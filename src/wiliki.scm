@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.47 2002-12-09 10:19:17 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.48 2002-12-19 00:06:06 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -24,7 +24,7 @@
 
 (autoload "wiliki/macro" handle-reader-macro handle-writer-macro)
 
-;; Version check
+;; Version check.
 (when (version<? (gauche-version) "0.6.3")
   (print (tree->string
           `(,(cgi-header)
@@ -61,6 +61,8 @@
              :init-value 'jp)
    (editable? :accessor editable?  :init-keyword :editable?
               :init-value #t)
+   (style-sheet :accessor style-sheet-of :init-keyword :style-sheet
+                :init-value #f)
    ))
 
 (define (url fmt . args)
@@ -378,9 +380,6 @@
                    (format-time (mtime-of page))))
       '()))
 
-(define (format-header type)       ;type may be 'html or 'plain
-  (cgi-header :content-type #`"text/,|type|; charset=,(if (eq? (lang) 'jp) 'euc-jp 'iso8859-1)"))
-
 (define (format-page title page . args)
   (let* ((wlki (wiliki))
          (show-edit? (and (editable? wlki)
@@ -393,54 +392,63 @@
                       (list (format-content page)
                             (format-footer page))
                       page)))
-    `(,(format-header 'html)
-      ,(html-doctype :type :transitional)
-      ,(html:html
-        (html:head (html:title (html-escape-string title)))
-        (html:body
-         :bgcolor "#eeeedd"
-         (html:h1 (if (is-a? page <page>)
-                      (html:a :href (url "c=s&key=[[~a]]" title)
-                              (html-escape-string title))
-                      (html-escape-string title)))
-         (html:div
-          :align "right"
-          (html:form
-           :method "POST" :action (cgi-name-of wlki)
-           (html:input :type "hidden" :name "c" :value "s")
-           (language-link page-id)
-           (if (string=? title (top-page-of wlki))
-               ""
-               (html:a :href (cgi-name-of wlki) ($$ "[Top Page]")))
-           (if show-edit?
-               (html:a :href (url "p=~a&c=e" title) ($$ "[Edit]"))
-               "")
-           (if show-all?
-               (html:a :href (url "c=a") ($$ "[All Pages]"))
-               "")
-           (if show-recent-changes?
-               (html:a :href (url "c=r") ($$ "[Recent Changes]"))
-               "")
-           (if show-search-box?
-               `("[" ,($$ "Search:")
-                 ,(html:input :type "text" :name "key" :size 10)
-                 "]")
-               "")
-           ))
-         (html:hr)
-         content)))))
+    (html-page
+     (html:title (html-escape-string title))
+     (html:h1 (if (is-a? page <page>)
+                  (html:a :href (url "c=s&key=[[~a]]" title)
+                          (html-escape-string title))
+                  (html-escape-string title)))
+     (html:div
+      :align "right"
+      (html:form
+       :method "POST" :action (cgi-name-of wlki)
+       (html:input :type "hidden" :name "c" :value "s")
+       (language-link page-id)
+       (if (string=? title (top-page-of wlki))
+           ""
+           (html:a :href (cgi-name-of wlki) ($$ "[Top Page]")))
+       (if show-edit?
+           (html:a :href (url "p=~a&c=e" title) ($$ "[Edit]"))
+           "")
+       (if show-all?
+           (html:a :href (url "c=a") ($$ "[All Pages]"))
+           "")
+       (if show-recent-changes?
+           (html:a :href (url "c=r") ($$ "[Recent Changes]"))
+           "")
+       (if show-search-box?
+           `("[" ,($$ "Search:")
+             ,(html:input :type "text" :name "key" :size 10)
+             "]")
+           "")
+       ))
+     (html:hr)
+     content)))
 
 ;; CGI processing ---------------------------------
 
+(define (html-page head-elements . body-elements)
+  ;; NB: cgi-header should be able to handle extra header fields.
+  ;; for now, I add extra headers manually.
+  `("Content-Style-Type: text/css\n"
+    ,(cgi-header
+      :content-type #`"text/html; charset=,(if (eq? (lang) 'jp) 'euc-jp 'iso8859-1)")
+    ,(html-doctype :type :transitional)
+    ,(html:html
+      (html:head
+       head-elements
+       (or (and-let* ((ss (style-sheet-of (wiliki))))
+             (html:link :rel "stylesheet" :href ss :type "text/css"))
+           ;; default
+           "<style type=\"text/css\"> body { background-color: #eeeedd }</style>"))
+      (html:body
+       body-elements))))
+
 (define (error-page e)
-  (list (cgi-header)
-        (html-doctype)
-        (html:html
-         (html:head (html:title "Wiliki: Error"))
-         (html:body
-          (html:h1 "Error")
-          (html:p (html-escape-string (ref e 'message)))
-          )))
+  (html-page
+   (html:title "Wiliki: Error")
+   (list (html:h1 "Error")
+         (html:p (html-escape-string (ref e 'message)))))
   )
 
 (define (redirect-page key)
@@ -606,7 +614,8 @@
 
 (define (cmd-lwp-view key)
   (let ((page (wdb-get (db) key #f)))
-    `(,(format-header 'plain)
+    `(,(cgi-header
+        :content-type #`"text/plain; charset=,(if (eq? (lang) 'jp) 'euc-jp 'iso8859-1)")
       ,#`"title: ,|key|\n"
       ,#`"wiliki-lwp-version: ,|*lwp-version*|\n"
       ,(if page
