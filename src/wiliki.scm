@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.28 2002-03-02 11:12:36 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.29 2002-03-02 21:23:34 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -210,12 +210,25 @@
             ((rxmatch rx line) (#f prefix) prefix)
             (else (loop (read-line p)))))))))
 
+(define (wikiname-anchor self wikiname)
+  ;; assumes wikiname already exist in the db.
+  (html:a :href (url self "~a" wikiname) (html-escape-string wikiname)))
+
 (define (expand-$$index self prefix)
   (html:ul
-   (map (lambda (key)
-          (html:li (html:a :href (url self "~a" key) key)))
+   (map (lambda (key) (html:li (wikiname-anchor self key)))
         (wdb-search (db-of self)
                     (lambda (k v) (string-prefix? prefix k))))))
+
+(define (expand-$$cindex self prefix . maybe-delim)
+  (define delim (if (pair? maybe-delim) (car maybe-delim) ""))
+  (fold-right (lambda (key r)
+                (if (null? r)
+                    (list (wikiname-anchor self key))
+                    (cons* (wikiname-anchor self key) delim " " r)))
+              '()
+              (wdb-search (db-of self)
+                          (lambda (k v) (string-prefix? prefix k)))))
 
 (define (expand-$$include self page)
   (cond ((wdb-get (db-of self) page) =>
@@ -228,6 +241,9 @@
            (cond ((and (string=? (car args) "$$index")
                        (not (null? (cadr args))))
                   (expand-$$index self (cadr args)))
+                 ((and (string=? (car args) "$$cindex")
+                       (not (null? (cadr args))))
+                  (apply expand-$$cindex self (cdr args)))
                  ((and (string=? (car args) "$$include")
                        (not (null? (cadr args))))
                   (expand-$$include self (cadr args)))
@@ -253,7 +269,7 @@
                                                (uri-encode-string inner))
                                  (html-escape-string name))))
           ((wdb-exists? (db-of self) name)
-           (tree->string (html:a :href (url self "~a" name) (html-escape-string name))))
+           (tree->string (wikiname-anchor self name)))
           (else
            (tree->string `(,(html-escape-string name) ,(html:a :href (url self "p=~a&c=e" name) "?")))))))
 

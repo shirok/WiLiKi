@@ -2,6 +2,7 @@
 
 	* src/wiliki.scm : added $$include macro.  implement simple
 	  parameter mechanism (define-parameter and parameterize*).
+	* src/wiliki.scm : added $$cindex macro.
 
 2002-03-01  Shiro Kawai  <shiro@acm.org>
 
