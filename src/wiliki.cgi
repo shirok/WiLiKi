@@ -4,7 +4,7 @@
 
 ;; Customization:
 ;;
-;;  (1) Change the #!-line on top to point gosh path at your site.
+;;  (1) Change the #!-line on top to point gosh's path at your site.
 ;;  (2) Tailor keyword arguments after 'make <wiliki>'.
 ;;
 ;;    :db-path - A path to the dbm database.  if it's relative, it's
@@ -24,12 +24,19 @@
 ;;
 ;;    :style-sheet - If a path to the css is given, it is used as a
 ;;               style sheet.  #f to use the default style.
+;;
+;;    :charsets - specify assoc list of character encodings to be
+;;                used to generate webpage.
+;;
+;;    :image-urls - specify which URL is allowed as an in-line image.
 
 (define (main args)
   (wiliki-main
    (make <wiliki>
      :db-path "/home/shiro/data/wikidata.dbm"
      :top-page "WiLiKi"
+     :style-sheet "wiliki-sample.css"
+     :charsets '((jp . euc-jp) (en . utf-8))
      :cgi-name (sys-basename *program-name*)
      )))
 

@@ -1,7 +1,29 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.51 2003-02-07 08:39:56 shirok Exp $
+;;;  Copyright (c) 2000-2003 Shiro Kawai, All rights reserved.
+;;;
+;;;  Permission is hereby granted, free of charge, to any person
+;;;  obtaining a copy of this software and associated documentation
+;;;  files (the "Software"), to deal in the Software without restriction,
+;;;  including without limitation the rights to use, copy, modify,
+;;;  merge, publish, distribute, sublicense, and/or sell copies of
+;;;  the Software, and to permit persons to whom the Software is
+;;;  furnished to do so, subject to the following conditions:
+;;;
+;;;  The above copyright notice and this permission notice shall be
+;;;  included in all copies or substantial portions of the Software.
+;;;
+;;;  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+;;;  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+;;;  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+;;;  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+;;;  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+;;;  AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+;;;  IN THE SOFTWARE.
+;;;
+;;;  $Id: wiliki.scm,v 1.52 2003-02-07 22:01:53 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -25,7 +47,7 @@
 (autoload "wiliki/macro" handle-reader-macro handle-writer-macro)
 
 ;; Version check.
-(when (version<? (gauche-version) "0.6.7_pre1")
+(when (version<? (gauche-version) "0.6.7")
   (print (tree->string
           `(,(cgi-header)
             ,(html:html (html:head (html:title "Error")))
