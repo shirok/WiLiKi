@@ -1,3 +1,8 @@
+2004-01-19  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/edit.scm (edit-form) : make "don't update recent changes"
+	  a label of the checkbox.
+
 2004-01-12  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/format.scm, src/wiliki/macro.scm, src/wiliki/util.scm :

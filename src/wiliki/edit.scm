@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: edit.scm,v 1.11 2004-01-11 21:27:06 shirok Exp $
+;;;  $Id: edit.scm,v 1.12 2004-01-20 02:10:04 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -38,9 +38,9 @@
         `((input (@ (type submit) (name preview) (value ,($$ "Preview again"))))
           (input (@ (type submit) (name commit) (value ,($$ "Commit")))))))
   (define (donttouch-checkbox)
-    `((input (@ (type checkbox) (name donttouch) (value on)
+    `((input (@ (type checkbox) (name donttouch) (value on) (id donttouch)
                 ,@(if donttouch '((checked checked)) '())))
-      ,($$ "Don't update 'Recent Changes'")))
+      (label (@ (for donttouch)) ,($$ "Don't update 'Recent Changes'"))))
   
   `((form
      (@ (method POST) (action ,(cgi-name-of (wiliki))))
