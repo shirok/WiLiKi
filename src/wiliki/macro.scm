@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.15 2003-11-19 14:59:06 shirok Exp $
+;;; $Id: macro.scm,v 1.16 2003-12-17 20:45:41 shirok Exp $
 
 (select-module wiliki)
 (use srfi-19)
@@ -192,7 +192,7 @@
 (define-reader-macro (toc . maybe-page)
   (let1 pagename (get-optional maybe-page (key-of (current-formatting-page)))
     (define (anchor id line)
-      (html:a :href #`",(url \"p=~a\" pagename)#,id"
+      (html:a :href #`",(url \"~a\" pagename)#,id"
               (html-escape-string line)))
     (define (make-toc page)
       (with-input-from-string (content-of page)

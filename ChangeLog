@@ -1,5 +1,10 @@
 2003-12-17  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki/macro.scm
+	(define-reader-macro) : generates anchor URL without "p=", so that
+	browser can use cached page to hop around within the page in
+	normal circumstances.
+
 	* src/wiliki.scm
 	(debug-level): fixed bad method name.
 	(cmd-view): added code to workaround when top page name is changed.
