@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: extract.scm,v 1.4 2003-02-11 14:03:57 shirok Exp $
+;;; $Id: extract.scm,v 1.5 2003-02-12 10:41:54 shirok Exp $
 
 (define (scan-src file)
   (define msgs '())
@@ -79,7 +79,7 @@
                     (when (null? (cddr dst-msg))
                       (format p "#| obsoleted message\n")
                       (format p "~a\n" (multiline-string (car dst-msg)))
-                      (format p "~a\n\n" (multiline-string (cadr dst-msg)))))
+                      (format p "~a\n|#\n" (multiline-string (cadr dst-msg)))))
                   (reverse dst-msgs))))
     (when (file-exists? dst-file)
       (sys-rename dst-file (string-append dst-file ".orig")))
