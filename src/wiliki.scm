@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.38 2002-05-22 04:43:42 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.39 2002-05-22 06:18:47 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -19,6 +19,8 @@
   (use wiliki.mcatalog)
   (export <wiliki> wiliki-main))
 (select-module wiliki)
+
+(autoload "wiliki/macro" handle-reader-macro handle-writer-macro)
 
 ;; Some constants
 
@@ -160,12 +162,9 @@
        (lambda (line)
          (display
           (regexp-replace-all
-           #/\[\[$(\w+)\]\]/ line
+           #/\[\[($\w+)\]\]/ line
            (lambda (m)
-             (let ((name (rxmatch-substring m 1)))
-               (cond ((string=? name "date")
-                      (format-time (sys-time)))
-                     (else #`"[[$,|name|]]"))))))
+             (tree->string (handle-writer-macro (rxmatch-substring m 1))))))
          (newline))
        read-line))))
 
@@ -197,40 +196,9 @@
   ;; assumes wikiname already exist in the db.
   (html:a :href (url "~a" wikiname) (html-escape-string wikiname)))
 
-(define (expand-$$index prefix)
-  (html:ul
-   (map (lambda (key) (html:li (wikiname-anchor key)))
-        (wdb-search (db)
-                    (lambda (k v) (string-prefix? prefix k))))))
-
-(define (expand-$$cindex prefix . maybe-delim)
-  (define delim (if (pair? maybe-delim) (car maybe-delim) ""))
-  (fold-right (lambda (key r)
-                (if (null? r)
-                    (list (wikiname-anchor key))
-                    (cons* (wikiname-anchor key) delim " " r)))
-              '()
-              (wdb-search (db)
-                          (lambda (k v) (string-prefix? prefix k)))))
-
-(define (expand-$$include page)
-  (cond ((wdb-get (db) page) =>
-         (lambda (page) (format-content page)))
-        (else #`"[[$$include ,(html-escape-string page)]]")))
-
 (define (reader-macro-wiki-name? name)
   (cond ((string-prefix? "$$" name)
-         (let ((args (string-tokenize name)))
-           (cond ((and (string=? (car args) "$$index")
-                       (not (null? (cadr args))))
-                  (expand-$$index (cadr args)))
-                 ((and (string=? (car args) "$$cindex")
-                       (not (null? (cadr args))))
-                  (apply expand-$$cindex (cdr args)))
-                 ((and (string=? (car args) "$$include")
-                       (not (null? (cadr args))))
-                  (expand-$$include (cadr args)))
-                 (else #`"[[,(html-escape-string name)]]"))))
+         (handle-reader-macro name))
         ((or (string-index name #[\s])
              (string-prefix? "$" name))
          ;;invalid wiki name

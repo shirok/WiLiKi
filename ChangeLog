@@ -1,5 +1,7 @@
 2002-05-21  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki/macro.scm : separated reader/writer macro handling
+	  routines here.  Added $$toc reader macro
 	* src/wiliki.scm : added a checkbox in editing screen to set
 	  "don't update 'Recent Changes'" option (so called "sage" feature).
 	  Also hide "Edit" link in the edit screen.
