@@ -1,5 +1,4 @@
 #!/bin/sh
-VERSION=`cat VERSION`
 TGZ_DEST="$HOME/shiro.dreamhost.com/scheme/vault/"
 RPMDIR="$HOME/rpm"
 
