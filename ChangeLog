@@ -1,3 +1,9 @@
+2003-02-11  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm (format-content): added comment syntax, revised
+	  table syntax (use '||' instead of '|' as a delimiter), and
+	  revised formatting routine to comply HTML (mostly).
+
 2003-02-10  Shiro Kawai  <shiro@acm.org>
 
 	* src/extract.scm : improved format of multiline string.

@@ -12,12 +12,12 @@ h1, h2, h3, h4, h5, h6 {
    color: #006655;
    background: transparent;
 }
-h1 { font: bold 190% }
-h2 { font: bold 160% }
-h3 { font: bold 130% }
-h4 { font: bold 110% }
-h5 { font: italic 100% }
-h6 { font: small-caps 100% }
+h1 { font-size: 190% }
+h2 { font-size: 160% }
+h3 { font-size: 130% }
+h4 { font-size: 110% }
+h5 { font-size: 100% }
+h6 { font-size: 100%; font-style: italic }
 
 pre {
     margin-left: 2em;

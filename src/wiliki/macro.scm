@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.7 2003-02-11 14:04:37 shirok Exp $
+;;; $Id: macro.scm,v 1.8 2003-02-12 03:23:51 shirok Exp $
 
 (select-module wiliki)
 
@@ -105,14 +105,18 @@
                     (lambda (k v) (string-prefix? prefix k))))))
 
 (define-reader-macro (cindex prefix . maybe-delim)
-  (define delim (if (pair? maybe-delim) (car maybe-delim) ""))
   (fold-right (lambda (key r)
                 (if (null? r)
                     (list (wikiname-anchor (car key)))
-                    (cons* (wikiname-anchor (car key)) delim " " r)))
+                    (cons* (wikiname-anchor (car key))
+                           (get-optional maybe-delim "")
+                           " " r)))
               '()
               (wdb-search (db)
                           (lambda (k v) (string-prefix? prefix k)))))
+
+;(define-reader-macro (anchor name . maybe-tag)
+;  (html:a :name name 
 
 (define-reader-macro (include page)
   (cond ((wdb-get (db) page) => format-content)
