@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.40 2002-09-26 09:32:18 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.41 2002-09-26 09:38:50 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -16,11 +16,20 @@
   (use dbm)
   (use dbm.gdbm)
   (use gauche.charconv)
+  (use gauche.version)
   (use wiliki.mcatalog)
   (export <wiliki> wiliki-main))
 (select-module wiliki)
 
 (autoload "wiliki/macro" handle-reader-macro handle-writer-macro)
+
+;; Version check
+(when (version<? (gauche-version) "0.6.3")
+  (print (tree->string
+          `(,(cgi-header)
+            ,(html:html (html:head (html:title "Error")))
+            ,(html:body "Gauche 0.6.3 or later is required."))))
+  (exit 0))
 
 ;; Some constants
 
