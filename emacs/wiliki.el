@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2004 Tokuya Kameshima.  All rights reserved.
 
-;; $Id: wiliki.el,v 1.9 2004-03-26 15:03:11 tkame Exp $
+;; $Id: wiliki.el,v 1.10 2004-04-01 15:04:32 tkame Exp $
 
 ;;; Installation:
 
@@ -442,6 +442,8 @@ FIELD-NAME is converted to lower-case."
 This is supporsed to be called when server closed connection"
   (with-wiliki-response session (wiliki-lwp-version title mtime status)
     ;; `body' is also bound.
+    (unless wiliki-lwp-version
+      (error "Not a WiLiKi site."))
     (let* ((buf (get-buffer-create (wiliki-buffer-name base-url title 'view)))
 	   pos-saved)
       (add-to-list 'wiliki-buffer-list buf)
@@ -802,24 +804,34 @@ Return the base URL as a string."
 
 (defvar wiliki-page-hist nil)
 
+(defun wiliki-complete-page (string predicate what)
+  ;; XXX: `base-url' must be bound.
+  (let ((complete-table (cons wiliki-refetch-item
+			      (wiliki-base-url->page-list base-url))))
+    (if (eq what t)
+	(all-completions string complete-table predicate)
+      (try-completion string complete-table predicate))))
+
 (defun wiliki-read-page (base-url &optional prompt default)
   "Prompt for a WikiName."
   (if (wiliki-decompose-wiliki-url base-url)
       nil				; BASE-URL contains page name.
-    (let (complete-table page refetch)
-      (or default
-	  (setq default ""))
-      (setq prompt (format "%s (default %s): "
-			   (or prompt "WikiName")
-			   (if (string= default "") "{top page}" default)))
-      (while (or (not page)
-		 (setq refetch (string= page (car wiliki-refetch-item))))
-	(if (assoc base-url wiliki-site-info-alist)
-	    (setq complete-table
-		  (cons wiliki-refetch-item
-			(wiliki-base-url->page-list base-url refetch))))
-	(setq page (completing-read prompt complete-table nil nil nil
-				    'wiliki-page-hist default)))
+    (let (page refetch)
+      (save-window-excursion
+	(or default
+	    (setq default ""))
+	(setq prompt (format "%s (default %s): "
+			     (or prompt "WikiName")
+			     (if (string= default "") "{top page}" default)))
+	(while (or (not page)
+		   (setq refetch (string= page (car wiliki-refetch-item))))
+	  (if refetch
+	      (with-output-to-temp-buffer "*Completions*"
+		(wiliki-base-url->page-list base-url t)
+		(display-completion-list
+		 (all-completions "" 'wiliki-complete-page))))
+	  (setq page (completing-read prompt 'wiliki-complete-page nil nil nil
+				      'wiliki-page-hist default))))
       page)))
 
 (defun wiliki-browse-url (url)
