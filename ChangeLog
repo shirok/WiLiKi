@@ -2,6 +2,7 @@
 
 	* src/wiliki.scm : added lwp-version to the lightweight
 	  protocol header.  change the lightweight protocol command to "lv".
+	* emacs/wiliki.el : added (not finished yet).
 
 2002-03-02  Shiro Kawai  <shiro@acm.org>
 
