@@ -23,12 +23,13 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: history.scm,v 1.6 2003-09-01 00:33:40 shirok Exp $
+;;;  $Id: history.scm,v 1.7 2003-09-01 03:46:00 shirok Exp $
 ;;;
 
 (select-module wiliki)
+(use util.lcs)
 
-;; Display "Edit History" page.
+;; "Edit History" page. ---------------------------------------
 (define (cmd-history pagename)
   
   (define (td . c)
@@ -41,8 +42,16 @@
            :class "history_th"
            :style "background-color:#ccccff; color:#000000"
            c))
+  (define (diff-to-prev entry prev-timestamp)
+    (html:a :href (url "p=~a&c=hd&t=~a&t1=~a"
+                       (cv-out pagename) prev-timestamp (ref entry 'timestamp))
+            "previous"))
+  (define (diff-to-current entry)
+    (html:a :href (url "p=~a&c=hd&t=~a"
+                       (cv-out pagename) (ref entry 'timestamp))
+            "current"))
 
-  (define (history-table-row entry rev)
+  (define (history-table-row first entry rev prev-timestamp)
     (list
      (html:tr (td :rowspan 2 rev)
               (td (format-time (ref entry 'timestamp)))
@@ -56,12 +65,11 @@
                                           (ref entry 'timestamp))
                                "View")
                    " this version] "
-                   "[Diff to "
-                   (html:a :href (url "p=~a&c=hd&t=~a"
-                                      (cv-out pagename)
-                                      (ref entry 'timestamp))
-                           "current")
-                   "]")))
+                   (if (eq? first entry)
+                     `("[Diff to ",(diff-to-prev entry prev-timestamp)"]")
+                     `("[Diff to ",(diff-to-current entry)
+                       "|",(diff-to-prev entry prev-timestamp)"]"))))
+              )
      (html:tr (td :colspan 3
                   (let1 l (ref entry 'log-message)
                     (cond ((or (not l) (equal? l ""))
@@ -78,9 +86,13 @@
      (html:tr (th :rowspan 2 "Rev")
               (th "Time") (th "Changes") (th "Operations"))
      (html:tr (th :colspan 3 "Log"))
-     (map history-table-row
-          entries
-          (iota (length entries) (length entries) -1))
+     (if (not (null? entries))
+       (map (cut history-table-row (car entries) <> <> <>)
+            entries
+            (iota (length entries) (length entries) -1)
+            (fold-right (lambda (e r) (cons (ref e 'timestamp) r))
+                        '(0) (drop* entries 1)))
+       '())
      (html:tr (td :colspan 4
                   (html:div
                    :style "text-align:right"
@@ -103,29 +115,57 @@
    :show-lang? #f :show-edit? #f :show-history? #f)
   )
 
-(define (cmd-diff pagename old-time)
+;; "Edit History:Diff" page. -----------------------------------
+(define (cmd-diff pagename old-time new-time)
+
+  (define (diff-to-current entries current)
+    (let* ((diffpage (wiliki-log-diff* entries current)))
+      (list
+       (html:h2 (format ($$ "Changes of ~a since ~a")
+                        (tree->string
+                         (format-wikiname-anchor pagename))
+                        (format-time old-time)))
+       (html:ul (html:li (format-diff-line `(+ . ,($$ "added lines"))))
+                (html:li (format-diff-line `(- . ,($$ "deleted lines")))))
+       (return-to-edit-history pagename)
+       (format-diff-pre diffpage))))
+
+  (define (diff2 entries current)
+    (let* ((oldpage (wiliki-log-revert* entries current))
+           (newpage (wiliki-log-revert*
+                     (take-while (lambda (e)
+                                   (< new-time (ref e 'timestamp)))
+                                 entries)
+                     current))
+           (rdiff (lcs-fold (cut acons '- <> <>)
+                            (cut acons '+ <> <>)
+                            cons
+                            '() oldpage newpage)))
+      (list
+       (html:h2 (format ($$ "Changes of ~a between ~a and ~a")
+                        (tree->string
+                         (format-wikiname-anchor pagename))
+                        (format-time old-time)
+                        (format-time new-time)))
+       (html:ul (html:li (format-diff-line `(+ . ,($$ "added lines"))))
+                (html:li (format-diff-line `(- . ,($$ "deleted lines")))))
+       (return-to-edit-history pagename)
+       (format-diff-pre (reverse! rdiff)))))
+
   (format-page
    ($$ "Edit History:Diff")
    (or (and-let* ((logfile (log-file-path (wiliki)))
                   (page    (wdb-get (db) pagename))
                   (picked  (wiliki-log-pick-from-file pagename logfile)))
-         (let* ((entries  (wiliki-log-entries-after picked old-time))
-                (diffpage (wiliki-log-diff* entries (content-of page))))
-           (list
-            (html:h2 (format ($$ "Changes of ~a since ~a")
-                             (tree->string
-                              (format-wikiname-anchor pagename))
-                             (format-time old-time)))
-            (html:ul (html:li (format-diff-line `(+ . ,($$ "added lines"))))
-                     (html:li (format-diff-line `(- . ,($$ "deleted lines")))))
-            (html:p :style "text-align:right"
-                    (html:a :href (url "~a&c=h" (cv-out pagename))
-                            ($$ "Return to the edit history")))
-            (format-diff-pre diffpage))))
+         (let ((entries  (wiliki-log-entries-after picked old-time)))
+           (if (>= old-time new-time)
+             (diff-to-current entries (content-of page))
+             (diff2 entries (content-of page)))))
        (no-history-info pagename))
    :show-lang? #f :show-edit? #f :show-history? #f)
   )
 
+;; "Edit History:View" page. -----------------------------------
 (define (cmd-viewold pagename old-time)
   (format-page
    ($$ "Edit History:View")
@@ -143,9 +183,7 @@
                     (html:a :href (url "~a&c=hd&t=~a"
                                        (cv-out pagename) old-time)
                             ($$ "View diff from current version")))
-            (html:p :style "text-align:right"
-                    (html:a :href (url "~a&c=h" (cv-out pagename))
-                            ($$ "Return to the edit history")))
+            (return-to-edit-history pagename)
             (format-diff-pre reverted))))
        (no-history-info pagename))
    :show-lang? #f :show-edit? #f :show-history? #f)
@@ -155,5 +193,10 @@
   (html:p (format ($$ "No edit history available for page ~a")
                   (tree->string
                    (format-wikiname-anchor pagename)))))
+
+(define (return-to-edit-history pagename)
+  (html:p :style "text-align:right"
+          (html:a :href (url "~a&c=h" (cv-out pagename))
+                  ($$ "Return to the edit history"))))
 
 (provide "wiliki/history")

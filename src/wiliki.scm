@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.92 2003-09-01 00:30:53 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.93 2003-09-01 03:45:59 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -444,6 +444,8 @@
          ((equal? command "hd")
           (with-db (cut cmd-diff pagename
                         (cgi-get-parameter "t" param :convert x->integer
+                                           :default 0)
+                        (cgi-get-parameter "t1" param :convert x->integer
                                            :default 0))))
          ((equal? command "hv")
           (with-db (cut cmd-viewold pagename
