@@ -3,32 +3,32 @@
 body {
   font-family: verdana, arial, helvetica, sans-serif;
   color: black;
-  background-color: #eeffff;
+  background-color: #ffffee;
 }
 
-:link    { text-decoration: none }
-:visited { text-decoration: none }
+:link    { text-decoration: none; color: #00bb00; }
+:visited { text-decoration: none; color: #557722; }
 
 h1 { 
   text-align: right;
   font-size: 190%;
-  color: #004400;
+  color: #444400;
   margin-top: 20pt;
   margin-bottom: 20pt;
-  border-bottom: solid thick #44cc44;
+  border-bottom: solid thick #888844;
 }
 
 h2 {
   text-align: left;
   font-size: 150%;
-  color: #008800;
+  color: #448800;
   margin-top: 30pt;
-  border-bottom: solid thin #44cc44;
+  border-bottom: solid thin #448800;
 }
 
 h3, h4, h5, h6 {
    text-align: left;
-   color: #008800;
+   color: #448800;
    background: transparent;
 }
 h3 { font-size: 130% }
@@ -40,7 +40,7 @@ pre {
     margin-left: 2em;
     margin-right: 2em;
     font-family: monospace;
-    background-color: #ddeedd;
+    background-color: #eeffee;
     border: solid thin #9999aa;
 }
 
@@ -57,7 +57,7 @@ dt { font-weight: bold }
 table.content-table { table-layout : fixed }
 
 td.inbody { background-color: #eeeeee }   /* used in formatted body */
-td.preview { background-color: #ddeeee }  /* used in preview page */
+td.preview { background-color: #eeeedd }  /* used in preview page */
 
 div.footer { color: #bbbbbb }
 
