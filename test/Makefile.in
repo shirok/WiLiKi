@@ -1,0 +1,22 @@
+GOSH = @GOSH@
+GAUCHE_CONFIG = @GAUCHE_CONFIG@
+TEST_OUT = test.log test.dbm
+GENERATED =
+
+all: 
+
+clean :
+	rm -rf core $(TEST_OUT) *~
+
+install:
+
+test :
+	@rm -f $(TEST_OUT)
+	$(GOSH) -I. test.scm > test.log
+
+distclean : clean
+	rm -f Makefile $(GENERATED)
+
+realclean : clean
+	rm -f Makefile $(GENERATED)
+

@@ -1,7 +1,7 @@
 dnl
 dnl configuring wiliki
 dnl
-dnl $Id: configure.in,v 1.1 2002-01-14 10:06:55 shirok Exp $
+dnl $Id: configure.in,v 1.2 2002-12-27 01:05:44 shirok Exp $
 AC_INIT(src/wiliki.scm)
 
 dnl Determine if we're configuring inside of Gauche main source tree or not.
@@ -48,4 +48,4 @@ LDFLAGS="$LDFLAGS `$GAUCHE_CONFIG --so-ldflags`"
 AC_SUBST(LDFLAGS)
 
 dnl Output
-AC_OUTPUT(src/Makefile)
+AC_OUTPUT(src/Makefile test/Makefile)
