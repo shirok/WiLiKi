@@ -108,6 +108,8 @@
     (page "''foo''''bar''baz''"))
 (tp "em" '(result (p "''foo\nbar''\n"))
     (page "''foo" "bar''"))
+(tp "em(empty)" '(result (p "foo\n"))
+    (page "''''foo"))
 
 (tp "strong" '(result (p "foo" (strong "bar") "baz\n"))
     (page "foo'''bar'''baz"))
@@ -118,6 +120,8 @@
     (page "''''foo''''"))
 (tp "strong" '(result (p "'" (strong "foo") "'\n"))
     (page "''''foo''''"))
+(tp "strong(empty)" '(result (p "foo\n"))
+    (page "''''''foo"))
 
 (tp "url" '(result (p (a (@ (href "http://foo")) "http://foo")))
     (page "http://foo"))

@@ -1,3 +1,8 @@
+2004-02-09  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/format.scm (fmt-line): let em and strong take the
+	  innermost apostrophes instead of first-match.
+
 2004-02-04  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/format.scm (fmt-line): fixed a problem of emphasizing
