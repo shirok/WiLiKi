@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.41 2002-09-26 09:38:50 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.42 2002-09-26 09:45:46 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -17,6 +17,7 @@
   (use dbm.gdbm)
   (use gauche.charconv)
   (use gauche.version)
+  (use gauche.sequence)
   (use wiliki.mcatalog)
   (export <wiliki> wiliki-main))
 (select-module wiliki)
@@ -329,7 +330,7 @@
   (define (pre line id)
     (cond ((eof-object? line) '("</pre>"))
           ((string-prefix? " " line)
-           `(,@(format-line line) ,@(pre (read-line))))
+           `(,@(format-line line) ,@(pre (read-line) id)))
           (else (cons "</pre>\n" (loop line '() id)))))
 
   (define (list-item match level nestings opentag closetag id)
