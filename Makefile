@@ -12,7 +12,7 @@ clean:
 test:
 	(cd test; $(MAKE) test)
 
-install:
+install: all
 	(cd src; $(MAKE) install)
 
 distclean: clean
