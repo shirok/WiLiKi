@@ -1,0 +1,19 @@
+GOSH = @GOSH@
+TEST_OUT = test.log test.dbm
+
+all:
+
+check : test
+
+test :
+	@rm -f $(TEST_OUT)
+	$(GOSH) -I. test.scm > test.log
+
+clean :
+	rm -rf core $(TEST_OUT) *~
+
+distclean : clean
+	rm -f Makefile
+
+maintainer-clean : clean
+	rm -f Makefile

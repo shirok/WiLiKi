@@ -1,3 +1,9 @@
+2003-04-21  Shiro Kawai  <shiro@acm.org>
+
+	* Makefile, src/Makefile.am, test/Makefile.am, configure.in :
+	  Removed automake dependency.
+	* src/wiliki.scm, src/wiliki/db.scm : separated database access layer.
+
 2003-04-06  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/macro.scm : fixed function call

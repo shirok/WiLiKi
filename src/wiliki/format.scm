@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.1 2003-04-06 22:14:31 shirok Exp $
+;;; $Id: format.scm,v 1.2 2003-04-22 01:02:52 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -64,9 +64,10 @@
   ;; assumes wikiname already exist in the db.
   (html:a :href (url "~a" (cv-out wikiname)) (html-escape-string wikiname)))
 
-;; Formatting html --------------------------------
-
-;; 
+;;=================================================
+;; Formatting: Wiki -> HTML
+;;
+ 
 (define (inter-wiki-name-prefix head)
   (and-let* ((page (wdb-get (db) "InterWikiName"))
              (rx   (string->regexp #`"^:,|head|:(\\S+)")))
@@ -114,7 +115,7 @@
 
 ;; Find wiki name in the line.
 ;; Correctly deal with nested "[[" and "]]"'s.
-(define (format-line line)
+(define (format-line line . expand-tabs?)
   ;; parse to next "[[" or "]]"
   (define (token s)
     (cond ((#/\[\[|\]\]/ s)
@@ -132,18 +133,46 @@
             (else
              (find-closer post (- level 1) (list* "]]" pre in))))))
 
-  (list
-   (let loop ((s line))
-     (receive (pre post) (string-scan s "[[" 'both)
-       (if pre
-           (cons (format-parts pre)
-                 (receive (wikiname rest) (find-closer post 0 '())
-                   (if wikiname
-                       (cons (format-wiki-name wikiname) (loop rest))
-                       (list rest))))
-           (format-parts s))))
-   "\n")
+  (let1 formatted 
+      (list
+       (let loop ((s line))
+         (receive (pre post) (string-scan s "[[" 'both)
+           (if pre
+               (cons (format-parts pre)
+                     (receive (wikiname rest) (find-closer post 0 '())
+                       (if wikiname
+                           (cons (format-wiki-name wikiname) (loop rest))
+                           (list rest))))
+               (format-parts s))))
+       "\n")
+    (if (get-optional expand-tabs? #f)
+        (expand-tab (tree->string formatted))
+        formatted))
   )
+
+;; Expands tabs in a line.
+(define expand-tab 
+  (let ((pads #("        "
+                " "
+                "  "
+                "   "
+                "    "
+                "     "
+                "      "
+                "       ")))
+    (lambda (line)
+      (let loop ((line   line)
+                 (r      '())
+                 (column 0))
+        (receive (before after) (string-scan line #\tab 'both)
+          (if before
+              (let* ((newcol  (+ (string-length before) column))
+                     (fill-to (inexact->exact (* (ceiling (/ newcol 8)) 8))))
+                (loop after
+                      (list* (vector-ref pads (- fill-to newcol)) before r)
+                      fill-to))
+              (reverse (cons line r))))))
+    ))
 
 (define (format-parts line)
   (define (uri line)
@@ -242,7 +271,7 @@
           ((string-prefix? " " line)
            (pre (generator) id
                 (list* "\n"
-                       (string-tr (tree->string (format-line line)) "\n" " ")
+                       (string-tr (tree->string (format-line line #t)) "\n" " ")
                        r)))
           (else (loop line '() id (cons "</pre>" r)))))
 
@@ -251,7 +280,10 @@
           ((string=? line "}}}")
            (loop (generator) '() id (cons "</pre>" r)))
           (else (pre* (generator) id
-                      (list* "\n" (html-escape-string line) r)))))
+                      (list* "\n"
+                             (html-escape-string
+                              (tree->string (expand-tab line)))
+                             r)))))
 
   (define (table body id r)
     (let1 r

@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.76 2003-04-07 02:45:21 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.77 2003-04-22 01:02:51 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -48,6 +48,11 @@
 
 ;; Load extra code only when needed.
 (autoload dbm.gdbm <gdbm>)
+(autoload wiliki.db      with-db
+                         wdb-exists? wdb-record->page wdb-get
+                         wdb-put! wdb-delete!
+                         wdb-recent-changes wdb-map
+                         wdb-search wdb-search-content)
 (autoload "wiliki/macro" handle-reader-macro handle-writer-macro
                          handle-virtual-page virtual-page?)
 (autoload "wiliki/rss"   rss-page)
@@ -139,17 +144,9 @@
     (html:a :href #`",(cgi-name-of (wiliki))?,|pagename|&l=,|target|"
             "[" (html-escape-string label) "]")))
 
-;; Database access ------------------------------------------
-
-(define (with-db thunk)
-  (parameterize
-   ((db (dbm-open (db-type-of (wiliki))
-                  :path (db-path-of (wiliki)) :rwmode :write)))
-   (dynamic-wind
-    (lambda () #f)
-    thunk
-    (lambda () (dbm-close (db))))))
-
+;; Class <page> ---------------------------------------------
+;;   Represents a page.
+;;
 (define-class <page> ()
   ((key   :init-keyword :key :accessor key-of)
    (ctime :initform (sys-time) :init-keyword :ctime :accessor ctime-of)
@@ -159,93 +156,20 @@
    (content :initform "" :init-keyword :content :accessor content-of)
    ))
 
-(define-method wdb-exists? ((db <dbm>) key)
-  (dbm-exists? db key))
-
-(define-method wdb-record->page ((db <dbm>) key record)
-  (call-with-input-string record
-    (lambda (p)
-      (let* ((params  (read p))
-             (content (port->string p)))
-        (apply make <page> :key key :content content params)))))
-
-;; WDB-GET db key &optional create-new
-(define-method wdb-get ((db <dbm>) key . option)
-  (cond ((dbm-get db key #f) => (cut wdb-record->page db key <>))
-        ((and (pair? option) (car option))
-         (make <page> :key key))
-        (else #f)))
-
-;; WDB-PUT! db key page
-(define-method wdb-put! ((db <dbm>) key (page <page>) . option)
-  (let ((s (with-output-to-string
-             (lambda ()
-               (write (list :ctime (ctime-of page)
-                            :cuser (cuser-of page)
-                            :mtime (mtime-of page)
-                            :muser (muser-of page)))
-               (display (content-of page)))))
-        (donttouch (get-keyword :donttouch option #f)))
-    (dbm-put! db key s)
-    (unless donttouch
-      (let1 r (alist-delete key
-                            (read-from-string
-                             (dbm-get db *recent-changes* "()")))
-        (dbm-put! db *recent-changes*
-                  (write-to-string
-                   (acons key (mtime-of page) (take* r 49))))))
-    ))
-
-;; WDB-DELETE! db key
-(define-method wdb-delete! ((db <dbm>) key)
-  (let ((r (alist-delete key
-                         (read-from-string (dbm-get db *recent-changes* "()")))))
-    (dbm-delete! db key)
-    (dbm-put! db *recent-changes* (write-to-string r))))
-
-(define-method wdb-recent-changes ((db <dbm>))
-  (read-from-string (dbm-get db *recent-changes* "()")))
-
-(define-method wdb-map ((db <dbm>) proc)
-  (reverse! (dbm-fold db
-                      (lambda (k v r)
-                        (if (string-prefix? " " k)
-                            r
-                            (cons (proc k v) r)))
-                      '())))
-
-(define-method wdb-search ((db <dbm>) pred . maybe-sorter)
-  (sort
-   (dbm-fold db
-             (lambda (k v r)
-               (if (pred k v) (acons k (read-from-string v) r) r))
-             '())
-   (get-optional maybe-sorter
-                 (lambda (a b)
-                   (> (get-keyword :mtime (cdr a) 0)
-                      (get-keyword :mtime (cdr b) 0))))))
-
-(define-method wdb-search-content ((db <dbm>) key . maybe-sorter)
-  (apply wdb-search db
-         (lambda (k v)
-           (and (not (string-prefix? " " k))
-                (string-contains (content-of (wdb-record->page db key v))
-                                      key)))
-         maybe-sorter))
-
 ;; Macros -----------------------------------------
 
 (define (expand-writer-macros content)
-  (with-string-io content
-    (lambda ()
-      (port-for-each
-       (lambda (line)
-         (display
-          (regexp-replace-all
-           #/\[\[($\w+)\]\]/ line
-           (lambda (m) (tree->string (handle-writer-macro (m 1))))))
-         (newline))
-       read-line))))
+  (with-string-io
+   content
+   (lambda ()
+     (port-for-each
+      (lambda (line)
+        (display
+         (regexp-replace-all
+          #/\[\[($\w+)\]\]/ line
+          (lambda (m) (tree->string (handle-writer-macro (m 1))))))
+        (newline))
+      read-line))))
 
 ;; Character conv ---------------------------------
 

@@ -2,9 +2,8 @@ dnl
 dnl Configuring wiliki
 dnl Process this file with autoconf to generate 'configure'.
 dnl
-dnl $Id: configure.in,v 1.3 2003-04-07 02:18:38 shirok Exp $
-AC_INIT(src/wiliki.scm)
-AM_INIT_AUTOMAKE(WiLiKi, 0.4_pre3)
+dnl $Id: configure.in,v 1.4 2003-04-22 01:02:51 shirok Exp $
+AC_INIT(WiLiKi, 0.4_pre4, shiro@acm.org)
 AC_GAUCHE_INIT_EXT
 
 dnl Sets the default value of INSTALL_TYPE macro.
@@ -23,5 +22,5 @@ dnl Set LDFLAGS to generate shared library.
 AC_GAUCHE_FIX_LIBS
 
 dnl Output
-echo $VERSION > VERSION
-AC_OUTPUT(Makefile src/Makefile test/Makefile)
+echo $PACKAGE_VERSION > VERSION
+AC_OUTPUT(src/Makefile test/Makefile)

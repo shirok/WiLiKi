@@ -1,19 +1,19 @@
 GOSH = @GOSH@
 GAUCHE_CONFIG = @GAUCHE_CONFIG@
 INSTALL_TYPE = @INSTALL_TYPE@
+INSTALL = @INSTALL@
 
-COMMON = wiliki.scm \
+TARGET = wiliki.scm \
+	 wiliki/db.scm \
          wiliki/format.scm \
          wiliki/mcatalog.scm \
          wiliki/macro.scm \
          wiliki/rss.scm \
          wiliki/pasttime.scm 
 
-scmlibdir = $(DESTDIR)`$(GAUCHE_CONFIG) --$(INSTALL_TYPE)libdir`
+SCM_INSTALL_DIR = $(DESTDIR)`$(GAUCHE_CONFIG) --$(INSTALL_TYPE)libdir`
 
-scmlib_SCRIPTS = $(COMMON) wiliki/msgs.jp
-
-EXTRA_DIST = $(COMMON) wiliki/msgs.jp.euc
+all : wiliki/msgs.jp
 
 wiliki/msgs.jp: wiliki/msgs.jp.euc
 	$(GOSH) -ugauche.charconv -e '(call-with-input-file "wiliki/msgs.jp.euc" (lambda (in) (call-with-output-file "wiliki/msgs.jp" (cut copy-port in <> :unit (quote char)))) :encoding "euc-jp")' -Eexit
@@ -21,7 +21,23 @@ wiliki/msgs.jp: wiliki/msgs.jp.euc
 extract :
 	$(GOSH) ./extract.scm wiliki.scm wiliki/msgs.jp.euc
 
+install :
+	if test ! -d $(SCM_INSTALL_DIR)/wiliki; then \
+	  $(INSTALL) -d $(SCM_INSTALL_DIR)/wiliki; \
+	fi
+	for f in $(TARGET); do \
+	  $(INSTALL) -m 444 $$f $(SCM_INSTALL_DIR)/$$f; \
+	done
+
 clean :
-	rm -f core *~ wiliki/*~
+	rm -f core *~ wiliki/*~ wiliki/*.orig wiliki/msgs.jp
 
 distclean : clean
+	rm -f Makefile
+
+maintainer-clean :
+	rm -f Makefile
+
+check :
+
+test :
