@@ -1,3 +1,7 @@
+2004-04-04  Shiro Kawai  <shiro@acm.org>
+
+	* doc/* : start adding documentation.  Yet to determine the format.
+
 2004-04-03  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki2html: removed.  The function is implemented by 'wiliki'

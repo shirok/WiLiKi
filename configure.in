@@ -2,7 +2,7 @@ dnl
 dnl Configuring wiliki
 dnl Process this file with autoconf to generate 'configure'.
 dnl
-dnl $Id: configure.in,v 1.8 2004-02-10 04:27:51 shirok Exp $
+dnl $Id: configure.in,v 1.9 2004-04-04 11:12:14 shirok Exp $
 AC_INIT(WiLiKi, 0.5_pre2, shiro@acm.org)
 AC_GAUCHE_INIT_EXT
 
@@ -23,4 +23,4 @@ AC_GAUCHE_FIX_LIBS
 
 dnl Output
 echo $PACKAGE_VERSION > VERSION
-AC_OUTPUT(src/Makefile test/Makefile)
+AC_OUTPUT(src/Makefile doc/Makefile test/Makefile)

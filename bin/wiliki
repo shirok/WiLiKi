@@ -24,7 +24,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki,v 1.1 2004-04-03 13:42:54 shirok Exp $
+;;;  $Id: wiliki,v 1.2 2004-04-04 11:12:14 shirok Exp $
 
 ;; NB: This is just a quick hack.  The next version of wiliki
 ;; will provide enough APIs so that users can create applications
@@ -91,6 +91,14 @@
         (eval '(main '()) mod)))))
 
 ;;;=====================================================
+;;; Export
+;;;
+
+(define (usage-export)
+  (p "Usage: wiliki export [-t type][-s style][-l scm] source.cgi dest-dir")
+  )
+
+;;;=====================================================
 ;;; Format
 ;;;
 
@@ -108,28 +116,34 @@
      "Description:"
      "  Takes a text file with wiliki markup, or a directory that contains"
      "  such text files, and generates html or sxml file(s)."
-     "  The first line of each text file will be the page name."
+     "  The first line of each text file will be the page name; its content"
+     "  begins from the second line."
      ""
      "  The first format takes a single text file and writes out HTML or"
      "  SXML as specified by -t option to stdout.  If an input file name is"
      "  omitted, input is taken from stdin.  If -o option is given, the"
-     "  output goes to the specified file."
+     "  output goes to the specified file.  Note that this wouldn't handle"
+     "  WikiNames nor macros, unless you set your own formatter by -l option."
      ""
-     "  The second format converts all text files inside a directory"
-     "  <source-dir>, and puts the output files in a directory <dest-dir>."
-     "  <dest-dir> will be created if it doesn't exist."
-     ""
-     "  The WikiNames in input text files will become a relative link to the"
-     "  generated file within the same directory, regardless of whether"
-     "  such file exists or not; it can be customized by giving your own"
-     "  formatter definition file (by -l option)."))
+     "  The second format converts all files with .txt suffix inside a "
+     "  directory <source-dir>, and puts the output files in a directory"
+     "  <dest-dir>, which will be created if it doesn't exist."
+     "  The WikiNames are handled as far as it refers to the file in the"
+     "  same directory.  You can customize it by setting your own formatter"
+     "  by -l option."))
 
-(define-class <text-formatter> (<wiliki-formatter>) ())
+(define-class <text-formatter> (<wiliki-formatter>)
+  ((suffix :init-value 'html)))
 
 (define the-style (make-parameter '()))
 
+(define file-page-alist (make-parameter '())) ;; filename - pagename alist
+
 (define-method wiliki:format-wikiname ((f <text-formatter>) name)
-  `((a (@ (href ,(pagename->path name))) ,name)))
+  (cond ((rassoc-ref (file-page-alist) name)
+         => (lambda (file)
+              `((a (@ (href ,#`",|file|.,(ref f 'suffix)")) ,name))))
+        (else `(,#`"[[,|name|]]"))))
 
 (define-method wiliki:format-head-elements ((f <text-formatter>) page)
   `((title ,(ref page 'title))
@@ -173,29 +187,37 @@
              out)))
 
 (define (format-dir src dst type emitter)
-  (define (dst-path title)
-    (build-path dst #`",(pagename->path title).,|type|"))
-  (define (process path)
+
+  (define (get-title path)
+    (call-with-input-file path
+      (lambda (p) (string-trim-both (read-line p)))))
+
+  (define (process path file&page)
     (receive (title content) (call-with-input-file path get-text-content)
-      (call-with-output-file (dst-path title)
+      (call-with-output-file (build-path dst #`",(car file&page).,type")
         (lambda (out)
           (emitter (wiliki:format-page (make <wiliki-page>
                                          :title title :content content))
                    out)))))
-  
-  (unless (file-exists? dst)
-    (make-directory* dst))
-  (for-each process
-            (directory-list src
-                            :children? #t :add-path? #t
-                            :filter file-is-regular?
-                            :filter-add-path? #t)))
+
+  (unless (file-exists? dst) (make-directory* dst))
+  (let* ((paths (directory-list src :children? #t :add-path? #t
+                                :filter #/\.txt$/))
+         (file&page (map (lambda (path)
+                           (cons (regexp-replace #/\.txt$/
+                                                 (sys-basename path) "")
+                                 (get-title path)))
+                         paths))
+         )
+    (parameterize ((file-page-alist file&page))
+      (for-each process paths file&page))))
       
 (define (get-text-content in)
   (let1 s (port->string-list in)
     (when (null? s)
       (app-error "input file is empty: ~a" (port-name in)))
-    (values (car s) (string-join (cdr s) "\n" 'suffix))))
+    (values (string-trim-both (car s))
+            (string-join (cdr s) "\n" 'suffix))))
 
 ;;;=====================================================
 ;;; Help

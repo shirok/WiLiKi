@@ -1,0 +1,99 @@
+wiliki.format
+* [Module] wiliki.format
+
+テキスト中のWiLiKi形式のマークアップを解釈し、SXMLを生成する機能を
+提供するモジュールです。このモジュールはwilikiの他の部分とは独立して
+使うことができます。例えば、アプリケーション中に容易にwiliki互換の
+フォーマッティング機能を含めることができます。
+
+アプリケーション側から呼ぶ主要なフォーマッティングルーチンは、
+wiliki:format-pageおよびwiliki:format-contentです。
+
+- wiliki:format-contentはwilikiマークアップされたテキストを
+文字列として取り、フォーマットされたSXMLノードのリストを返します。
+- wiliki:format-pageはページを表現する<wiliki-page>クラスの
+インスタンスを取り、完全なHTMLページを表現するSXML式を返します。
+
+フォーマッティングのカスタマイズは、<wiliki-formatter>クラスの
+サブクラスを作成し、メソッドを適宜オーバロードすることで可能です。
+例えば、マークアップ中のWikiNameの解釈は、メソッド
+wiliki:format-wikinameによって行われます。
+
+<wiliki-formatter>クラスのデフォルトメソッドの多くは、
+ほとんど何もしないことに注意して下さい。WikiNameのリンクやマクロ等、
+wiliki.cgiで実現される機能の多くはモジュール[[wiliki]]や
+[[wiliki.macro]]で実装されています。
+wiliki.formatモジュールを単独でアプリケーションに用いる場合は、
+アプリケーションの方針に従って、WikiNameの解釈方法を設計して下さい。
+
+
+* 高レベルフォーマッティング機構
+
+** [Procedure] wiliki:format-content ''content''
+
+wilikiマークアップされた文字列を ''content''として受け取り、
+フォーマットしたSXMLノードのリストを返します。
+{{{
+(wiliki:format-content "abc\n- def\n")
+ => ((p "abc\n") (ul (li "def\n")))
+}}}
+
+なお、<wiliki-page>オブジェクトを''content''に渡すことも
+できます。その場合は、ページの内容 (contentスロットの値) を
+wilikiマークアップされたテキストとしてフォーマットします。
+contentスロットの値が既にSXML式であった場合は、
+
+
+** [Procedure] wiliki:format-page ''page'' [''options'' ...]
+
+''Page''に<wiliki-page>オブジェクトを受け取り、
+HTMLページを表現するSXML式を返します。
+
+
+
+
+
+** [Class] <wiliki-page>
+
+ページを表現するクラスです。ページはデータベースに格納されたもの
+(persistent page)であっても、一時的にプロセス内で作成されたもの
+(transient page)であっても構いません。wiliki.formatモジュール自身は
+データベースとのやりとりは行いません。モジュールを使うアプリケーションが
+適切な方法で<wiliki-page>のインスタンスを作成し、フォーマットルーチンに
+渡します。アプリケーションは必要に応じて<wiliki-page>クラスの
+サブクラスを作成することもできます。
+
+*** [Slot] title
+
+ページタイトル文字列。デフォルトでページフォーマット時にtitle要素および
+bodyのヘッダ部分に使われます。
+
+*** [Slot] key
+
+これがpersistent pageの場合、それを一意に同定するための文字列。
+transient pageでは#fにしておきます。
+ページフォーマットルーチン内では、この値はincludeされたページの
+循環を検出するのに使われます。
+
+*** [Slot] command
+
+transient pageの場合、そのページを再生成するためのURLのquery string。
+これはwiliki本体で使われるもので、フォーマッタだけを利用
+
+
+
+
+
+* 低レベルフォーマッティング機構
+
+** [Class] <wiliki-formatter>
+
+WiLiKiのフォーマッティングを行うモジュールです。
+このクラス、もしくはそのサブクラスのインスタンスが、
+グローバルなパラメータwiliki:formatterに格納されており、
+WiLiKiのフォーマッティングルーチンは
+
+
+フォーマッティングをカスタマイズする場合は、このクラスの
+サブクラスを作り
+

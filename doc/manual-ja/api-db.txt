@@ -1,0 +1,27 @@
+wiliki.db
+
+* [Module] wiliki.db
+
+WiLiKiのデータベースのアクセス手続きをまとめたモジュールです。
+
+* [Procedure] wiliki-with-db ''path'' ''type'' ''thunk'' &keyword ''rwmode''
+
+* [Procedure] wiliki-db-record->page ''key'' ''record''
+
+* [Procedure] wiliki-db-exists? ''key''
+
+* [Procedure] wiliki-db-get ''key'' &optional ''create-new''
+
+* [Procedure] wiliki-db-put! ''key'' ''page'' &keyword ''donttouch''
+
+* [Procedure] wiliki-db-delete! ''key''
+
+* [Procedure] wiliki-db-recent-changes
+
+* [Procedure] wiliki-db-map ''proc''
+
+* [Procedure] wiliki-db-search ''pred'' &optional ''sorter''
+
+* [Procedure] wiliki-db-search-content ''key'' &optional ''sorter''
+
+
