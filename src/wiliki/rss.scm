@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: rss.scm,v 1.2 2003-02-09 02:58:23 shirok Exp $
+;;;  $Id: rss.scm,v 1.3 2003-02-11 22:22:43 shirok Exp $
 ;;;
 
 ;; In future, this might be rewritten to use proper XML framework.
@@ -43,6 +43,7 @@
       "<rdf:RDF
        xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"
        xmlns=\"http://purl.org/rss/1.0/\"
+       xmlns:dc=\"http://purl.org/dc/elements/1.1/\"
       >\n"
       ,(rdf-channel
         full-url
@@ -55,8 +56,7 @@
       ,(map (lambda (entry)
               (rdf-item (rdf-title (car entry))
                         (rdf-link (url-full "~a" (cv-out (car entry))))
-                        (rdf-description
-                         #`",(car entry) (,(how-long-since (cdr entry)))")))
+                        (dc-date  (cdr entry))))
             entries)
       "</rdf:RDF>\n")))
 
@@ -83,5 +83,8 @@
 (define (rdf-link link) (rdf-simple-1 "link" link))
 (define (rdf-description desc) (rdf-simple-1 "description" desc))
 
+(define (dc-date secs)
+  (rdf-simple-1 "dc:date"
+                (sys-strftime "%Y-%m-%dT%H:%M:%S+00:00" (sys-gmtime secs))))
 
 (provide "wiliki/rss")
