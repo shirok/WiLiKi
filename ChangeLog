@@ -1,3 +1,10 @@
+2004-04-02  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/format.scm (fmt-lines): fixed a bug that caused infinite
+	  loop (thanks to Kouhei Sutou for a patch).  This changes behavior
+	  of ul/ol inside blockquote, but I believe the previous behavior
+	  was wrong.
+
 2004-03-29  Shiro Kawai  <shiro@acm.org>
 
 	* src/format.scm (fmt-lines) : fixed a bug that caused infinite loop

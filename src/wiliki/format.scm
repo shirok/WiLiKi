@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.33 2004-03-30 07:26:59 shirok Exp $
+;;; $Id: format.scm,v 1.34 2004-04-02 12:10:56 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -451,7 +451,7 @@
 
   ;; Blockquote
   (define (blockquote ctx cont)
-    (let* ((new-ctx (cons 'blockquote ctx))
+    (let* ((new-ctx (list 'blockquote))
            (r `(blockquote ,@(block (next-token new-ctx) new-ctx '()))))
       (cont (next-token ctx) ctx r)))
 
@@ -467,7 +467,7 @@
           (let ((new-level (h-level (token-value tok)))
                 (cur-level (l-level ctx)))
             (cond ((< new-level bottom)
-                  (values tok `((,(car ctx) ,@(reverse! items)))))
+                   (values tok `((,(car ctx) ,@(reverse! items)))))
                   ((and (eq? (token-type tok) (car ctx))
                         (= new-level cur-level))
                    (fold-content tok ctx items))

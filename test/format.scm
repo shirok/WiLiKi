@@ -518,20 +518,20 @@
           "fff"))
 
 (tp "blockquote & lists"
-    '(result (ul (li (blockquote (p "aaa\n"))
+    '(result (ul (li (blockquote (ul (li "aaa\n")))
                      "bbb\n")
                  (li (blockquote (p "ccc\n")
                                  (ol (li "ddd\n")))))
              (ol (li "eee\n")))
     (page "- "
           "<<<"
-          "aaa"
+          "- aaa"
           ">>>"
           "bbb"
           "- "
           "<<<"
           "ccc"
-          "## ddd"
+          "# ddd"
           ">>>"
           "# eee"))
 
