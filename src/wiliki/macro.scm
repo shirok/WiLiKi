@@ -2,7 +2,7 @@
 ;;; wiliki/macro.scm - macro handling (to be autoloaded)
 ;;;
 
-;; $Id: macro.scm,v 1.1 2002-05-22 06:18:47 shirok Exp $
+;; $Id: macro.scm,v 1.2 2002-09-26 10:17:18 shirok Exp $
 
 (select-module wiliki)
 
@@ -97,36 +97,48 @@
   (cond ((wdb-get (db) page) => format-content)
         (else #`"[[$$include ,(html-escape-string page)]]")))
 
-(define-reader-macro (toc page)
+(define-reader-macro (toc . maybe-page)
+  (define (anchor id line)
+    (if (null? maybe-page)
+        (html:a :href #`"#,id" line)
+        (html:a :href #`",(url \"p=~a\" (car maybe-page))#,id" line)))
   (define (make-toc page)
     (with-input-from-string (content-of page)
       (lambda ()
         (let loop ((line (read-line))
                    (depth 0)
-                   (r '()))
+                   (r '())
+                   (id 0))
           (cond
            ((eof-object? line)
             (reverse (append (make-list depth "</ul>") r)))
            ((rxmatch #/^\*+ / line) =>
             (lambda (m)
-              (let1 newdepth (- (string-length (rxmatch-substring m)) 1)
+              (let1 newdepth (- (string-length (m)) 1)
                 (cond ((= newdepth depth)
                        (loop (read-line)
                              newdepth
-                             (cons* (rxmatch-after m) "<li> " r)))
+                             (cons* (anchor id (rxmatch-after m)) "<li> " r)
+                             (+ id 1)))
                       ((> newdepth depth)
                        (loop (read-line)
                              newdepth
-                             (cons* (rxmatch-after m) "<li> "
+                             (cons* (anchor id (rxmatch-after m)) "<li> "
                                     (make-list (- newdepth depth) "<ul>")
-                                    r)))
+                                    r)
+                             (+ id 1)))
                       (else
                        (loop (read-line)
                              newdepth
-                             (cons* (rxmatch-after m) "<li>"
+                             (cons* (anchor id (rxmatch-after m)) "<li>"
                                     (make-list (- depth newdepth) "</ul>")
-                                    r)))
+                                    r)
+                             (+ id 1)))
                       ))))
-           (else (loop (read-line) depth r)))))))
-  (cond ((wdb-get (db) page) => make-toc)
-        (else #`"[[$$toc ,(html-escape-string page)]]")))
+           (else (loop (read-line) depth r id)))))))
+  (if (null? maybe-page)
+      (cond ((wdb-get (db) (key-of (page))) => make-toc)
+            (else #f"`[[$$toc]]"))
+      (cond ((wdb-get (db) (car maybe-page)) => make-toc)
+            (else #`"[[$$toc ,(html-escape-string page)]]")))
+  )
