@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.8 2003-08-24 07:00:45 shirok Exp $
+;;; $Id: format.scm,v 1.9 2003-08-31 10:37:40 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -471,46 +471,50 @@
       '()))
 
 (define (format-page title page . args)
-  (let* ((wlki (wiliki))
-         (show-lang? (get-keyword :show-lang? args #t))
-         (show-edit? (and (editable? wlki)
-                          (get-keyword :show-edit? args #t)))
-         (show-all?  (get-keyword :show-all? args #t))
-         (show-recent-changes? (get-keyword :show-recent-changes? args #t))
-         (show-search-box? (get-keyword :show-search-box? args #t))
-         (page-id (get-keyword :page-id args title))
-         (content (if (is-a? page <page>)
+  (let-keywords* args ((show-lang? #t)
+                       (show-edit? (editable? (wiliki)))
+                       (show-all?  #t)
+                       (show-recent-changes? #t)
+                       (show-search-box? #t)
+                       (show-history? (log-file (wiliki)))
+                       (page-id title))
+    (let* ((wlki (wiliki))
+           (page-id (get-keyword :page-id args title))
+           (content (if (is-a? page <page>)
                       (list (format-content page)
                             (format-footer page))
                       page)))
-    (html-page
-     (html:title (html-escape-string title))
-     (html:h1 (if (is-a? page <page>)
+      (html-page
+       (html:title (html-escape-string title))
+       (html:h1 (if (is-a? page <page>)
                   (html:a :href (url "c=s&key=[[~a]]" title)
                           (html-escape-string title))
                   (html-escape-string title)))
-     (html:div
-      :align "right"
-      (html:form
-       :method "POST" :action (cgi-name-of wlki)
-       (html:input :type "hidden" :name "c" :value "s")
-       (cond-list
-        (show-lang?
-         (language-link page-id))
-        ((not (string=? title (top-page-of wlki)))
-         (html:a :href (cgi-name-of wlki) ($$ "[Top Page]")))
-        (show-edit?
-         (html:a :href (url "p=~a&c=e" title) ($$ "[Edit]")))
-        (show-all?
-         (html:a :href (url "c=a") ($$ "[All Pages]")))
-        (show-recent-changes?
-         (html:a :href (url "c=r") ($$ "[Recent Changes]")))
-        (show-search-box?
-         `("[" ,($$ "Search:")
-           ,(html:input :type "text" :name "key" :size 10)
-           "]")))
-       ))
-     (html:hr)
-     content)))
+       (html:div
+        :align "right"
+        (html:form
+         :method "POST" :action (cgi-name-of wlki)
+         (html:input :type "hidden" :name "c" :value "s")
+         (cond-list
+          (show-lang?
+           (language-link page-id))
+          ((not (string=? title (top-page-of wlki)))
+           (html:a :href (cgi-name-of wlki) ($$ "[Top Page]")))
+          (show-edit?
+           (html:a :href (url "p=~a&c=e" title) ($$ "[Edit]")))
+          (show-all?
+           (html:a :href (url "c=a") ($$ "[All Pages]")))
+          (show-recent-changes?
+           (html:a :href (url "c=r") ($$ "[Recent Changes]")))
+          (show-history?
+           (html:a :href (url "p=~a&c=h" title) ($$ "[Edit History]")))
+          (show-search-box?
+           `("[" ,($$ "Search:")
+             ,(html:input :type "text" :name "key" :size 10)
+             "]")))
+         ))
+       (html:hr)
+       content)))
+  )
 
 (provide "wiliki/format")

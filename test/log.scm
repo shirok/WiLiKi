@@ -96,18 +96,18 @@ for user-defined classes.
 
 (test* "page1-1" page1-1-log
        (wiliki-log-create "Page1" page1-1 ""
-                          1234567890 "Created"
-                          "1.2.3.4" "shiro"))
+                          :timestamp 1234567890 :message "Created"
+                          :remote-addr "1.2.3.4" :remote-user "shiro"))
 
 (test* "page1-2" page1-2-log
        (wiliki-log-create "Page1" page1-2 page1-1
-                          1234567891 "Added menu items\n"
-                          "1.2.3.4" "shirok"))
+                          :timestamp 1234567891 :message "Added menu items\n"
+                          :remote-addr "1.2.3.4" :remote-user "shirok"))
 
 (test* "page1-3" page1-3-log
        (wiliki-log-create "Page1" page1-3 page1-2
-                          1234567892 "Some\nfixes"
-                          "1.2.3.4" "shiro"))
+                          :timestamp 1234567892 :message "Some\nfixes"
+                          :remote-addr "1.2.3.4" :remote-user "shiro"))
 
 
 ;; Prepare log file
@@ -116,13 +116,17 @@ for user-defined classes.
   (lambda ()
     (display page1-1-log)
     (display (wiliki-log-create "Page2" page2-1 ""
-                                1234567890 "Another\npage.\n"
-                                "3.4.5.6" "U.N.Owen"))
+                                :timestamp 1234567890
+                                :message "Another\npage.\n"
+                                :remote-addr "3.4.5.6"
+                                :remote-user "U.N.Owen"))
     (display page1-2-log)
     (display page1-3-log)
     (display (wiliki-log-create "Page2" page2-2 page2-1
-                                1234567895 "Added noise\n"
-                                "3.4.5.6" "U.N.Owen"))))
+                                :timestamp 1234567895
+                                :message "Added noise\n"
+                                :remote-addr "3.4.5.6"
+                                :remote-user "U.N.Owen"))))
 
 ;; Scan log file -------------------------------------------
 

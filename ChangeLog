@@ -1,3 +1,11 @@
+2003-08-30  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm, src/wiliki/history.scm, src/wiliki/log.scm,
+	  src/wiliki/format.scm: 
+	  First snapshot of integrating history module.   If the log
+	  file name is given to :log-file slot of wiliki, the history
+	  feature is turned on.  There are still some missing features.
+
 2003-08-23  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/format.scm : rewrote formatting engine to produce

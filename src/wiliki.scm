@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.87 2003-08-30 12:27:57 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.88 2003-08-31 10:37:40 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -61,9 +61,12 @@
                          format-time format-colored-box format-wikiname-anchor
                          format-wiki-name)
 (autoload wiliki.log     wiliki-log-create wiliki-log-pick
+                         wiliki-log-pick-from-file
                          wiliki-log-parse-entry wiliki-log-entries-after
-                         wiliki-log-diff wiliki-log-revert
+                         wiliki-log-diff wiliki-log-diff*
+                         wiliki-log-revert wiliki-log-revert*
                          wiliki-log-merge)
+(autoload "wiliki/history" cmd-history cmd-diff)
 
 
 ;; Version check.
@@ -124,6 +127,11 @@
                                "/wiliki.cgi"))
    (debug-level :accessor debug-level :init-keyword :debug-level
                 :init-value 0)
+   ;; log file path.  if specified, logging & history feature becomes
+   ;; available.  If the name given doesn't hvae directory component,
+   ;; it is regarded in the same directory as db-path.
+   (log-file    :accessor log-file    :init-keyword :log-file
+                :init-value #f)
    ;; customize edit text area size
    (textarea-rows :accessor textarea-rows-of :init-keyword :textarea-rows
                   :init-value 40)
@@ -143,7 +151,8 @@
          (cgi-name-of self))
      (if (null? args)
          fstr
-         (apply format #f fstr (map uri-encode-string args))))))
+         (apply format fstr
+                (map (compose uri-encode-string x->string) args))))))
 
 (define (url fmt . args) (%url-format #f fmt args))
 (define (url-full fmt . args) (%url-format #t fmt args))
@@ -217,6 +226,32 @@
         (cdr p))
       "EUC-JP")) ;; this is a fallback.
 
+;; Logging ----------------------------------------
+
+(define (log-file-path wiliki)
+  (and wiliki
+       (and-let* ((filename (log-file wiliki)))
+         (if (or (string-prefix? "./" filename)
+                 (string-prefix? "../" filename)
+                 (string-prefix? "/" filename))
+           filename
+           (string-append (sys-dirname (db-path-of wiliki)) "/" filename)))))
+
+;; NB: we assume write-log is always called during the main database
+;; is locked, so we don't do any locking here.
+(define (write-log wiliki pagename old new timestamp)
+  (and-let* ((logfile (log-file-path wiliki)))
+    (let ((content (wiliki-log-create
+                    pagename new old
+                    :timestamp timestamp
+                    :remote-addr (or (sys-getenv "REMOTE_ADDR") "")
+                    :remote-user (or (sys-getenv "REMOTE_USER") ""))
+                   ))
+      (call-with-output-file logfile
+        (lambda (p) (display content p) (flush p))
+        :if-exists :append)
+      )))
+
 ;; CGI processing ---------------------------------
 
 (define (html-page head-elements . body-elements)
@@ -269,7 +304,7 @@
      ,($$ "<p>The following shows what you are about to submit.  Please re-edit the content and submit again.</p>")
      ,(edit-form #t pagename content (mtime-of page) donttouch)
      )
-   :show-edit? #f))
+   :show-edit? #f :show-history? #f))
 
 (define (cmd-view pagename)
   ;; NB: see the comment in format-wiki-name about the order of
@@ -291,7 +326,7 @@
           `(,(html:p
               ($$ "Create a new page: ")
               (format-wiki-name pagename)))
-          :show-edit? #f))
+          :show-edit? #f :show-history? #f))
         ))
 
 (define (edit-form preview? pagename content mtime donttouch)
@@ -372,7 +407,7 @@
     (format-page pagename
                  (edit-form #t pagename
                             (content-of page) (mtime-of page) #f)
-                 :show-edit? #f :show-lang? #f)))
+                 :show-edit? #f :show-lang? #f :show-history? #f)))
 
 (define (cmd-preview pagename content mtime donttouch)
   (let ((page (wdb-get (db) pagename #t)))
@@ -384,7 +419,7 @@
                                                   :content content)))
            ,(html:hr)
            ,(edit-form #f pagename content mtime donttouch))
-         :show-edit? #f :show-lang? #f)
+         :show-edit? #f :show-lang? #f :show-history? #f)
         (conflict-page page pagename content donttouch)
         )))
 
@@ -396,12 +431,14 @@
     (if (or (not (mtime-of p)) (eqv? (mtime-of p) mtime))
         (if (string-every #[\s] content)
             (begin
+              (write-log (wiliki) pagename (content-of p) "" now)
               (set! (content-of p) "")
               (wdb-delete! (db) pagename)
               (redirect-page (top-page-of (wiliki))))
-            (begin
+            (let1 new-content (expand-writer-macros content)
+              (write-log (wiliki) pagename (content-of p) new-content now)
               (set! (mtime-of p) now)
-              (set! (content-of p) (expand-writer-macros content))
+              (set! (content-of p) new-content)
               (wdb-put! (db) pagename p :donttouch donttouch)
               (redirect-page pagename)))
         (conflict-page p pagename content donttouch)
@@ -416,7 +453,8 @@
          (sort (wdb-map (db) (lambda (k v) k)) string<?)))
    :page-id "c=a"
    :show-edit? #f
-   :show-all? #f))
+   :show-all? #f
+   :show-history? #f))
 
 (define (cmd-recent-changes)
   (format-page
@@ -430,7 +468,8 @@
          (wdb-recent-changes (db))))
    :page-id "c=r"
    :show-edit? #f
-   :show-recent-changes? #f))
+   :show-recent-changes? #f
+   :show-history? #f))
 
 (define (cmd-search key)
   (format-page
@@ -444,7 +483,8 @@
                 "")))
          (wdb-search-content (db) key)))
    :page-id (format #f "c=s&key=~a" (html-escape-string key))
-   :show-edit? #f))
+   :show-edit? #f
+   :show-history? #f))
 
 (define (cmd-lwp-view key)
   (let ((page (wdb-get (db) key #f)))
@@ -526,6 +566,11 @@
           (with-db cmd-all))
          ((equal? command "r")
           (with-db cmd-recent-changes))
+         ((equal? command "h")
+          (with-db (cut cmd-history pagename)))
+         ((equal? command "hd")
+          (with-db (cut cmd-diff pagename
+                        (cgi-get-parameter "t" param :convert x->integer))))
          ((equal? command "s")
           (with-db
            (cut cmd-search (cgi-get-parameter "key" param :convert cv-in))))

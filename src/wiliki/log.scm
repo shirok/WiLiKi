@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: log.scm,v 1.7 2003-08-30 12:19:29 shirok Exp $
+;;; $Id: log.scm,v 1.8 2003-08-31 10:37:40 shirok Exp $
 
 (define-module wiliki.log
   (use srfi-1)
@@ -36,10 +36,13 @@
   (export <wiliki-log-entry>
           wiliki-log-create
           wiliki-log-pick
+          wiliki-log-pick-from-file
           wiliki-log-parse-entry
           wiliki-log-entries-after
           wiliki-log-diff
+          wiliki-log-diff*
           wiliki-log-revert
+          wiliki-log-revert*
           wiliki-log-merge
           )
   )
@@ -87,18 +90,23 @@
 
 ;; Create a log entry and returns the string. ----------------------
 ;; This function doesn't use <wiliki-log-entry> structure.
-(define (wiliki-log-create pagename new old time log remote-addr remote-user)
-  (with-output-to-string
-    (lambda ()
-      (with-port-locking (current-output-port)
-        (lambda ()
-          (format #t "C ~s ~s ~s ~s~%"
-                  pagename time remote-addr remote-user)
-          (for-each (cut print "L " <>)
-                    (call-with-input-string log port->string-list))
-          (emit-edit-list new old)
-          (print "."))
-        ))
+(define (wiliki-log-create pagename new old . args)
+  (let-keywords* args ((timestamp (sys-time))
+                       (message   "")
+                       (remote-addr "")
+                       (remote-user "")
+                       (info      ""))
+    (with-output-to-string
+      (lambda ()
+        (with-port-locking (current-output-port)
+          (lambda ()
+            (format #t "C ~s ~s ~s ~s~%"
+                    pagename timestamp remote-addr remote-user)
+            (for-each (cut print "L " <>)
+                      (call-with-input-string message port->string-list))
+            (emit-edit-list new old)
+            (print "."))
+          )))
     ))
 
 ;; Emit an edit list
@@ -152,6 +160,12 @@
                  #f
                  (cut read-line iport))))
   entries)
+
+(define (wiliki-log-pick-from-file pagename filename)
+  (call-with-input-file filename
+    (lambda (p)
+      (and p (wiliki-log-pick pagename p)))
+    :if-does-not-exist #f))
 
 ;; Parses picked entry and returns <wiliki-log-entry> structure ---
 
@@ -235,6 +249,18 @@
                (append! (reverse! r)
                         (map (cut cons '- <>) deleted-lines)))))
 
+;; Get diff of more than one entries back
+(define (wiliki-log-diff* entries newpage)
+  (cond ((null? entries) (string->lines newpage))
+        ((null? (cdr entries)) (wiliki-log-diff (car entries) newpage))
+        (else
+         (let* ((new (string->lines newpage))
+                (old (wiliki-log-revert* entries new)))
+           (reverse! (lcs-fold (cut acons '+ <> <>)
+                               (cut acons '- <> <>)
+                               cons
+                               '() new old))))))
+
 ;; Returns a previous version of the page (in the form of a list of lines)
 (define (wiliki-log-revert entry newpage)
   (fold-diff entry
@@ -244,6 +270,14 @@
              cons                       ;c-proc
              (lambda (deleted-lines r)
                (append! (reverse! r) deleted-lines))))
+
+;; Apply all entries
+(define (wiliki-log-revert* entries newpage)
+  (let loop ((entries entries)
+             (page    newpage))
+    (if (null? entries)
+      page
+      (loop (cdr entries) (wiliki-log-revert (car entries) page)))))
 
 ;; Merge branches  ----------------------------------------
 

@@ -6,6 +6,8 @@ INSTALL = @INSTALL@
 TARGET = wiliki.scm \
 	 wiliki/db.scm \
          wiliki/format.scm \
+         wiliki/history.scm \
+	 wiliki/log.scm \
          wiliki/mcatalog.scm \
          wiliki/macro.scm \
          wiliki/rss.scm \
