@@ -24,7 +24,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: rssmix.cgi,v 1.3 2003-02-18 00:30:23 shirok Exp $
+;;;  $Id: rssmix.cgi,v 1.4 2003-02-18 04:09:06 shirok Exp $
 ;;;
 
 ;; THIS IS AN EXPERIMENTAL SCRIPT.  Eventually this will be a part of
@@ -76,6 +76,8 @@
    ;; - timeout value to fetch RSS
    (db      :init-value #f)
    ;; - opened dbm instance
+   (db-lock :init-form (make-mutex))
+   ;; - mutex for db
    ))
 
 ;; temporary structure to represent site item info
@@ -174,7 +176,8 @@
               (or (cdr rss&valid?) (fetch-thread)))
         (cons '() (fetch-thread)))))
 
-;; get cached result if any
+;; Get cached result if any.  This is called from primordial thread,
+;; so we don't need to lock db.
 (define (get-cache self id)
   (and-let* ((body  (dbm-get (ref self 'db) id #f))
              (sbody (read-from-string body))
@@ -183,9 +186,15 @@
      (get-keyword :rss-cache sbody #f)
      (> timestamp (- (sys-time) (ref self 'cache-life))))))
 
+;; Update cache.  This is called from each thread, so needs mutex.
 (define (put-cache! self id rss)
-  (dbm-put! (ref self 'db) id
-            (write-to-string (list :timestamp (sys-time) :rss-cache rss))))
+  (dynamic-wind
+   (lambda () (mutex-lock! (ref self 'db-lock)))
+   (lambda ()
+     (dbm-put! (ref self 'db) id
+               (write-to-string (list :timestamp (sys-time) :rss-cache rss)))
+     )
+   (lambda () (mutex-unlock! (ref self 'db-lock)))))
 
 ;; Creates a thunk for thread
 (define (make-thunk self id uri)
