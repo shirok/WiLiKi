@@ -201,10 +201,14 @@ for user-defined classes.
 
 (test* "revert 1-3 to 1-1" page1-1
        (string-join
-        (fold (lambda (entry page)
-                (wiliki-log-revert entry page))
-              page1-3
-              (map wiliki-log-parse-entry (take picked1 2)))
+        (fold wiliki-log-revert page1-3
+              (wiliki-log-entries-after picked1 1234567891))
+        "\n" 'suffix))
+
+(test* "revert 1-3 to none" ""
+       (string-join
+        (fold wiliki-log-revert page1-3
+              (wiliki-log-entries-after picked1 0))
         "\n" 'suffix))
 
 (test* "revert 2-2 to 2-1" page2-1

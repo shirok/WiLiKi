@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: log.scm,v 1.2 2003-08-25 20:22:29 shirok Exp $
+;;; $Id: log.scm,v 1.3 2003-08-25 20:45:08 shirok Exp $
 
 (define-module wiliki.log
   (use srfi-1)
@@ -33,6 +33,7 @@
           wiliki-log-create
           wiliki-log-pick
           wiliki-log-parse-entry
+          wiliki-log-entries-after
           wiliki-log-diff
           wiliki-log-revert
           wiliki-log-merge
@@ -184,6 +185,17 @@
   (set! (ref entry 'deleted-lines) (reverse! d-lines))
   entry)
 
+;; returns list of entries after the specified date, from picked entries
+
+(define (wiliki-log-entries-after picked time)
+  (let loop ((picked picked) (r '()))
+    (if (null? picked)
+      (reverse! r)
+      (let1 e (wiliki-log-parse-entry (car picked))
+        (if (< (ref e 'timestamp) time)
+          (reverse! r)
+          (loop (cdr picked) (cons e r)))))))
+
 ;; From log entry and the current page, creates diff or recovers
 ;; original content.
 
@@ -231,6 +243,7 @@
              cons                       ;c-proc
              (lambda (deleted-lines r)
                (append! (reverse! r) deleted-lines))))
+
 
 (define (wiliki-log-merge entry current alt)
   #f)
