@@ -1,3 +1,7 @@
+2003-11-19  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki2html : added.
+
 2003-10-09  YAEGASHI Takeshi  <t@keshi.org>
 
 	* debian: new directory: Debian packaging files.
