@@ -1,5 +1,7 @@
 2002-03-01  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki.scm : escape special characters in wiki name
+	  formatting.
 	* src/wiliki.scm (cmd-commit-edit) : delete page if it contains
 	  only whitespace characters.  (string-null? is not enough, for
 	  some browsers sends extra \n in some cases.).

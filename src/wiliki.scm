@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.25 2002-03-01 20:24:06 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.26 2002-03-01 20:52:56 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -217,9 +217,9 @@
                                                (uri-encode-string inner))
                                  (html-escape-string name))))
           ((wdb-exists? (db-of self) name)
-           (tree->string (html:a :href (url self "~a" name) name)))
+           (tree->string (html:a :href (url self "~a" name) (html-escape-string name))))
           (else
-           (tree->string `(,name ,(html:a :href (url self "p=~a&c=e" name) "?")))))))
+           (tree->string `(,(html-escape-string name) ,(html:a :href (url self "p=~a&c=e" name) "?")))))))
 
 ;; Find wiki name in the line.
 ;; Correctly deal with nested "[[" and "]]"'s.
