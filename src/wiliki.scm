@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.68 2003-02-15 05:10:32 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.69 2003-02-19 22:54:46 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -454,7 +454,7 @@
                             (string-split body  "||")))
               r)
       (let1 next (generator)
-        (cond ((eof-object? body) (finish '("</table>") r))
+        (cond ((eof-object? next) (finish '("</table>") r))
               ((rxmatch #/^\|\|(.*)\|\|$/ next)
                => (lambda (m) (table (m 1) id r)))
               (else (loop next '() id (cons "</table>\n" r)))))))
