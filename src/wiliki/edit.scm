@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: edit.scm,v 1.3 2003-09-02 10:40:47 shirok Exp $
+;;;  $Id: edit.scm,v 1.4 2003-12-18 04:04:23 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -140,12 +140,19 @@
       (redirect-page (top-page-of (wiliki))))
 
     (define (update-page content)
-      (let1 new-content (expand-writer-macros content)
-        (write-log (wiliki) pagename (content-of p) new-content now logmsg)
-        (set! (mtime-of p) now)
-        (set! (content-of p) new-content)
-        (wdb-put! (db) pagename p :donttouch donttouch)
-        (redirect-page pagename)))
+      (when (page-changed? content (content-of p))
+        (let1 new-content (expand-writer-macros content)
+          (write-log (wiliki) pagename (content-of p) new-content now logmsg)
+          (set! (mtime-of p) now)
+          (set! (content-of p) new-content)
+          (wdb-put! (db) pagename p :donttouch donttouch)))
+      (redirect-page pagename))
+
+    ;; check if page has been changed.  we should ignore the difference
+    ;; of line terminators.
+    (define (page-changed? c1 c2)
+      (not (equal? (call-with-input-string c1 port->string-list)
+                   (call-with-input-string c2 port->string-list))))
 
     (define (handle-conflict)
       ;; let's see if we can merge changes

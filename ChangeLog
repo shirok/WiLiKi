@@ -1,5 +1,8 @@
 2003-12-17  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki/edit.scm (cmd-commit-edit) : avoid writing log and db
+	  if the content isn't changed.
+
 	* src/wiliki/macro.scm
 	(define-reader-macro) : generates anchor URL without "p=", so that
 	browser can use cached page to hop around within the page in
