@@ -1,3 +1,12 @@
+2003-08-18  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm, src/wiliki/format.scm : Changed precedence of
+	  wikiname recoginition in URL.  Now the pathname notation
+	  (e.g. http://foo/bar/wiliki.cgi/PageName) is the highest precedence,
+	  "?p=PageName" comes next, and "?PageName" is the last.  The default
+	  format of the link of formatted page is also changed to use pathname
+	  notation.
+
 2003-08-17  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm (<wiliki>) : added customization parameter

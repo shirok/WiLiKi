@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.84 2003-08-18 08:32:42 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.85 2003-08-19 10:49:23 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -116,7 +116,7 @@
                                "localhost"))
    (script-name :accessor script-name-of :init-keyword :script-name
                 :init-form (or (sys-getenv "SCRIPT_NAME")
-                               "wiliki.cgi"))
+                               "/wiliki.cgi"))
    (debug-level :accessor debug-level :init-keyword :debug-level
                 :init-value 0)
    ;; customize edit text area size
@@ -129,19 +129,22 @@
 (define (cgi-name-of wiliki)
   (sys-basename (script-name-of wiliki)))
 
-(define (%url-format full? fmt args)
+(define (%url-format full? page fmt args)
   (let ((self (wiliki))
-        (fstr #`"?,|fmt|&l=,(lang)"))
+        (fstr (if fmt #`"?,|fmt|&l=,(lang)" #`"?l=,(lang)"))
+        (page (if page #`"/,(uri-encode-string page)" "")))
     (string-append
      (if full?
          #`"http://,(server-name-of self),(script-name-of self)"
          (cgi-name-of self))
+     page
      (if (null? args)
          fstr
          (apply format #f fstr (map uri-encode-string args))))))
 
-(define (url fmt . args) (%url-format #f fmt args))
-(define (url-full fmt . args) (%url-format #t fmt args))
+(define (url fmt . args) (%url-format #f #f fmt args))
+(define (url-full fmt . args) (%url-format #t #f fmt args))
+(define (url-page page fmt . args) (%url-format #f page fmt args))
 
 ;; Creates a link to switch language
 (define (language-link pagename)
@@ -149,8 +152,12 @@
       (case (lang)
         ((jp) (values 'en "->English"))
         (else (values 'jp "->Japanese")))
-    (html:a :href #`",(cgi-name-of (wiliki))?,|pagename|&l=,|target|"
+    (html:a :href #`",(cgi-name-of (wiliki))/,|pagename|?l=,|target|"
             "[" (html-escape-string label) "]")))
+
+;; fallback
+(define-method title-of (obj) "WiLiKi")
+(define-method debug-level-of (obj) 0)
 
 ;; Class <page> ---------------------------------------------
 ;;   Represents a page.
@@ -234,7 +241,7 @@
 
 (define (error-page e)
   (html-page
-   (html:title #`",(title-of (wiliki)): Error")
+   (html:title #`",(title-of (wiliki)) : Error")
    (list (html:h1 "Error")
          (html:p (html-escape-string (ref e 'message)))
          (if (positive? (debug-level (wiliki)))
@@ -453,37 +460,43 @@
 ;; Retrieve requested page name.
 ;; The pagename can be specified in one of the following ways:
 ;;
+;;  * Using request path
+;;      http://foo.net/wiliki.cgi/PageName
+;;  * Using cgi 'p' parameter
+;;      http://foo.net/wiliki.cgi?l=jp&p=PageName
 ;;  * Using cgi parameter - in this case, PageName must be the
 ;;    first parameter before any other CGI parameters.
 ;;      http://foo.net/wiliki.cgi?PageName
-;;  * Using cgi 'p' parameter
-;;      http://foo.net/wiliki.cgi?l=jp&p=PageName
-;;  * Using request path
-;;      http://foo.net/wiliki.cgi/PageName
 ;;
 ;; The url is tested in the order above.  So the following URL points
-;; the page "Bar", no matter what "Foo" and "Baz" are.
+;; the page "Foo".
 ;;      http://foo.net/wiliki.cgi/Foo?Bar&p=Baz
 ;;
 ;; If no page is given, the top page of WiLiKi is used.
+;; If the url main component ends with '/', it is regareded as a
+;; top page, e.g. the following points to the toppage.
+;;      http://foo.net/wiliki.cgi/?Bar&p=Baz
+
 
 (define (get-page-name wiki param)
 
   ;; Extract the extra components of REQUEST_URI after the CGI name.
-  ;; Falls back to top page name.
+  ;; If the path components
   (define (get-path)
-    (or (and-let* ((uri (sys-getenv "REQUEST_URI"))
-                   (script (script-name-of wiki))
-                   (path (string-scan uri #`",|script|/" 'after)))
-          (cv-in (uri-decode-string
-                  (or (string-scan path "?" 'before) path))))
-        (top-page-of wiki)))
+    (and-let* ((uri (sys-getenv "REQUEST_URI"))
+               (script (script-name-of wiki))
+               (path (string-scan uri #`",|script|/" 'after))
+               (conv (cv-in (uri-decode-string
+                             (or (string-scan path "?" 'before) path)))))
+      (if (equal? conv "")
+        (top-page-of wiki)
+        conv)))
 
-  (cond ((null? param) (get-path))
-        ((eq? (cadar param) #t) (cv-in (caar param)))
-        (else (cgi-get-parameter "p" param
-                                 :default (get-path)
-                                 :convert cv-in)))
+  (cond ((get-path))
+        ((cgi-get-parameter "p" param :default #f :convert cv-in))
+        ((and (pair? param) (pair? (car param)) (eq? (cadar param) #t))
+         (cv-in (caar param)))
+        (else (top-page-of wiki)))
   )
 
 ;; Entry ------------------------------------------
