@@ -1,3 +1,8 @@
+2003-04-06  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm, src/wiliki/format.scm : separated formatting stuff
+	  into a module.
+
 2003-03-31  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/macro.scm : capture error in macro expander.
