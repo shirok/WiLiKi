@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.9 2001-11-27 20:13:48 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.10 2001-11-28 08:06:18 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -133,6 +133,24 @@
     ((jp) "Wiliki: 検索結果")
     (else "Wiliki: Search results")))
 
+(define (msg-conflict-page wiliki)
+  (case (language-of wiliki)
+    ((jp) "Wiliki: 更新の衝突")
+    (else "Wiliki: Update Conflict")))
+
+(define (msg-conflict-helper wiliki)
+  (case (language-of wiliki)
+    ((jp) "<p>あなたが編集している間に、他の人がこのページを更新したようです。
+           最新の内容を以下に表示します。</p>")
+    (else "<p>It seems that somebody has updated this page while you're
+           editing.  The most recent content is shown below.</p>")))
+
+(define (msg-conflict-helper2 wiliki)
+  (case (language-of wiliki)
+    ((jp) "<p>以下は、あなたが提出しようとした内容です。再編集してSubmitして下さい。</p>")
+    (else "<p>The following shows what you are about to submit.
+              Please re-edit the content and submit again.</p>")))
+
 (define (language-link wiliki pagename)
   (receive (target label)
       (case (language-of wiliki)
@@ -244,6 +262,10 @@
   (apply format #f
          (format #f "~a?~a&l=~s" (cgi-name-of self) fmt (language-of self))
          (map uri-encode-string args)))
+
+(define (colored-box content)
+  (html:table :width "100%" :cellpadding 5
+              (html:tr (html:td :bgcolor "#eeddaa" content))))
 
 (define (format-line self line)
   (define (wiki-name line)
@@ -407,27 +429,49 @@
   (let ((page (wdb-get (db-of self) pagename #t)))
     (format-page
      self pagename
-     (html:form :method "POST" :action (cgi-name-of self)
-                (html:input :type "hidden" :name "c" :value "c")
-                (html:input :type "hidden" :name "p" :value pagename)
-                (html:textarea :name "content" :rows 40 :cols 80
-                               (content-of page))
-                (html:br)
-                (html:input :type "submit" :name "submit" :value "Submit")
-                (html:input :type "reset"  :name "reset"  :value "Reset")
-                (html:br)
-                (msg-edit-helper self)
-                ))))
+     (html:form
+      :method "POST" :action (cgi-name-of self)
+      (html:input :type "hidden" :name "c" :value "c")
+      (html:input :type "hidden" :name "p" :value pagename)
+      (html:input :type "hidden" :name "mtime" :value (mtime-of page))
+      (html:textarea :name "content" :rows 40 :cols 80 (content-of page))
+      (html:br)
+      (html:input :type "submit" :name "submit" :value "Submit")
+      (html:input :type "reset"  :name "reset"  :value "Reset")
+      (html:br)
+      (msg-edit-helper self)
+      ))))
 
-(define (cmd-commit-edit self pagename content)
+(define (cmd-commit-edit self pagename content mtime)
   (unless (editable? self)
     (errorf "Can't edit the page ~s: the database is read-only" pagename))
   (let ((page (wdb-get (db-of self) pagename #t))
         (now  (sys-time)))
-    (set! (mtime-of page) now)
-    (set! (content-of page) (expand-writer-macros content))
-    (wdb-put! (db-of self) pagename page)
-    (format-page self pagename page)))
+    (if (eqv? (mtime-of page) mtime)
+        (begin
+          (set! (mtime-of page) now)
+          (set! (content-of page) (expand-writer-macros content))
+          (wdb-put! (db-of self) pagename page)
+          (format-page self pagename page))
+        (format-page
+         self (msg-conflict-page self)
+         `(,(msg-conflict-helper self)
+           ,(html:hr)
+           ,(colored-box (html:pre (html-escape-string (content-of page))))
+           ,(html:hr)
+           ,(msg-conflict-helper2 self)
+           ,(html:form
+             :method "POST" :action (cgi-name-of self)
+             (html:input :type "hidden" :name "c" :value "c")
+             (html:input :type "hidden" :name "p" :value pagename)
+             (html:input :type "hidden" :name "mtime" :value (mtime-of page))
+             (html:textarea :name "content" :rows 40 :cols 80 content)
+             (html:br)
+             (html:input :type "submit" :name "submit" :value "Submit")
+             (html:input :type "reset"  :name "reset"  :value "Reset")
+             (html:br)
+             (msg-edit-helper self))))
+        )))
 
 (define (cmd-all self)
   (format-page
@@ -496,7 +540,10 @@
                       ((equal? command "c")
                        (cmd-commit-edit self pagename
                                         (cgi-get-parameter "content" param
-                                                           :convert ccv)))
+                                                           :convert ccv)
+                                        (cgi-get-parameter "mtime" param
+                                                           :convert x->integer
+                                                           :default 0)))
                       (else (error "Unknown command" command))))))
        ))
    :merge-cookies #t
