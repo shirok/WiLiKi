@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.22 2002-02-28 09:32:56 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.23 2002-02-28 11:00:06 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -407,20 +407,30 @@
         (else (error "No such page" pagename))))
 
 (define (edit-form self preview? pagename content mtime)
+  (define (buttons)
+    (if preview?
+        (list (html:input :type "submit" :name "preview"
+                          :value "Preview")
+              (html:input :type "submit" :name "commit"
+                          :value "Commit without preview")
+              (html:input :type "reset"  :name "reset"  :value "Reset"))
+        (list (html:input :type "submit" :name "commit"
+                          :value "Commit")
+              (html:input :type "submit" :name "preview"
+                          :value "Preview again")
+              (html:input :type "reset"  :name "reset"  :value "Reset"))
+        ))
+
   (html:form
    :method "POST" :action (cgi-name-of self)
-   (html:input :type "submit" :name "submit"
-               :value (if preview? "Preview" "Commit"))
-   (html:input :type "reset"  :name "reset"  :value "Reset")
+   (buttons)
    (html:br)
-   (html:input :type "hidden" :name "c" :value (if preview? "p" "c"))
+   (html:input :type "hidden" :name "c" :value "c")
    (html:input :type "hidden" :name "p" :value pagename)
    (html:input :type "hidden" :name "mtime" :value mtime)
    (html:textarea :name "content" :rows 40 :cols 80 content)
    (html:br)
-   (html:input :type "submit" :name "submit"
-               :value (if preview? "Preview" "Commit"))
-   (html:input :type "reset"  :name "reset"  :value "Reset")
+   (buttons)
    (html:br)
    ($$ "<h2>Text Formatting Rules</h2>
       <p>No HTML.</p>
@@ -563,8 +573,10 @@
                       ((equal? command "s")
                        (cmd-search self (cgi-get-parameter "key" param
                                                            :convert ccv)))
-                      ((member command '("p" "c"))
-                       ((if (equal? command "c") cmd-commit-edit cmd-preview)
+                      ((equal? command "c")
+                       ((if (cgi-get-parameter "commit" param :default #f)
+                            cmd-commit-edit
+                            cmd-preview)
                         self pagename
                         (cgi-get-parameter "content" param :convert ccv)
                         (cgi-get-parameter "mtime" param
