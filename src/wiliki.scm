@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.44 2002-09-30 09:03:08 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.45 2002-10-08 09:51:59 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -462,7 +462,8 @@
    (html:input :type "hidden" :name "c" :value "c")
    (html:input :type "hidden" :name "p" :value pagename)
    (html:input :type "hidden" :name "mtime" :value mtime)
-   (html:textarea :name "content" :rows 40 :cols 80 content)
+   (html:textarea :name "content" :rows 40 :cols 80
+                  (html-escape-string content))
    (html:br)
    (buttons)
    (html:br)
