@@ -2,7 +2,7 @@
 ;;; wiliki/macro.scm - macro handling (to be autoloaded)
 ;;;
 
-;; $Id: macro.scm,v 1.4 2002-12-02 07:09:18 shirok Exp $
+;; $Id: macro.scm,v 1.5 2002-12-19 01:28:33 shirok Exp $
 
 (select-module wiliki)
 
@@ -96,6 +96,22 @@
 (define-reader-macro (include page)
   (cond ((wdb-get (db) page) => format-content)
         (else #`"[[$$include ,(html-escape-string page)]]")))
+
+(define-reader-macro (img url . maybe-alt)
+  (define (alt) (if (null? maybe-alt) "[image]" (string-join maybe-alt " ")))
+  (define (badimg) (html:a :href url (alt)))
+  (let loop ((urls (image-urls-of (wiliki))))
+    (if (pair? urls)
+        (receive (pred action)
+            (if (pair? (car urls))
+                (values (caar urls) (cadar urls))
+                (values (car urls) 'allow))
+          (if (pred url)
+              (if (eq? action 'allow)
+                  (html:img :src url :alt (alt))
+                  (badimg))
+              (loop (cdr urls))))
+        (badimg))))
 
 (define-reader-macro (toc . maybe-page)
   (define (anchor id line)
