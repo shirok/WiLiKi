@@ -1,5 +1,6 @@
 2002-12-18  Shiro Kawai  <shiro@acm.org>
 
+	* release 0.2
 	* src/wiliki/macro.scm : support inline-image by $$img macro.
 	* src/wiliki.scm: added style-sheet support, and inline-image
 	  allow/deny rules.
