@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2004 Tokuya Kameshima.  All rights reserved.
 
-;; $Id: wiliki.el,v 1.10 2004-04-01 15:04:32 tkame Exp $
+;; $Id: wiliki.el,v 1.11 2004-06-03 16:27:29 tkame Exp $
 
 ;;; Installation:
 
@@ -28,9 +28,8 @@
 
 ;;; TODO:
 
-;; - font lock for `wiliki-edit-mode'.
 ;; - Don't ask the log message if the site doesn't have change logs.
-;; - Page rendering.
+;; - More page rendering for browsing.
 ;; - Character encoding detection.
 ;; - Proxy authentication.
 ;; - Code refactoring.
@@ -107,6 +106,16 @@ via the proxy server `wiliki-http-proxy'."
   "Function to display a non-WiLiKi page in a WWW Browser."
   :group 'wiliki
   :type 'function)
+
+(defcustom wiliki-writer-macro-regexp "date"
+  "Regular expression matching writer macro names."
+  :group 'wiliki
+  :type 'regexp)
+
+(defcustom wiliki-reader-macro-regexp "include\\|index\\|cindex\\|toc\\|img"
+  "Regular expression matching reader macro names."
+  :group 'wiliki
+  :type 'regexp)
 
 (defcustom wiliki-mode-hook nil
   "Hook called in `wiliki-mode'."
@@ -231,8 +240,8 @@ If the data for BASE-URL does not exist in the list, new data is created."
       (goto-char (point-min))
       (while (re-search-forward
 	      "^:\\([^:]+\\):[ \t]*\n?[ \t]*\\([^:][^ \t\n]*\\)" nil t)
-	(let* ((name (match-string 1))
-	       (url (match-string 2))
+	(let* ((name (match-string-no-properties 1))
+	       (url (match-string-no-properties 2))
 	       (scheme (if (string-match "^\\(https?\\|ftp\\|mailto\\):" url)
 			   ""
 			 "http://")))
@@ -254,7 +263,7 @@ If the data for BASE-URL does not exist in the list, new data is created."
       (set-buffer buf)
       (goto-char (point-min))
       (while (re-search-forward "\\[\\[\\(.*\\)\\]\\]" nil t)
-	(setq pages (cons (cons (match-string 1) nil)
+	(setq pages (cons (cons (match-string-no-properties 1) nil)
 			  pages))))
     (setf (wiliki-site-info-page-list (wiliki-site-info base-url))
 	  (reverse pages))))
@@ -681,7 +690,7 @@ function returning a string which is inserted into the page buffer."
                  (< pre-close open))
              (or (not post-open)
                  (> post-open close)))
-        (buffer-substring (+ open 2) (- close 2))
+        (buffer-substring-no-properties (+ open 2) (- close 2))
       nil)))
 
 (defun wiliki-site-base-url-p (base-url)
@@ -1233,6 +1242,14 @@ if one exists."
 	(message "(No changes need to be committed)"))
     (error "Not a Wiliki Edit Mode.")))
 
+(defun wiliki-recenter-and-fontify (&optional arg)
+  "Center point in window, redisplay frame, and fontify the current buffer
+if Font-Lock mode is enabled."
+  (interactive "P")
+  (recenter arg)
+  (if font-lock-mode
+      (font-lock-fontify-buffer)))
+
 (defun wiliki-log-done (dont-touch)
   "Finish editing the log message and commit the changes to the server.
 If DONT-TOUCH is non-nil, the page does not update 'Recent Changes'."
@@ -1294,7 +1311,8 @@ If DONT-TOUCH is non-nil, the page does not update 'Recent Changes'."
   (define-key wiliki-edit-mode-map "\C-i" 'wiliki-next-wikiname)
   (define-key wiliki-edit-mode-map [(shift tab)] 'wiliki-previous-wikiname)
   (define-key wiliki-edit-mode-map [(shift iso-lefttab)]
-    'wiliki-previous-wikiname))
+    'wiliki-previous-wikiname)
+  (define-key wiliki-edit-mode-map "\C-l" 'wiliki-recenter-and-fontify))
 
 (if wiliki-log-mode-map
     ()
@@ -1302,6 +1320,236 @@ If DONT-TOUCH is non-nil, the page does not update 'Recent Changes'."
   (define-key wiliki-log-mode-map "\C-c\C-c" 'wiliki-log-done)
   (define-key wiliki-log-mode-map "\M-p" 'wiliki-previous-comment)
   (define-key wiliki-log-mode-map "\M-n" 'wiliki-next-comment))
+
+
+;;; Faces
+
+(defface wiliki-header-1-face
+  '((t (:weight bold :height 1.3 :inherit variable-pitch)))
+  "Face for Wiliki headers of level 1.")
+
+(defface wiliki-header-2-face
+  '((t (:weight bold :height 1.2 :inherit variable-pitch)))
+  "Face for Wiliki headers of level 2.")
+
+(defface wiliki-header-3-face
+  '((t (:weight bold :height 1.1 :inherit variable-pitch)))
+  "Face for Wiliki headers of level 3.")
+
+(defface wiliki-header-4-face
+  '((t (:weight bold :height 1.0 :inherit variable-pitch)))
+  "Face for Wiliki headers of level 4.")
+
+(defface wiliki-header-5-face
+  '((t (:weight bold :height 0.9 :inherit variable-pitch)))
+  "Face for Wiliki headers of level 5 and below.")
+
+(defface wiliki-link-face
+  '((((class color) (background light)) (:foreground "#551a8b" :bold t))
+    (((class color) (background dark)) (:foreground "cyan" :bold t))
+    (t (:bold t)))
+  "Face for Wiliki links.")
+
+(defface wiliki-table-border-face
+  '((((class color)) (:foreground "blue4"))
+    (t (:bold t)))
+  "Face for Wiliki table border.")
+
+(defface wiliki-table-rule-face
+  '((((class color)) (:foreground "skyblue4"))
+    (t (:bold t)))
+  "Face for Wiliki table border.")
+
+(defface wiliki-verbatim-face
+  '((((class color) (background light)) (:foreground "OliveDrab"))
+    (((class color) (background dark)) (:foreground "LightSalmon"))
+    (((type tty) (class color)) (:foreground "green"))
+    (t (:italic t)))
+  "Face for Wiliki verbatim texts.")
+
+(defface wiliki-bold-face
+  '((t (:bold t)))
+  "Face for Wiliki bold texts.")
+
+(defface wiliki-italic-face
+  '((t (:italic t)))
+  "Face for Wiliki italic texts.")
+
+(defvar wiliki-header-1-face 'wiliki-header-1-face)
+(defvar wiliki-header-2-face 'wiliki-header-2-face)
+(defvar wiliki-header-3-face 'wiliki-header-3-face)
+(defvar wiliki-header-4-face 'wiliki-header-4-face)
+(defvar wiliki-header-5-face 'wiliki-header-5-face)
+(defvar wiliki-link-face 'wiliki-link-face)
+(defvar wiliki-table-border-face 'wiliki-table-border-face)
+(defvar wiliki-table-rule-face 'wiliki-table-rule-face)
+(defvar wiliki-verbatim-face 'wiliki-verbatim-face)
+(defvar wiliki-bold-face 'wiliki-bold-face)
+(defvar wiliki-italic-face 'wiliki-italic-face)
+
+(defconst wiliki-any-char-regexp "\\(?:.\\|\n~\\)")
+
+(defvar wiliki-font-lock-emphasis-regions nil)
+
+(defun wiliki-font-lock-init ()
+  (set (make-local-variable 'wiliki-font-lock-emphasis-regions) nil)
+  '((lambda (end)
+      (setq wiliki-font-lock-emphasis-regions nil)
+      nil)))
+
+(defun wiliki-fontify-later (face)
+  `(ignore nil (setq wiliki-font-lock-emphasis-regions
+		     (cons (list (match-data) ,face)
+			   wiliki-font-lock-emphasis-regions))))
+
+(defun wiliki-font-lock-fontify-delayed-regions ()
+  '((lambda (end)
+      (if wiliki-font-lock-emphasis-regions
+	  (let ((match (nth 0 (car wiliki-font-lock-emphasis-regions))))
+	    (set-match-data match)
+	    (goto-char (match-end 0))
+	    (match-beginning 0))))
+    (2 (prog1
+	   (nth 1 (car wiliki-font-lock-emphasis-regions))
+	 (setq wiliki-font-lock-emphasis-regions
+	       (cdr wiliki-font-lock-emphasis-regions)))
+       append)))
+
+(defun wiliki-font-lock-matcher (regexp)
+  `(lambda (end)
+     (wiliki-font-lock-search-no-face ,regexp end t)))
+(put 'wiliki-font-lock-matcher 'lisp-indent-function 1)
+
+(defvar wiliki-font-lock-syntactic-keywords `(("\n~" 0 "_")))
+
+(defvar wiliki-font-lock-keywords
+  `((eval . (wiliki-font-lock-init))
+
+    ("^;;.*" . font-lock-comment-face)
+    ("^----$" . wiliki-bold-face)	; <hr>
+    "^\\(<<<\\|>>>\\)$"			; <blockquote>
+    ("^\\([-#]+\\) " (1 font-lock-function-name-face)) ; <ul> and <ol>
+
+    (,(concat "^\\(||\\)\\(" wiliki-any-char-regexp "*?\\)\\(||\\)$") ; <table>
+     (1 wiliki-table-border-face)
+     (3 wiliki-table-border-face)
+     ("||"
+      (progn
+	(goto-char (match-beginning 2))
+	(match-end 2))
+      (goto-char (match-end 0))
+      (0 wiliki-table-rule-face)))
+
+    (,(wiliki-font-lock-matcher	      ; writer macro such as [[$date]]
+	  (concat "\\(\\[\\[\\)\\(\\$\\("
+		  wiliki-writer-macro-regexp
+		  "\\)\\)\\( " wiliki-any-char-regexp "*?\\)?\\(\\]\\]\\)"))
+     (1 font-lock-keyword-face)
+     (2 font-lock-type-face)
+     (4 font-lock-reference-face nil t)
+     (5 font-lock-keyword-face))
+    (,(wiliki-font-lock-matcher	      ; reader macro such as [[$$toc]]
+	  (concat "\\(\\[\\[\\)\\(\\$\\$\\("
+		  wiliki-reader-macro-regexp
+		  "\\)\\)\\( " wiliki-any-char-regexp "*?\\)?\\(\\]\\]\\)"))
+     (1 font-lock-keyword-face)
+     (2 font-lock-type-face)
+     (4 font-lock-reference-face nil t)
+     (5 font-lock-keyword-face))
+    (,(wiliki-font-lock-matcher		; unknown macro
+	  (concat "\\(\\[\\[\\)\\(\\$"
+		  wiliki-any-char-regexp "*?\\)\\(\\]\\]\\)"))
+     (1 font-lock-keyword-face)
+     (2 font-lock-warning-face)
+     (3 font-lock-keyword-face))
+    (,(wiliki-font-lock-matcher		; [[WikiName]]
+	  (concat "\\(\\[\\[\\)\\("
+		  wiliki-any-char-regexp "*?\\)\\(\\]\\]\\)"))
+     (1 font-lock-keyword-face)
+     (2 wiliki-link-face)
+     (3 font-lock-keyword-face))
+
+    (,(concat "^\\(:\\)\\(" wiliki-any-char-regexp "*\\)\\(:\\)") ; <dl>
+     (1 font-lock-keyword-face)
+     ,(wiliki-fontify-later wiliki-bold-face)
+     (3 font-lock-keyword-face))
+    (,(wiliki-font-lock-matcher		; <strong>
+	  (concat "\\('''\\)\\([^'\n]?"
+		  wiliki-any-char-regexp "*?\\)\\('''\\)"))
+     (1 font-lock-keyword-face)
+     ,(wiliki-fontify-later wiliki-bold-face)
+     (3 font-lock-keyword-face))
+    (,(wiliki-font-lock-matcher		; <em>
+	  (concat "\\(''\\)\\([^'\n]?" wiliki-any-char-regexp "*?\\)\\(''\\)"))
+     (1 font-lock-keyword-face)
+     ,(wiliki-fontify-later wiliki-italic-face)
+     (3 font-lock-keyword-face))
+
+    (".\\(~%\\)" (1 font-lock-warning-face)) ; <br>
+
+
+    ;; [url]
+    (,(wiliki-font-lock-matcher
+	  (concat "\\(\\[\\)\\(\\(https?\\|ftp\\)://\\S-*?\\)\\( +\\("
+		  wiliki-any-char-regexp "*?\\)\\)?\\(\\]\\)"))
+     (1 font-lock-keyword-face)
+     (2 wiliki-link-face)
+     (5 font-lock-reference-face)
+     (6 font-lock-keyword-face))
+    (,(wiliki-font-lock-matcher "\\(https?\\|ftp\\)://\\S-*") ; url
+     ;; XXX: http://foo''italic''
+     . wiliki-link-face)
+    (,(wiliki-font-lock-matcher
+	  (concat "\\(\\[\\)\\(mailto:\\S-+@\\S-+\\)\\s-+\\(\\S-"
+		  wiliki-any-char-regexp "*\\)\\(\\]\\)"))
+     (1 font-lock-keyword-face)
+     (2 wiliki-link-face)
+     (3 font-lock-reference-face)
+     (4 font-lock-keyword-face))
+
+    (,(concat "^\\(\\*+\\) "		; <h2>, <h3>, <h4>, ...
+	      wiliki-any-char-regexp "*")
+     (0 (let* ((len (- (match-end 1) (match-beginning 1)))
+	       (face-name (format "wiliki-header-%d-face" (min len 5))))
+	  (intern face-name))
+	keep))
+
+    ;; fontify body portion of '''...''', ''...'', and :...:
+    ;; These fontifications are delayed until here.
+    ,(wiliki-font-lock-fontify-delayed-regions)
+
+    ("^~" (0 font-lock-warning-face t))
+    ("^\\({{{\\)\n\\(\\(.*\n\\)*?\\)\\(}}}\\)$" ; <pre>
+     (1 font-lock-keyword-face)
+     (2 wiliki-verbatim-face t)		; override faces
+     (4 font-lock-keyword-face)))
+  "Default expressions to highlight in Wiliki modes.")
+
+(defun wiliki-font-lock-search-no-face (regexp &optional bound noerror face)
+  (or bound (setq bound (point-max)))
+  (let ((saved (point))
+	(move-to-beg-func (if face 'text-property-not-all 'text-property-any))
+	(move-to-end-func (if face 'text-property-any 'text-property-not-all))
+	found)
+    (while (and (not found)
+		(re-search-forward regexp bound t)) ; search roughly
+      (let* ((beg (or (funcall move-to-beg-func (match-beginning 0) bound
+			       'face face)
+		      bound))
+	     (end (or (funcall move-to-end-func beg bound 'face face) bound)))
+	(if (and (< beg (match-beginning 0))
+		 (< (match-end 0) end))
+	    (setq found (point))
+	  (goto-char beg)
+	  (if (re-search-forward regexp end 'move)
+	      (setq found (point))))))
+    (or found
+	(cond ((null noerror) (error "search failed"))
+	      ((eq noerror t) (goto-char saved) nil)
+	      (t (goto-char bound) nil)))))
+
+
+;;; Mode definitions
 
 (defun wiliki-mode ()
   "Major mode to communicate WiLiKi.
@@ -1315,13 +1563,20 @@ If DONT-TOUCH is non-nil, the page does not update 'Recent Changes'."
   (make-local-variable 'wiliki-status)
   (make-local-variable 'wiliki-editable)
   (make-local-variable 'wiliki-use-lwp-for-commit)
+  (set (make-local-variable 'font-lock-support-mode)
+       'fast-lock-mode)
+  (set (make-local-variable 'font-lock-defaults)
+       '(wiliki-font-lock-keywords t t nil backward-paragraph))
+  (set (make-local-variable 'font-lock-syntactic-keywords)
+       wiliki-font-lock-syntactic-keywords)
   (setq major-mode 'wiliki-mode)
   (setq mode-name "WiLiKi")
   (make-local-variable 'kill-buffer-hook)
   (use-local-map wiliki-mode-map)
   (run-hooks 'wiliki-mode-hook))
 
-(defun wiliki-edit-mode ()
+;; (defun wiliki-edit-mode ()
+(define-derived-mode wiliki-edit-mode text-mode "Wiliki-Edit"
   "Major mode to edit and commit WiLiKi page.
 
 \\{wiliki-edit-mode-map}"
@@ -1332,6 +1587,11 @@ If DONT-TOUCH is non-nil, the page does not update 'Recent Changes'."
   (make-local-variable 'wiliki-edit-status)
   (make-local-variable 'wiliki-edit-previous-window-config)
   (make-local-variable 'wiliki-use-lwp-for-commit)
+  (set (make-local-variable 'font-lock-defaults)
+       '(wiliki-font-lock-keywords t t nil backward-paragraph))
+  (set (make-local-variable 'font-lock-syntactic-keywords)
+       wiliki-font-lock-syntactic-keywords)
+  (set (make-local-variable 'font-lock-multiline) t)
   (setq major-mode 'wiliki-edit-mode)
   (setq mode-name "WiLiKi-Edit")
   (set (make-local-variable 'comment-start) ";;")
