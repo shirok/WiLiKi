@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.104 2004-01-12 06:24:24 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.105 2004-01-12 07:08:49 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -45,6 +45,7 @@
   (use wiliki.mcatalog)
   (use wiliki.format)
   (export <wiliki> wiliki-main wiliki
+          wiliki:language-link wiliki:self-url
           wiliki:top-link wiliki:edit-link wiliki:history-link
           wiliki:all-link wiliki:recent-link wiliki:search-box
           wiliki:menu-links wiliki:page-title
@@ -205,8 +206,11 @@
      (lambda (fmt . args) (url-format #t fmt args)) ;; url-full
      )))
 
+;; For export
+(define wiliki:self-url url)
+
 ;; Creates a link to switch language
-(define (language-link page)
+(define (wiliki:language-link page)
   (and-let* ((target (or (ref page 'command) (ref page 'key))))
     (receive (language label)
         (case (lang)
@@ -235,7 +239,8 @@
 ;; Default menu link composers
 (define (wiliki:top-link page)
   (and (not (equal? (ref page 'title) (top-page-of (wiliki))))
-       `(a (@ (href ,(cgi-name-of (wiliki)))) ,($$ "[Top Page]"))))
+       `(a (@ (href ,#`",(cgi-name-of (wiliki)),(lang-spec (lang) '?)"))
+           ,($$ "[Top Page]"))))
 
 (define (wiliki:edit-link page)
   (and (ref (wiliki) 'editable?)
@@ -256,20 +261,25 @@
   (and (not (equal? (ref page 'command) "c=r"))
        `(a (@ (href ,(url "c=r"))) ,($$ "[Recent Changes]"))))
 
-(define (wiliki:search-box page)
-  `(span "[" ,($$ "Search:") (input (@ (type text) (name key) (size 10))) "]"))
+(define (wiliki:search-box)
+  `((form (@ (method POST) (action ,(cgi-name-of (wiliki)))
+             (style "margin:0pt; padding:0pt"))
+          (input (@ (type hidden) (name c) (value s)
+                    (style "margin:0pt; padding:0pt")))
+          (span ,($$ "Search:")
+                (input (@ (type text) (name key) (size 10)))))))
 
 (define (wiliki:menu-links page)
-  `((form (@ (method POST) (action ,(cgi-name-of (wiliki))))
-          (input (@ (type hidden) (name c) (value s)))
-          ,@(cond-list
-             ((language-link page))
-             ((wiliki:top-link page))
-             ((wiliki:edit-link page))
-             ((wiliki:history-link page))
-             ((wiliki:all-link page))
-             ((wiliki:recent-link page))
-             ((wiliki:search-box page))))))
+  `((table
+     (@ (border 0) (cellpadding 0))
+     (tr (td ,@(cond-list
+                ((wiliki:language-link page))
+                ((wiliki:top-link page))
+                ((wiliki:edit-link page))
+                ((wiliki:history-link page))
+                ((wiliki:all-link page))
+                ((wiliki:recent-link page))))
+         (td ,@(wiliki:search-box))))))
 
 (define (wiliki:page-title page)
   `((h1 ,(if (wiliki:persistent-page? page)

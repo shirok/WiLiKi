@@ -2,13 +2,20 @@
 
 ;; wiliki2 - sample of customizing page format
 
+(use util.list)
 (use wiliki)
 (use wiliki.format)
 (use wiliki.db)
 
 (define (my-page-header page opts)
   `((div (@ (style "font-size:80%;text-align:right"))
-         ,@(wiliki:menu-links page))))
+         ,@(cond-list
+            ((wiliki:top-link page))
+            ((wiliki:edit-link page))
+            ((wiliki:history-link page))
+            ((wiliki:all-link page))
+            ((wiliki:recent-link page))
+            ((wiliki:language-link page))))))
 
 (define (my-page-footer page opts)
   `((hr)
@@ -27,11 +34,15 @@
                 (valign "top") (style "font-size:80%;width:10em"))
              (div (@ (class "menu-title")) "Topics")
              ,@(wiliki:get-formatted-page-content "Topics")
-             (div (@ (class "menu-title")) "Recent Updated")
+             (div (@ (class "menu-title")) "Search")
+             (div (@ (style "margin-top:2pt;margin-bottom:2pt"))
+                  ,@(wiliki:search-box))
+             (div (@ (class "menu-title")) "Recent Changes")
              (ul (@ (class "menu-list"))
                  ,@(map (lambda (p)
-                          `(li ,@(wiliki:format-wiki-name (car p))))
-                        (wiliki:recent-changes-alist :length 20))))
+                          `(li ,@(wiliki:format-wikiname (car p))))
+                        (wiliki:recent-changes-alist :length 20)))
+             (a (@ (href ,(wiliki:self-url "c=r"))) "More ..."))
          (td (@ (valign "top"))
              ,@(wiliki:page-title page)
              ,@(wiliki:format-content page))))))
