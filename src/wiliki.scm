@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.21 2002-02-27 20:41:54 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.22 2002-02-28 09:32:56 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -123,14 +123,16 @@
                       '())))
 
 (define-method wdb-search ((db <dbm>) key)
-  (dbm-fold db
-            (lambda (k v r)
-              (if (and (not (string-prefix? " " k))
-                       (string-contains (content-of (wdb-record->page db v))
-                                        key))
-                  (cons k r)
-                  r))
-            '()))
+  (sort
+   (dbm-fold db
+             (lambda (k v r)
+               (if (and (not (string-prefix? " " k))
+                        (string-contains (content-of (wdb-record->page db v))
+                                         key))
+                   (cons k r)
+                   r))
+             '())
+   string<?))
 
 ;; Macros -----------------------------------------
 
