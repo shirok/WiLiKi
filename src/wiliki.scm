@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.86 2003-08-19 11:22:28 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.87 2003-08-30 12:27:57 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -55,11 +55,16 @@
                          wdb-search wdb-search-content)
 (autoload "wiliki/macro" handle-reader-macro handle-writer-macro
                          handle-virtual-page virtual-page?)
-(autoload "wiliki/rss"   rss-page)
-(autoload "wiliki/pasttime" how-long-since)
+(autoload wiliki.rss     rss-page)
+(autoload wiliki.pasttime how-long-since)
 (autoload wiliki.format  format-page format-footer format-content
                          format-time format-colored-box format-wikiname-anchor
                          format-wiki-name)
+(autoload wiliki.log     wiliki-log-create wiliki-log-pick
+                         wiliki-log-parse-entry wiliki-log-entries-after
+                         wiliki-log-diff wiliki-log-revert
+                         wiliki-log-merge)
+
 
 ;; Version check.
 (when (version<? (gauche-version) "0.6.7.1")

@@ -23,10 +23,12 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: pasttime.scm,v 1.2 2003-02-09 07:43:23 shirok Exp $
+;;;  $Id: pasttime.scm,v 1.3 2003-08-30 12:28:00 shirok Exp $
 ;;;
 
-(select-module wiliki)
+(define-module wiliki.pasttime
+  (export how-long-since))
+(select-module wiliki.pasttime)
 
 ;; Multilingualizaton of this module is tricky, as the rules of
 ;; forming plurals are different from language to language.
@@ -42,7 +44,6 @@
 (define (how-long-since time . opts)
   (define (pl num unit)
     (format "~a ~a~a" num unit (if (= num 1) "" "s")))
-
   (let-optionals* opts ((now (sys-time)))
     (let ((diff (- now time)))
       (cond

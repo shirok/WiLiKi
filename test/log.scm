@@ -368,7 +368,7 @@ for user-defined classes.
 (test* "add&delete 8" '("a" (a "S" "T" "d" "e" "f") (b "b" "S" "T" "e" "f"))
        (mg '("a" "b" "c" "d")
            '("a" "S" "T" "d" "e" "f")
-           '("a" "b" "S" "T" "e" "f"))
+           '("a" "b" "S" "T" "e" "f")))
 
 ;; other patterns
 (test* "other 0" '("b" "a")

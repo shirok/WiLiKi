@@ -23,13 +23,19 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: rss.scm,v 1.4 2003-03-05 07:32:41 shirok Exp $
+;;;  $Id: rss.scm,v 1.5 2003-08-30 12:28:00 shirok Exp $
 ;;;
 
 ;; In future, this might be rewritten to use proper XML framework.
 ;; for now, I use an ad-hoc approach.
 
-(select-module wiliki)
+(define-module wiliki.rss
+  (use wiliki.db)
+  (use util.list)
+  (use text.html-lite)
+  (extend wiliki)
+  (export rss-page))
+(select-module wiliki.rss)
 
 ;; API
 (define (rss-page db)
