@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.17 2004-01-01 08:11:16 shirok Exp $
+;;; $Id: format.scm,v 1.18 2004-01-01 22:24:14 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -81,25 +81,47 @@
 ;; Utilities
 
 (define (format-diff-pre difflines)
-  (html:pre :class "diff"
-            :style "background-color:#ffffff; color:#000000; margin:0"
-            (map format-diff-line difflines)))
+  `(pre (@ (class "diff")
+           (style "background-color:#ffffff; color:#000000; margin:0"))
+        ,@(map format-diff-line difflines)))
 
 (define (format-diff-line line)
   (define (aline . c)
-    (html:span :class "diff_added"
-               :style "background-color:#ffffff; color: #4444ff"
-               c))
+    `(span (@ (class "diff_added")
+              (style "background-color:#ffffff; color: #4444ff"))
+           ,@c))
   (define (dline . c)
-    (html:span :class "diff_deleted"
-               :style "background-color:#ffffff; color: #ff4444"
-               c))
-  (cond ((string? line) (list "  " (html-escape-string line) "\n"))
-        ((eq? (car line) '+)
-         (aline "+ " (html-escape-string (cdr line)) "\n"))
-        ((eq? (car line) '-)
-         (dline "- " (html-escape-string (cdr line)) "\n"))
+    `(span (@ (class "diff_deleted")
+              (style "background-color:#ffffff; color: #ff4444"))
+           ,@c))
+  (cond ((string? line) `(span "  " ,line "\n"))
+        ((eq? (car line) '+) (aline "+ " (cdr line) "\n"))
+        ((eq? (car line) '-) (dline "- " (cdr line) "\n"))
         (else "???")))
+
+;; Expands tabs in a line.
+(define expand-tab 
+  (let ((pads #("        "
+                " "
+                "  "
+                "   "
+                "    "
+                "     "
+                "      "
+                "       ")))
+    (lambda (line)
+      (let loop ((line   line)
+                 (r      '())
+                 (column 0))
+        (receive (before after) (string-scan line #\tab 'both)
+          (if before
+              (let* ((newcol  (+ (string-length before) column))
+                     (fill-to (inexact->exact (* (ceiling (/ newcol 8)) 8))))
+                (loop after
+                      (list* (vector-ref pads (- fill-to newcol)) before r)
+                      fill-to))
+              (reverse (cons line r))))))
+    ))
 
 ;; similar to sxml:sxml->xml, but deals with stree node, which
 ;; embeds a string tree.
@@ -185,30 +207,6 @@
       (expand-tab (tree->string formatted))
       formatted))
   )
-
-;; Expands tabs in a line.
-(define expand-tab 
-  (let ((pads #("        "
-                " "
-                "  "
-                "   "
-                "    "
-                "     "
-                "      "
-                "       ")))
-    (lambda (line)
-      (let loop ((line   line)
-                 (r      '())
-                 (column 0))
-        (receive (before after) (string-scan line #\tab 'both)
-          (if before
-              (let* ((newcol  (+ (string-length before) column))
-                     (fill-to (inexact->exact (* (ceiling (/ newcol 8)) 8))))
-                (loop after
-                      (list* (vector-ref pads (- fill-to newcol)) before r)
-                      fill-to))
-              (reverse (cons line r))))))
-    ))
 
 (define (format-parts fmtr line)
   (define (uri line)

@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.100 2004-01-01 08:11:16 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.101 2004-01-01 22:24:13 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -70,11 +70,11 @@
 (autoload "wiliki/edit"    cmd-edit cmd-preview cmd-commit-edit)
 
 ;; Version check.
-(when (version<? (gauche-version) "0.6.7.1")
+(when (version<? (gauche-version) "0.7.3")
   (print (tree->string
           `(,(cgi-header)
             ,(html:html (html:head (html:title "Error")))
-            ,(html:body "Gauche 0.6.7.1 or later is required."))))
+            ,(html:body "Gauche 0.7.3 or later is required."))))
   (exit 0))
 
 ;; Some constants
@@ -198,8 +198,8 @@
       (case (lang)
         ((jp) (values 'en "->English"))
         (else (values 'jp "->Japanese")))
-    (html:a :href #`",(cgi-name-of (wiliki))?,|pagename|,(lang-spec target '&)"
-            "[" (html-escape-string label) "]")))
+    `(a (@ (href ,(string-append (cgi-name-of (wiliki)) "?" pagename (lang-spec target '&))))
+        "[" ,label "]")))
 
 ;; fallback
 (define-method title-of (obj) "WiLiKi")
@@ -232,7 +232,7 @@
                  (input (@ (type hidden) (name c) (value s)))
                  ,@(cond-list
                     (show-lang?
-                     `(stree ,(language-link page-id)))
+                     (language-link page-id))
                     ((not (string=? page-id (top-page-of (wiliki))))
                      `(a (@ (href ,(cgi-name-of (wiliki))))
                          ,($$ "[Top Page]")))
@@ -254,9 +254,13 @@
                             "]")))))
       (hr))))
 
-(define (format-wikiname-anchor wikiname)
-  ;; assumes wikiname already exist in the db.
+
+(define (format-wikiname-anchor wikiname) ;; for backward compatibility
   (html:a :href (url "~a" (cv-out wikiname)) (html-escape-string wikiname)))
+
+(define (wiki-name-anchor wikiname)
+  `(a (@ (href ,(url "~a" (cv-out wikiname))))
+      ,(html-escape-string wikiname)))
 
 (define (format-time time)
   (if time
@@ -311,7 +315,8 @@
           ;; virtual one?  Note also the order of this check must match
           ;; the order in cmd-view.
           ((or (wdb-exists? (db) name) (virtual-page? name))
-           (tree->string (format-wikiname-anchor name)))
+           (tree->string
+            (wiliki:sxml->stree (wiki-name-anchor name))))
           (else
            (tree->string
             `(,(html-escape-string name)
@@ -471,7 +476,7 @@
      :key (string-append (title-of (wiliki))": "($$ "All Pages"))
      :content `((ul
                  ,@(map (lambda (k)
-                          `(li (stree ,(format-wikiname-anchor k))))
+                          `(li ,(wiki-name-anchor k)))
                         (sort (wdb-map (db) (lambda (k v) k)) string<?)))))
    :page-id "c=a"
    :show-edit? #f
@@ -488,7 +493,7 @@
                  `(tr
                    (td ,(format-time (cdr p)))
                    (td "(" ,(how-long-since (cdr p)) " ago)")
-                   (td (stree ,(format-wikiname-anchor (car p))))))
+                   (td ,(wiki-name-anchor (car p)))))
                (wdb-recent-changes (db))))))
    :page-id "c=r"
    :show-edit? #f
@@ -503,7 +508,7 @@
      `((ul
         ,@(map (lambda (p)
                  `(li
-                   (stree ,(format-wikiname-anchor (car p)))
+                   ,(wiki-name-anchor (car p))
                    ,(or (and-let* ((mtime (get-keyword :mtime (cdr p) #f)))
                           #`"(,(how-long-since mtime))")
                         "")))

@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: edit.scm,v 1.7 2004-01-01 08:11:16 shirok Exp $
+;;;  $Id: edit.scm,v 1.8 2004-01-01 22:24:14 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -54,14 +54,14 @@
                   (class content)
                   (rows ,(textarea-rows-of (wiliki)))
                   (cols ,(textarea-cols-of (wiliki))))
-               ,(html-escape-string content))
+               ,content)
      (br)
      (p ,($$ "ChangeLog (brief summary of your edit for later reference):"))
      (textarea (@ (name logmsg)
                   (class logmsg)
                   (rows 2)
                   (cols ,(textarea-cols-of (wiliki))))
-               ,(html-escape-string logmsg))
+               ,logmsg)
      (br)
      ,@(buttons)
      (br)
