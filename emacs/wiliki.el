@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2004 Tokuya Kameshima.  All rights reserved.
 
-;; $Id: wiliki.el,v 1.6 2004-03-15 15:04:15 tkame Exp $
+;; $Id: wiliki.el,v 1.7 2004-03-19 15:12:29 tkame Exp $
 
 ;;; Installation:
 
@@ -220,8 +220,10 @@ If the data for BASE-URL does not exist in the list, new data is created."
   (let ((interwikis (wiliki-base-url->interwikis base-url)))
     (cdr (assoc other-wiki interwikis))))
 
-(defun wiliki-base-url->page-list (base-url)
-  (wiliki-site-info-page-list (wiliki-site-info base-url)))
+(defun wiliki-base-url->page-list (base-url &optional force-fetch)
+  (or (and (not force-fetch)
+	   (wiliki-site-info-page-list (wiliki-site-info base-url)))
+      (wiliki-update-page-list base-url t)))
 
 (defun wiliki-parse-inter-wiki-name (&optional buffer)
   (save-excursion
@@ -247,6 +249,18 @@ If the data for BASE-URL does not exist in the list, new data is created."
 	 (interwikis (wiliki-parse-inter-wiki-name buf)))
     (setf (wiliki-site-info-interwikis (wiliki-site-info base-url))
 	  interwikis)))
+
+(defun wiliki-update-page-list (base-url &optional force-fetch)
+  (let* ((buf (wiliki-page-buffer base-url "$all" force-fetch))
+	 pages)
+    (save-excursion
+      (set-buffer buf)
+      (goto-char (point-min))
+      (while (re-search-forward "\\[\\[\\(.*\\)\\]\\]" nil t)
+	(setq pages (cons (cons (match-string 1) nil)
+			  pages))))
+    (setf (wiliki-site-info-page-list (wiliki-site-info base-url))
+	  (reverse pages))))
 
        
 ;;;
@@ -475,6 +489,7 @@ function returning a string which is inserted into the page buffer."
 	(error "Not a html"))
     (let ((buf (get-buffer-create (wiliki-buffer-name base-url page)))
 	  pos-saved)
+      (add-to-list 'wiliki-buffer-list buf)
       (with-current-buffer buf
 	(setq pos-saved (point))
 	(setq buffer-read-only nil)
@@ -508,7 +523,9 @@ function returning a string which is inserted into the page buffer."
 	(setq wiliki-base-url base-url)
 	(setq wiliki-title page)
 ;; 	(setq wiliki-mtime mtime) ;; (time-to-seconds (date-to-time date))
-	(setq wiliki-editable nil))
+	(setq wiliki-editable nil)
+	(if (string= wiliki-title "$all")
+	    (wiliki-update-page-list base-url)))
       buf)))
    
 ;; [redirect] http header
@@ -779,29 +796,37 @@ Return the base URL as a string."
     (or (car (cdr (assoc url-or-site-name wiliki-sites))) ; XXX
 	url-or-site-name)))
 
+(defconst wiliki-refetch-item '("$refetch" . nil))
+
 (defvar wiliki-page-hist nil)
 
 (defun wiliki-read-page (base-url &optional prompt default)
   "Prompt for a WikiName."
-  ;; TODO: Get the page list from the server.
-  (let ((decomp-url (wiliki-decompose-wiliki-url base-url))
-	complete-table)
-    (if decomp-url
-	nil
+  (if (wiliki-decompose-wiliki-url base-url)
+      nil				; BASE-URL contains page name.
+    (let (complete-table page refetch)
       (or default
 	  (setq default ""))
       (setq prompt (format "%s (default %s): "
 			   (or prompt "WikiName")
 			   (if (string= default "") "{top page}" default)))
-      (if (assoc base-url wiliki-site-info-alist)
-	  (setq complete-table (wiliki-base-url->page-list base-url)))
-      (completing-read prompt complete-table nil nil nil
-		       'wiliki-page-hist default))))
+      (while (or (not page)
+		 (setq refetch (string= page (car wiliki-refetch-item))))
+	(if (assoc base-url wiliki-site-info-alist)
+	    (setq complete-table
+		  (cons wiliki-refetch-item
+			(wiliki-base-url->page-list base-url refetch))))
+	(setq page (completing-read prompt complete-table nil nil nil
+				    'wiliki-page-hist default)))
+      page)))
 
 (defun wiliki-browse-url (url)
   (let ((browse-url-browser-function
 	 wiliki-browse-url-browser-function))
-    (browse-url url)))
+    (message "invoking external browser for %s ..." url)
+    (browse-url url)
+    (sit-for 3)
+    (message "")))
 
 
 ;;;
@@ -1019,6 +1044,7 @@ if one exists."
 	(while wiliki-buffer-list
 	  (kill-buffer (car wiliki-buffer-list))
 	  (setq wiliki-buffer-list (cdr wiliki-buffer-list)))
+	(setq wiliki-site-info-alist nil)
 	(if (window-configuration-p config)
 	    (set-window-configuration config))
 	(setq wiliki-previous-window-config nil)))
