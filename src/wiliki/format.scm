@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.2 2003-04-22 01:02:52 shirok Exp $
+;;; $Id: format.scm,v 1.3 2003-06-07 08:49:04 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -197,13 +197,18 @@
              (format #f "~a<a href=\"~a\">~a:~a~a</a>"
                      (if openp "[" "") url
                      scheme (or server "") path))))))
+  (define (mailto line)
+    (regexp-replace-all
+     #/\[(mailto:[-\w]+(?:\.[-\w]+)*@[-\w]+(?:\.[-\w]+)+)\s+(.*)\]/ line
+     ;; NB: 'line' is already HTML-escaped, so no need to sanitize it.
+     "<a href=\"\\1\">\\2</a>"))
   (define (bold line)
     (regexp-replace-all #/'''([^']*)'''/ line "<strong>\\1</strong>"))
   (define (italic line)
     (regexp-replace-all #/''([^']*)''/ line "<em>\\1</em>"))
   (define (nl line)
     (regexp-replace-all #/~%/ line "<br>"))
-  (uri (nl (italic (bold (html-escape-string line))))))
+  (mailto (uri (nl (italic (bold (html-escape-string line)))))))
 
 ;; Read lines from generator and format them.
 (define (format-lines generator)
