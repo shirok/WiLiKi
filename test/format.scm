@@ -80,12 +80,11 @@
               (cut ssax:xml->sxml <> '()))))))
 
 (define (page . lines)
-  (make (with-module wiliki <page>)
-    :content (string-join lines "\n" 'suffix)))
+  (string-join lines "\n" 'suffix))
 
 (define-macro (tp label expected-sxml page)
   `(tf ,label ,expected-sxml
-       (list "<result>" (format-content ,page) "</result>")))
+       (list "<result>" (wiliki:format #f ,page) "</result>")))
 
 ;;------------------------------------------------
 (test-section "inline elements")

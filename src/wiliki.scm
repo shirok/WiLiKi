@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.98 2003-12-29 12:43:48 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.99 2003-12-31 02:59:00 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -43,6 +43,8 @@
   (use gauche.parameter)
   (use gauche.sequence)
   (use wiliki.mcatalog)
+  (use wiliki.format)
+  (use wiliki.page)
   (export <wiliki> wiliki-main))
 (select-module wiliki)
 
@@ -57,9 +59,6 @@
                          handle-virtual-page virtual-page?)
 (autoload wiliki.rss     rss-page)
 (autoload wiliki.pasttime how-long-since)
-(autoload wiliki.format  format-page format-footer format-content
-                         format-time format-colored-box format-wikiname-anchor
-                         format-wiki-name format-diff-pre format-diff-line)
 (autoload wiliki.log     wiliki-log-create wiliki-log-pick
                          wiliki-log-pick-from-file
                          wiliki-log-parse-entry wiliki-log-entries-after
@@ -212,17 +211,75 @@
 (define-method title-of (obj) "WiLiKi")
 (define-method debug-level (obj) 0)
 
-;; Class <page> ---------------------------------------------
-;;   Represents a page.
-;;
-(define-class <page> ()
-  ((key   :init-keyword :key :accessor key-of)
-   (ctime :initform (sys-time) :init-keyword :ctime :accessor ctime-of)
-   (cuser :initform #f :init-keyword :cuser :accessor cuser-of)
-   (mtime :initform #f :init-keyword :mtime :accessor mtime-of)
-   (muser :initform #f :init-keyword :muser :accessor muser-of)
-   (content :initform "" :init-keyword :content :accessor content-of)
-   ))
+;; WiLiKi-specific formatting routines ----------------------
+
+(define (format-wikiname-anchor wikiname)
+  ;; assumes wikiname already exist in the db.
+  (html:a :href (url "~a" (cv-out wikiname)) (html-escape-string wikiname)))
+
+(define (format-time time)
+  (if time
+    (if (zero? time)
+      ($$ "Epoch")
+      (sys-strftime "%Y/%m/%d %T %Z" (sys-localtime time)))
+    "-"))
+
+(define (format-wiki-name name)
+  (define (inter-wiki-name-prefix head)
+    (and-let* ((page (wdb-get (db) "InterWikiName"))
+               (rx   (string->regexp #`"^:,|head|:\\s*")))
+      (call-with-input-string (ref page 'content)
+        (lambda (p)
+          (let loop ((line (read-line p)))
+            (cond ((eof-object? line) #f)
+                  ((rx line) =>
+                   (lambda (m)
+                     (let ((prefix (m 'after)))
+                       (if (string-null? prefix)
+                         (let ((prefix (read-line p)))
+                           (if (or (eof-object? prefix) (string-null? prefix))
+                             #f
+                             (string-trim-both prefix)))
+                         (string-trim-both prefix)))))
+                  (else (loop (read-line p)))))))))
+  (define (reader-macro-wiki-name? name)
+    (cond ((string-prefix? "$$" name)
+           (handle-reader-macro name))
+          ((or (string-index name #[\s])
+               (string-prefix? "$" name))
+           ;;invalid wiki name
+           #`"[[,(html-escape-string name)]]")
+          (else #f)))
+  (define (inter-wiki-name? name)
+    (receive (head after) (string-scan name ":" 'both)
+      (or (and head
+               (and-let* ((inter-prefix (inter-wiki-name-prefix head)))
+                 (values inter-prefix after)))
+          (values #f #f))))
+  (receive (prefix inner) (inter-wiki-name? name)
+    (cond ((reader-macro-wiki-name? name))
+          (prefix
+           (let ((scheme
+                  (if (#/^(https?|ftp|mailto):/ prefix) "" "http://")))
+             (tree->string (html:a
+                            :href (format "~a~a~a" scheme prefix
+                                          (uri-encode-string (cv-out inner)))
+                            (html-escape-string name)))))
+          ;; NB: the order of checks here is debatable.  Should a virtual
+          ;; page shadow an existing page, or an existing page shadow a
+          ;; virtual one?  Note also the order of this check must match
+          ;; the order in cmd-view.
+          ((or (wdb-exists? (db) name) (virtual-page? name))
+           (tree->string (format-wikiname-anchor name)))
+          (else
+           (tree->string
+            `(,(html-escape-string name)
+              ,(html:a :href (url "p=~a&c=e" (cv-out name)) "?")))))))
+
+(the-formatter
+ (make <wiliki-formatter>
+   :bracket (lambda (fmtr name) (format-wiki-name name))
+   :time    (lambda (fmtr time) (format-time time))))
 
 ;; Macros -----------------------------------------
 
@@ -341,9 +398,9 @@
 (define (cmd-view pagename)
   ;; NB: see the comment in format-wiki-name about the order of
   ;; wdb-get and virtual-page? check.
-  (cond ((wdb-get (db) pagename) => (cut format-page pagename <>))
+  (cond ((wdb-get (db) pagename) => (cut format-page (wiliki) pagename <>))
         ((virtual-page? pagename)
-         (format-page pagename (handle-virtual-page pagename)
+         (format-page (wiliki) pagename (handle-virtual-page pagename)
                       :show-edit? #f))
         ((equal? pagename (top-page-of (wiliki)))
          (let ((toppage (make <page> :key pagename :mtime (sys-time))))
@@ -352,7 +409,7 @@
            (if (editable? (wiliki))
              (with-db (lambda ()
                         (wdb-put! (db) (top-page-of (wiliki)) toppage)
-                        (format-page (top-page-of (wiliki)) toppage))
+                        (format-page (wiliki) (top-page-of (wiliki)) toppage))
                :write)
              (errorf "Top-page (~a) doesn't exist, and the database is read-only" toppage))))
         ((or (string-index pagename #[\s\[\]])
@@ -360,6 +417,7 @@
          (error "Invalid page name" pagename))
         (else
          (format-page
+          (wiliki)
           (string-append ($$ "Nonexistent page: ") pagename)
           `(,(html:p
               ($$ "Create a new page: ")
@@ -369,6 +427,7 @@
 
 (define (cmd-all)
   (format-page
+   (wiliki)
    (string-append (title-of (wiliki))": "($$ "All Pages"))
    (html:ul
     (map (lambda (k) (html:li (format-wikiname-anchor k)))
@@ -380,6 +439,7 @@
 
 (define (cmd-recent-changes)
   (format-page
+   (wiliki)
    (string-append (title-of (wiliki))": "($$ "Recent Changes"))
    (html:table
     (map (lambda (p)
@@ -395,6 +455,7 @@
 
 (define (cmd-search key)
   (format-page
+   (wiliki)
    (string-append (title-of (wiliki))": "($$ "Search results"))
    (html:ul
     (map (lambda (p)
@@ -415,9 +476,9 @@
       ,#`"title: ,|key|\n"
       ,#`"wiliki-lwp-version: ,|*lwp-version*|\n"
       ,(if page
-           `(,#`"mtime: ,(mtime-of page)\n"
+           `(,#`"mtime: ,(ref page 'mtime)\n"
              "\n"
-             ,(content-of page))
+             ,(ref page 'content))
            `(,#`"mtime: 0\n"
              "\n")))))
 

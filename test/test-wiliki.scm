@@ -1,7 +1,7 @@
 ;;
 ;; test for wiliki
 ;;
-;; $Id: test-wiliki.scm,v 1.5 2003-12-30 09:07:19 shirok Exp $
+;; $Id: test-wiliki.scm,v 1.6 2003-12-31 02:59:00 shirok Exp $
 
 (use gauche.test)
 (use gauche.parameter)
@@ -37,6 +37,7 @@
                    :top-page "TEST"
                    :title    "Test"
                    :description "Test wiliki"
+                   :debug-level 1
                    :language 'en
                    ,@params))))
       ))

@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: edit.scm,v 1.5 2003-12-21 21:36:12 shirok Exp $
+;;;  $Id: edit.scm,v 1.6 2003-12-31 02:59:00 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -113,16 +113,19 @@
   (unless (editable? (wiliki))
     (errorf "Can't edit the page ~s: the database is read-only" pagename))
   (let ((page (wdb-get (db) pagename #t)))
-    (format-page pagename
+    (format-page (wiliki)
+                 pagename
                  (edit-form #t pagename
-                            (content-of page) (mtime-of page) "" #f)
+                            (ref page 'content)
+                            (ref page 'mtime) "" #f)
                  :show-edit? #f :show-lang? #f :show-history? #f)))
 
 (define (cmd-preview pagename content mtime logmsg donttouch)
   (let ((page (wdb-get (db) pagename #t)))
     (format-page
+     (wiliki)
      (format #f ($$ "Preview of ~a") pagename)
-     `(,(format-colored-box (format-content (make <page>
+     `(,(preview-box (format-content (make <page>
                                               :key pagename
                                               :content content)))
        ,(html:hr)
@@ -134,17 +137,17 @@
         (now (sys-time)))
 
     (define (erase-page)
-      (write-log (wiliki) pagename (content-of p) "" now logmsg)
-      (set! (content-of p) "")
+      (write-log (wiliki) pagename (ref p 'content) "" now logmsg)
+      (set! (ref p 'content) "")
       (wdb-delete! (db) pagename)
       (redirect-page (top-page-of (wiliki))))
 
     (define (update-page content)
-      (when (page-changed? content (content-of p))
+      (when (page-changed? content (ref p 'content))
         (let1 new-content (expand-writer-macros content)
-          (write-log (wiliki) pagename (content-of p) new-content now logmsg)
-          (set! (mtime-of p) now)
-          (set! (content-of p) new-content)
+          (write-log (wiliki) pagename (ref p 'content) new-content now logmsg)
+          (set! (ref p 'mtime) now)
+          (set! (ref p 'content) new-content)
           (wdb-put! (db) pagename p :donttouch donttouch)))
       (redirect-page pagename))
 
@@ -160,17 +163,17 @@
                      (picked (wiliki-log-pick-from-file pagename logfile)))
             (let ((common (wiliki-log-revert*
                            (wiliki-log-entries-after picked mtime)
-                           (content-of p))))
+                           (ref p 'content))))
               (receive (merged success?)
-                  (wiliki-log-merge common (content-of p) content)
+                  (wiliki-log-merge common (ref p 'content) content)
                 (if success?
                   (update-page (string-join merged "\n" 'suffix))
                   (conflict-page p (conflict->diff merged)
                                  content logmsg donttouch)))))
-          (if (equal? (content-of p) content)
+          (if (equal? (ref p 'content) content)
             (redirect-page pagename) ;; no need to update
             (let1 diff '()
-              (diff-report (content-of p) content
+              (diff-report (ref p 'content) content
                            :writer (lambda (line type)
                                      (push! diff
                                             (if type (cons type line) line))))
@@ -184,10 +187,11 @@
               (dolist (line (cdr chunk)) (push! difflist (cons k line))))
             (push! difflist chunk)))
         (reverse! difflist)))
-                  
+
+    ;; body of cmd-commit-edit
     (unless (editable? (wiliki))
       (errorf "Can't edit the page ~s: the database is read-only" pagename))
-    (if (or (not (mtime-of p)) (eqv? (mtime-of p) mtime))
+    (if (or (not (ref p 'mtime)) (eqv? (ref p 'mtime) mtime))
       (if (string-every #[\s] content)
         (erase-page)
         (update-page content))
@@ -195,6 +199,7 @@
 
 (define (conflict-page page diff content logmsg donttouch)
   (format-page
+   (wiliki)
    (string-append (title-of (wiliki))": "($$ "Update Conflict"))
    `(,($$ "<p>It seems that somebody has updated this page
        while you're editing.  The difference is snown below.
@@ -208,9 +213,16 @@
      ,(format-diff-pre diff)
      ,(html:a :name "edit" (html:hr))
      ,($$ "<p>The following shows what you are about to submit.  Please re-edit the content and submit again.</p>")
-     ,(edit-form #t (key-of page) content (mtime-of page) logmsg donttouch)
+     ,(edit-form #t (ref page 'key) content (ref page 'mtime) logmsg donttouch)
      )
    :show-lang? #f :show-edit? #f :show-history? #f))
+
+(define (preview-box content)
+  (html:table
+   :width "100%" :cellpadding 5
+   (html:tr (html:td :class "preview"
+                     :style "background-color:#eeddaa; color:#000000"
+                     content))))
 
 (provide "wiliki/edit")
 

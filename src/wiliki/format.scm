@@ -1,5 +1,5 @@
-;;;
-;;; wiliki/format.scm - page formatter
+>;;;
+;;; wiliki/format.scm - wiliki markup -> SXML converter
 ;;;
 ;;;  Copyright (c) 2003 Shiro Kawai, All rights reserved.
 ;;;
@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.15 2003-10-08 07:28:26 shirok Exp $
+;;; $Id: format.scm,v 1.16 2003-12-31 02:59:00 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -39,38 +39,37 @@
   (use gauche.parameter)
   (use gauche.charconv)
   (use gauche.sequence)
-  (extend wiliki)
-  (export format-page
-          format-footer
-          format-content
-          format-time
-          format-colored-box
-          format-wikiname-anchor
-          format-wiki-name
+  (export <wiliki-formatter>
+          wiliki-format-wiki-name
+          wiliki-format-time
+          wiliki:format
           format-diff-pre
           format-diff-line)
   )
 (select-module wiliki.format)
 
+;; This module implements a generic function that translates WiLiki
+;; notation to SXML.   It is designed not to depend other parts of
+;; WiLiKi so that it can be used for other applications that needs
+;; wiki-like formatting capability.
+
+;; The formatter needs a certain knowledge about how to handle
+;; external links.
+
+(define-class <wiliki-formatter> ()
+  ((bracket :init-keyword :bracket
+            :init-form (lambda (f name) #`"[[,|name|]]"))
+   (time    :init-keyword :time
+            :init-form (lambda (f time) (x->string time)))
+   ))
+
+(define (wiliki-format-wiki-name fmtr name)
+  ((ref fmtr 'bracket) fmtr name))
+
+(define (wiliki-format-time fmtr time)
+  ((ref fmtr 'time) fmtr time))
+
 ;; Utilities
-
-(define (format-time time)
-  (if time
-    (if (zero? time)
-      ($$ "Epoch")
-      (sys-strftime "%Y/%m/%d %T %Z" (sys-localtime time)))
-    "-"))
-
-(define (format-colored-box content)
-  (html:table
-   :width "100%" :cellpadding 5
-   (html:tr (html:td :class "preview"
-                     :style "background-color:#eeddaa; color:#000000"
-                     content))))
-
-(define (format-wikiname-anchor wikiname)
-  ;; assumes wikiname already exist in the db.
-  (html:a :href (url "~a" (cv-out wikiname)) (html-escape-string wikiname)))
 
 (define (format-diff-pre difflines)
   (html:pre :class "diff"
@@ -96,64 +95,10 @@
 ;;=================================================
 ;; Formatting: Wiki -> HTML
 ;;
- 
-(define (inter-wiki-name-prefix head)
-  (and-let* ((page (wdb-get (db) "InterWikiName"))
-             (rx   (string->regexp #`"^:,|head|:\\s*")))
-    (call-with-input-string (content-of page)
-      (lambda (p)
-        (let loop ((line (read-line p)))
-          (cond ((eof-object? line) #f)
-                ((rx line) =>
-                 (lambda (m)
-                   (let ((prefix (m 'after)))
-                     (if (string-null? prefix)
-                       (let ((prefix (read-line p)))
-                         (if (or (eof-object? prefix) (string-null? prefix))
-                           #f
-                           (string-trim-both prefix)))
-                       (string-trim-both prefix)))))
-                (else (loop (read-line p)))))))))
-
-(define (reader-macro-wiki-name? name)
-  (cond ((string-prefix? "$$" name)
-         (handle-reader-macro name))
-        ((or (string-index name #[\s])
-             (string-prefix? "$" name))
-         ;;invalid wiki name
-         #`"[[,(html-escape-string name)]]")
-        (else #f)))
-
-(define (inter-wiki-name? name)
-  (receive (head after) (string-scan name ":" 'both)
-    (or (and head
-             (and-let* ((inter-prefix (inter-wiki-name-prefix head)))
-               (values inter-prefix after)))
-        (values #f #f))))
-
-(define (format-wiki-name name)
-  (receive (prefix inner) (inter-wiki-name? name)
-    (cond ((reader-macro-wiki-name? name))
-          (prefix
-           (let ((scheme
-                  (if (#/^(https?|ftp|mailto):/ prefix) "" "http://")))
-             (tree->string (html:a
-                            :href (format "~a~a~a" scheme prefix
-                                          (uri-encode-string (cv-out inner)))
-                            (html-escape-string name)))))
-          ;; NB: the order of checks here is debatable.  Should a virtual
-          ;; page shadow an existing page, or an existing page shadow a
-          ;; virtual one?  Note also the order of this check must match
-          ;; the order in cmd-view.
-          ((or (wdb-exists? (db) name) (virtual-page? name))
-           (tree->string (format-wikiname-anchor name)))
-          (else
-           (tree->string `(,(html-escape-string name)
-                           ,(html:a :href (url "p=~a&c=e" (cv-out name)) "?")))))))
 
 ;; Find wiki name in the line.
 ;; Correctly deal with nested "[[" and "]]"'s.
-(define (format-line line . expand-tabs?)
+(define (format-line fmtr line . expand-tabs?)
   ;; parse to next "[[" or "]]"
   (define (token s)
     (cond ((#/\[\[|\]\]/ s)
@@ -176,12 +121,13 @@
        (let loop ((s line))
          (receive (pre post) (string-scan s "[[" 'both)
            (if pre
-             (cons (format-parts pre)
+             (cons (format-parts fmtr pre)
                    (receive (wikiname rest) (find-closer post 0 '())
                      (if wikiname
-                       (cons (format-wiki-name wikiname) (loop rest))
+                       (cons (wiliki-format-wiki-name fmtr wikiname)
+                             (loop rest))
                        (list rest))))
-             (format-parts s))))
+             (format-parts fmtr s))))
        "\n")
     (if (get-optional expand-tabs? #f)
       (expand-tab (tree->string formatted))
@@ -212,7 +158,7 @@
               (reverse (cons line r))))))
     ))
 
-(define (format-parts line)
+(define (format-parts fmtr line)
   (define (uri line)
     (regexp-replace-all
      #/(\[)?(http|https|ftp):(\/\/[^\/?#\s]*)?([^?#\s]*(\?[^#\s]*)?(#\S*)?)(\s([^\]]+)\])?/
@@ -250,7 +196,7 @@
 
 ;; Read lines from generator and format them.  This is the main
 ;; parser/transformer of WiLiKi format.
-(define (format-lines generator)
+(define (format-lines fmtr generator)
   ;; Common loop states:
   ;;  ctx  - context; a list of symbols that represents the current stack
   ;;         of elements.  Using this, this procedure is effectively a
@@ -305,10 +251,10 @@
                       "<table class=\"inbody\" border=\"1\" cellspacing=\"0\">\n")
                   (table (m 1) ctx))))
           ((block-bottom? ctx)
-           (>> '() "<p>" (format-line line))
+           (>> '() "<p>" (format-line fmtr line))
            (loop (generator) (cons 'p ctx)))
           (else
-           (>> '() (format-line line))
+           (>> '() (format-line fmtr line))
            (loop (generator) ctx))
           ))
 
@@ -344,7 +290,7 @@
     (let* ((hfn (ref `(,html:h2 ,html:h3 ,html:h4 ,html:h5)
                      (- level 1)
                      html:h6)))
-      (>> ctx (hfn (html:a :name (gen-id) (format-line (m 'after)))))
+      (>> ctx (hfn (html:a :name (gen-id) (format-line fmtr (m 'after)))))
       (loop (generator) '())))
 
   ;; Non-verbatime pre
@@ -352,7 +298,7 @@
     (cond ((eof-object? line) (>> ctx))
           ((string-prefix? " " line)
            (>> '()
-               (string-delete (tree->string (format-line line #t))
+               (string-delete (tree->string (format-line fmtr line #t))
                               #\newline)
                "\n")
            (pre (generator) ctx))
@@ -377,7 +323,7 @@
   (define (table body ctx)
     (>> '() (html:tr :class "inbody"
                      (map (lambda (seg)
-                            (html:td :class "inbody" (format-line seg)))
+                            (html:td :class "inbody" (format-line fmtr seg)))
                           (string-split body  "||"))))
     (let1 next (generator)
       (cond ((eof-object? next) (>> '(table)))
@@ -408,7 +354,7 @@
   (define (list-item match level ltag ctx)
     (let* ((line (rxmatch-after match))
            (ctx  (adjust-list-level (ensure-block ctx) level ltag)))
-      (>> '() (format-line line))
+      (>> '() (format-line fmtr line))
       (loop (generator) ctx)))
 
   (define (adjust-list-level ctx list-level ltag)
@@ -434,8 +380,8 @@
 
   ;; DL
   (define (def-item match ctx)
-    (let ((dt (format-line (match 1)))
-          (dd (format-line (match 2))))
+    (let ((dt (format-line fmtr (match 1)))
+          (dd (format-line fmtr (match 2))))
       (receive (pre rest) (break (cut eq? <> 'dl) ctx)
         (if (null? rest)
           (let1 ctx (ensure-block pre)  ; begin new dl
@@ -483,75 +429,11 @@
             )))
   )
   
-(define-method format-content ((page <page>))
-  (if (member page (page-format-history)
-              (lambda (p1 p2) (string=? (key-of p1) (key-of p2))))
-      ;; loop in $$include chain detected
-      ">>>$$include loop detected<<<"
-      (parameterize
-       ((page-format-history (cons page (page-format-history))))
-       (format-content (content-of page)))))
-
-(define-method format-content ((content <string>))
+(define (wiliki:format fmtr content)
   (call-with-input-string content
     (lambda (p)
       (with-port-locking p
         (lambda ()
-          (format-lines (make-line-scanner p)))))))
-
-(define (format-footer page)
-  (if (mtime-of page)
-      `(,(html:hr)
-        ,(html:div :align "right"
-                   ($$ "Last modified : ")
-                   (format-time (mtime-of page))))
-      '()))
-
-(define (format-page title page . args)
-  (let-keywords* args ((show-lang? #t)
-                       (show-edit? (editable? (wiliki)))
-                       (show-all?  #t)
-                       (show-recent-changes? #t)
-                       (show-search-box? #t)
-                       (show-history? (log-file (wiliki)))
-                       (page-id title))
-    (let* ((wlki (wiliki))
-           (page-id (get-keyword :page-id args title))
-           (content (if (is-a? page <page>)
-                      (list (format-content page)
-                            (format-footer page))
-                      page)))
-      (html-page
-       (html:title (html-escape-string title))
-       (html:h1 (if (is-a? page <page>)
-                  (html:a :href (url "c=s&key=[[~a]]" title)
-                          (html-escape-string title))
-                  (html-escape-string title)))
-       (html:div
-        :align "right"
-        (html:form
-         :method "POST" :action (cgi-name-of wlki)
-         (html:input :type "hidden" :name "c" :value "s")
-         (cond-list
-          (show-lang?
-           (language-link page-id))
-          ((not (string=? title (top-page-of wlki)))
-           (html:a :href (cgi-name-of wlki) ($$ "[Top Page]")))
-          (show-edit?
-           (html:a :href (url "p=~a&c=e" title) ($$ "[Edit]")))
-          (show-history?
-           (html:a :href (url "p=~a&c=h" title) ($$ "[Edit History]")))
-          (show-all?
-           (html:a :href (url "c=a") ($$ "[All Pages]")))
-          (show-recent-changes?
-           (html:a :href (url "c=r") ($$ "[Recent Changes]")))
-          (show-search-box?
-           `("[" ,($$ "Search:")
-             ,(html:input :type "text" :name "key" :size 10)
-             "]")))
-         ))
-       (html:hr)
-       content)))
-  )
+          (format-lines fmtr (make-line-scanner p)))))))
 
 (provide "wiliki/format")

@@ -23,13 +23,14 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: db.scm,v 1.7 2003-12-19 03:42:09 shirok Exp $
+;;; $Id: db.scm,v 1.8 2003-12-31 02:59:00 shirok Exp $
 
 (define-module wiliki.db
   (use srfi-13)
   (use gauche.parameter)
   (use util.list)
   (use dbm)
+  (use wiliki.page)
   (extend wiliki)
   (export with-db
           wdb-exists? wdb-record->page wdb-get wdb-put! wdb-delete!
@@ -113,11 +114,11 @@
 (define-method wdb-put! ((db <dbm>) key (page <page>) . option)
   (let ((s (with-output-to-string
              (lambda ()
-               (write (list :ctime (ctime-of page)
-                            :cuser (cuser-of page)
-                            :mtime (mtime-of page)
-                            :muser (muser-of page)))
-               (display (content-of page)))))
+               (write (list :ctime (ref page 'ctime)
+                            :cuser (ref page 'cuser)
+                            :mtime (ref page 'mtime)
+                            :muser (ref page 'muser)))
+               (display (ref page 'content)))))
         (donttouch (get-keyword :donttouch option #f)))
     (dbm-put! db key s)
     (unless donttouch
@@ -126,7 +127,7 @@
                              (dbm-get db *recent-changes* "()")))
         (dbm-put! db *recent-changes*
                   (write-to-string
-                   (acons key (mtime-of page) (take* r 49))))))
+                   (acons key (ref page 'mtime) (take* r 49))))))
     ))
 
 ;; WDB-DELETE! db key
@@ -162,7 +163,7 @@
   (apply wdb-search db
          (lambda (k v)
            (and (not (string-prefix? " " k))
-                (string-contains-ci (content-of (wdb-record->page db key v))
+                (string-contains-ci (ref (wdb-record->page db key v) 'content)
                                     key)))
          maybe-sorter))
 

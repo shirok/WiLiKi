@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: history.scm,v 1.8 2003-09-01 03:49:22 shirok Exp $
+;;;  $Id: history.scm,v 1.9 2003-12-31 02:59:00 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -102,6 +102,7 @@
                    "]")))))
   
   (format-page
+   (wiliki)
    ($$ "Edit History")
    (or (and-let* ((logfile (log-file-path (wiliki)))
                   (picked (wiliki-log-pick-from-file pagename logfile))
@@ -155,14 +156,15 @@
        (format-diff-pre (reverse! rdiff)))))
 
   (format-page
+   (wiliki)
    ($$ "Edit History:Diff")
    (or (and-let* ((logfile (log-file-path (wiliki)))
                   (page    (wdb-get (db) pagename))
                   (picked  (wiliki-log-pick-from-file pagename logfile)))
          (let ((entries  (wiliki-log-entries-after picked old-time)))
            (if (>= old-time new-time)
-             (diff-to-current entries (content-of page))
-             (diff2 entries (content-of page)))))
+             (diff-to-current entries (ref page 'content))
+             (diff2 entries (ref page 'content)))))
        (no-history-info pagename))
    :show-lang? #f :show-edit? #f :show-history? #f)
   )
@@ -170,12 +172,13 @@
 ;; "Edit History:View" page. -----------------------------------
 (define (cmd-viewold pagename old-time)
   (format-page
+   (wiliki)
    ($$ "Edit History:View")
    (or (and-let* ((logfile (log-file-path (wiliki)))
                   (page    (wdb-get (db) pagename))
                   (picked  (wiliki-log-pick-from-file pagename logfile)))
          (let* ((entries  (wiliki-log-entries-after picked old-time))
-                (reverted (wiliki-log-revert* entries (content-of page))))
+                (reverted (wiliki-log-revert* entries (ref page 'content))))
            (list
             (html:h2 (format ($$ "Content of ~a at ~a")
                              (tree->string

@@ -1,3 +1,7 @@
+2003-12-30  Shiro Kawai  <shiro@acm.org>
+
+	* working snapshot of refactoring formatter.  more changes to come.
+
 2003-12-29  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm (get-page-name): changed to use PATH_INFO instead of
