@@ -1,5 +1,7 @@
 2003-03-31  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki/macro.scm : capture error in macro expander.
+
 	* src/wiliki.scm, src/wiliki/msgs.jp.euc: fixed the text formatting
 	  instruction message.
 	

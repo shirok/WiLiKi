@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.9 2003-03-06 04:46:42 shirok Exp $
+;;; $Id: macro.scm,v 1.10 2003-04-01 08:36:10 shirok Exp $
 
 (select-module wiliki)
 (use srfi-19)
@@ -40,19 +40,27 @@
 
 (define (handle-reader-macro name)
   (let1 args (string-tokenize name)
-    (cond ((assoc (car args) *reader-macro-alist*)
-           => (lambda (p) (apply (cdr p) (cdr args))))
-          (else (unrecognized name)))))
+    (handle-expansion name
+                      (lambda () (assoc (car args) *reader-macro-alist*))
+                      (lambda (p) (apply (cdr p) (cdr args))))))
 
 (define (handle-writer-macro name)
   (let1 args (string-tokenize name)
-    (cond ((assoc (car args) *writer-macro-alist*)
-           => (lambda (p) (apply (cdr p) (cdr args))))
-          (else (unrecognized name)))))
+    (handle-expansion name
+                      (lambda () (assoc (car args) *writer-macro-alist*))
+                      (lambda (p) (apply (cdr p) (cdr args))))))
 
 (define (handle-virtual-page name)
-  (cond ((get-virtual-page name) => (lambda (p) ((cdr p) name)))
-        (else (unrecognized name))))
+  (handle-expansion name
+                    (lambda () (get-virtual-page name))
+                    (lambda (p) ((cdr p) name))))
+
+(define (handle-expansion name finder applier)
+  (with-error-handler
+      (lambda (e) (unrecognized name))
+    (lambda ()
+      (cond ((finder) => applier)
+            (else (unrecognized name))))))
 
 ;;----------------------------------------------
 ;; Utility to define macros
