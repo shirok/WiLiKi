@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.29 2002-03-02 21:23:34 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.30 2002-03-03 06:34:57 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -630,6 +630,7 @@
    :page-id (format #f "c=s&key=~a" (html-escape-string key))
    :show-edit? #f))
 
+
 ;; Entry ------------------------------------------
 
 (define-method wiliki-main ((self <wiliki>))
@@ -646,7 +647,7 @@
            (lang     (cgi-get-parameter "l" param :convert string->symbol)))
        (when lang (set! (language-of self) lang))
        (textdomain (language-of self))
-       `(,(cgi-header :content-type "text/html; charset=euc-jp")
+       `(,(cgi-header :content-type #`"text/html; charset=,(if (eq? (language-of self) 'jp) 'euc-jp 'iso8859-1)")
          ,(with-db self
                    (lambda ()
                      (cond

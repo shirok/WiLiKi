@@ -1,5 +1,6 @@
 2002-03-02  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki.scm : switch charset by the language.
 	* src/wiliki.scm : added $$include macro.  implement simple
 	  parameter mechanism (define-parameter and parameterize*).
 	* src/wiliki.scm : added $$cindex macro.
