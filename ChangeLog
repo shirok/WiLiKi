@@ -1,3 +1,7 @@
+2003-02-13  Shiro Kawai  <shiro@acm.org>
+
+	* release 0.3
+
 2003-02-12  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm (make-line-fetcher): fixed a problem with comments
