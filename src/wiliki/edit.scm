@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: edit.scm,v 1.6 2003-12-31 02:59:00 shirok Exp $
+;;;  $Id: edit.scm,v 1.7 2004-01-01 08:11:16 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -33,39 +33,40 @@
 (define (edit-form preview? pagename content mtime logmsg donttouch)
   (define (buttons)
     (if preview?
-        `(,(html:input :type "submit" :name "preview" :value ($$ "Preview"))
-          ,(html:input :type "submit" :name "commit" :value ($$ "Commit without preview")))
-        `(,(html:input :type "submit" :name "preview" :value ($$ "Preview again"))
-          ,(html:input :type "submit" :name "commit" :value ($$ "Commit")))))
+        `((input (@ (type submit) (name preview) (value ,($$ "Preview"))))
+          (input (@ (type submit) (name commit) (value ,($$ "Commit without preview")))))
+        `((input (@ (type submit) (name preview) (value ,($$ "Preview again"))))
+          (input (@ (type submit) (name commit) (value ,($$ "Commit")))))))
   (define (donttouch-checkbox)
-    `(,(apply html:input :type "checkbox" :name "donttouch" :value "on"
-              (if donttouch '(:checked #t) '()))
+    `((input (@ (type checkbox) (name donttouch) (value on)
+                ,@(if donttouch '((checked checked)) '())))
       ,($$ "Don't update 'Recent Changes'")))
   
-  (html:form
-   :method "POST" :action (cgi-name-of (wiliki))
-   (buttons) (donttouch-checkbox)
-   (html:br)
-   (html:input :type "hidden" :name "c" :value "c")
-   (html:input :type "hidden" :name "p" :value pagename)
-   (html:input :type "hidden" :name "l" :value (lang))
-   (html:input :type "hidden" :name "mtime" :value mtime)
-   (html:textarea :name "content"
-                  :class "content"
-                  :rows (textarea-rows-of (wiliki))
-                  :cols (textarea-cols-of (wiliki))
-                  (html-escape-string content))
-   (html:br)
-   (html:p ($$ "ChangeLog (brief summary of your edit for later reference):"))
-   (html:textarea :name "logmsg"
-                  :class "logmsg"
-                  :rows 2
-                  :cols (textarea-cols-of (wiliki))
-                  (html-escape-string logmsg))
-   (html:br)
-   (buttons)
-   (html:br)
-   ($$ "<h2>Text Formatting Rules</h2>
+  `((form
+     (@ (method POST) (action ,(cgi-name-of (wiliki))))
+     ,@(buttons) ,@(donttouch-checkbox)
+     (br)
+     (input (@ (type hidden) (name c) (value c)))
+     (input (@ (type hidden) (name p) (value ,pagename)))
+     (input (@ (type hidden) (name l) (value ,(lang))))
+     (input (@ (type hidden) (name mtime) (value ,mtime)))
+     (textarea (@ (name content)
+                  (class content)
+                  (rows ,(textarea-rows-of (wiliki)))
+                  (cols ,(textarea-cols-of (wiliki))))
+               ,(html-escape-string content))
+     (br)
+     (p ,($$ "ChangeLog (brief summary of your edit for later reference):"))
+     (textarea (@ (name logmsg)
+                  (class logmsg)
+                  (rows 2)
+                  (cols ,(textarea-cols-of (wiliki))))
+               ,(html-escape-string logmsg))
+     (br)
+     ,@(buttons)
+     (br)
+     (stree
+      ,($$ "<h2>Text Formatting Rules</h2>
       <p>No HTML.</p>
       <p>A line begins with \";;\" doesn't appear in the output (comment).</p>
       <p>A line begins with \"~\" is treated as if it is continued
@@ -106,30 +107,32 @@
       <p>\"~%\" is replaced for \"&lt;br&gt;\".</p>
       <p>If you want to use special characters at the
          beginning of line, put six consecutive single quotes.
-         It emphasizes a null string, so it's effectively nothing.</p>")
-   ))
+         It emphasizes a null string, so it's effectively nothing.</p>"))
+     )))
 
 (define (cmd-edit pagename)
   (unless (editable? (wiliki))
     (errorf "Can't edit the page ~s: the database is read-only" pagename))
   (let ((page (wdb-get (db) pagename #t)))
-    (format-page (wiliki)
-                 pagename
-                 (edit-form #t pagename
-                            (ref page 'content)
-                            (ref page 'mtime) "" #f)
-                 :show-edit? #f :show-lang? #f :show-history? #f)))
+    (html-page (make <page>
+                   :key pagename
+                   :content
+                   (edit-form #t pagename
+                              (ref page 'content)
+                              (ref page 'mtime) "" #f))
+               :show-edit? #f :show-lang? #f :show-history? #f)))
 
 (define (cmd-preview pagename content mtime logmsg donttouch)
   (let ((page (wdb-get (db) pagename #t)))
-    (format-page
-     (wiliki)
-     (format #f ($$ "Preview of ~a") pagename)
-     `(,(preview-box (format-content (make <page>
-                                              :key pagename
-                                              :content content)))
-       ,(html:hr)
-       ,(edit-form #f pagename content mtime logmsg donttouch))
+    (html-page
+     (make <page>
+       :key (format #f ($$ "Preview of ~a") pagename)
+       :content
+       `(,(preview-box (format-content (make <page>
+                                         :key pagename
+                                         :content content)))
+         (hr)
+         ,@(edit-form #f pagename content mtime logmsg donttouch)))
      :show-edit? #f :show-lang? #f :show-history? #f)))
 
 (define (cmd-commit-edit pagename content mtime logmsg donttouch)
@@ -198,31 +201,32 @@
       (handle-conflict))))
 
 (define (conflict-page page diff content logmsg donttouch)
-  (format-page
-   (wiliki)
-   (string-append (title-of (wiliki))": "($$ "Update Conflict"))
-   `(,($$ "<p>It seems that somebody has updated this page
+  (html-page
+   (make <page>
+     :key (string-append (title-of (wiliki))": "($$ "Update Conflict"))
+     :content
+     `((stree ,($$ "<p>It seems that somebody has updated this page
        while you're editing.  The difference is snown below.
-       Please revise <a href=\"#edit\">your edit</a> and commit again.</p>")
-     ,(html:hr)
-     ,(html:ul
-       (html:li (format-diff-line
-                 `(+ . ,($$ "lines you added (or somebody else deleted)"))))
-       (html:li (format-diff-line
-                 `(- . ,($$ "lines somebody else added (or you deleted)")))))
-     ,(format-diff-pre diff)
-     ,(html:a :name "edit" (html:hr))
-     ,($$ "<p>The following shows what you are about to submit.  Please re-edit the content and submit again.</p>")
-     ,(edit-form #t (ref page 'key) content (ref page 'mtime) logmsg donttouch)
-     )
+       Please revise <a href=\"#edit\">your edit</a> and commit again.</p>"))
+       (hr)
+       (ul
+        (li ,(format-diff-line
+              `(+ . ,($$ "lines you added (or somebody else deleted)"))))
+        (li ,(format-diff-line
+              `(- . ,($$ "lines somebody else added (or you deleted)")))))
+       ,(format-diff-pre diff)
+       (a (@ (name "edit")) (hr))
+       ,($$ "<p>The following shows what you are about to submit.  Please re-edit the content and submit again.</p>")
+       ,@(edit-form #t (ref page 'key) content (ref page 'mtime) logmsg donttouch)
+       ))
    :show-lang? #f :show-edit? #f :show-history? #f))
 
 (define (preview-box content)
-  (html:table
-   :width "100%" :cellpadding 5
-   (html:tr (html:td :class "preview"
-                     :style "background-color:#eeddaa; color:#000000"
-                     content))))
+  `(table
+    (@ (width "100%") (cellpadding 5))
+    (tr (td (@ (class "preview")
+               (style "background-color:#eeddaa; color:#000000"))
+            (stree ,content)))))
 
 (provide "wiliki/edit")
 

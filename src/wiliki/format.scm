@@ -1,4 +1,4 @@
->;;;
+;;;
 ;;; wiliki/format.scm - wiliki markup -> SXML converter
 ;;;
 ;;;  Copyright (c) 2003 Shiro Kawai, All rights reserved.
@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.16 2003-12-31 02:59:00 shirok Exp $
+;;; $Id: format.scm,v 1.17 2004-01-01 08:11:16 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -43,8 +43,14 @@
           wiliki-format-wiki-name
           wiliki-format-time
           wiliki:format
+          wiliki:sxml->stree
           format-diff-pre
-          format-diff-line)
+          format-diff-line
+          <page> format-page format-content the-formatter
+          wiliki-page-header wiliki-page-footer
+          wiliki-page-stack wiliki-current-page
+          wiliki-page-head-elements
+          )
   )
 (select-module wiliki.format)
 
@@ -69,6 +75,9 @@
 (define (wiliki-format-time fmtr time)
   ((ref fmtr 'time) fmtr time))
 
+(define the-formatter
+  (make-parameter (make <wiliki-formatter>)))
+
 ;; Utilities
 
 (define (format-diff-pre difflines)
@@ -91,6 +100,49 @@
         ((eq? (car line) '-)
          (dline "- " (html-escape-string (cdr line)) "\n"))
         (else "???")))
+
+;; similar to sxml:sxml->xml, but deals with stree node, which
+;; embeds a string tree.
+
+(define (wiliki:sxml->stree sxml)
+  (define (sxml-node type body)
+    (define (attr lis r)
+      (cond ((null? lis) (reverse! r))
+            ((not (= (length+ (car lis)) 2))
+             (error "bad attribute in node: " (cons type body)))
+            (else
+             (attr (cdr lis)
+                   (cons `(" " ,(html-escape-string (x->string (caar lis)))
+                           "=\"" ,(html-escape-string (x->string (cadar lis)))
+                           "\"")
+                         r)))))
+    (define (rest lis)
+      (if (null? lis)
+        '(" />")
+        (list* ">" (reverse! (fold node '() lis)) "</" type "\n>")))
+
+    (if (and (pair? body)
+             (pair? (car body))
+             (eq? (caar body) '@))
+      (list* "<" type (attr (cdar body) '()) (rest (cdr body)))
+      (list* "<" type (rest body)))
+    )
+
+  (define (node n r)
+    (cond
+     ((string? n) (cons (html-escape-string n) r))
+     ((and (pair? n) (symbol? (car n)))
+      (if (eq? (car n) 'stree)
+        (cons (cdr n) r)
+        (cons (sxml-node (car n) (cdr n)) r)))
+     (else
+      ;; badly formed node.  we show it for debugging ease.
+      (cons (list "<span class=\"wiliki-alert\">" 
+                  (html-escape-string (format "~,,,,50:s" n))
+                  "</span\n>")
+            r))))
+
+  (node sxml '()))
 
 ;;=================================================
 ;; Formatting: Wiki -> HTML
@@ -435,5 +487,62 @@
       (with-port-locking p
         (lambda ()
           (format-lines fmtr (make-line-scanner p)))))))
+
+;; Page ======================================================
+
+(define wiliki-page-stack
+  (make-parameter '()))
+
+(define (wiliki-current-page)
+  (let1 hist (wiliki-page-stack)
+    (if (null? hist) #f (car hist))))
+
+;; Class <page> ---------------------------------------------
+;;   Represents a page.
+;;
+(define-class <page> ()
+  ((key   :init-keyword :key)
+   (ctime :initform (sys-time) :init-keyword :ctime)
+   (cuser :initform #f :init-keyword :cuser)
+   (mtime :initform #f :init-keyword :mtime)
+   (muser :initform #f :init-keyword :muser)
+   (content :initform "" :init-keyword :content)
+   ))
+
+(define-method format-content ((page <page>))
+  (if (member page (wiliki-page-stack)
+              (lambda (p1 p2) (string=? (ref p1 'key) (ref p2 'key))))
+      ;; loop in $$include chain detected
+      ">>>$$include loop detected<<<"
+      (parameterize
+          ((wiliki-page-stack (cons page (wiliki-page-stack))))
+        (format-content (ref page 'content)))))
+
+(define-method format-content ((content <string>))
+  (wiliki:format (the-formatter) content))
+
+;; Default methods
+(define-method wiliki-page-footer ((page <top>) fmtr opts)
+  '())
+
+(define-method wiliki-page-header ((page <top>) fmtr opts)
+  '())
+
+(define-method wiliki-page-head-elements ((page <top>) fmtr opts)
+  '())
+
+(define-method format-page ((page <page>) . args)
+  (let* ((content (if (string? (ref page 'content))
+                    `((stree ,(format-content page)))
+                    (ref page 'content))))
+    `(html
+      (head ,@(wiliki-page-head-elements page (the-formatter) args))
+      (body
+       ,@(wiliki-page-header page (the-formatter)
+                             (list* :page-id (get-keyword :page-id args (ref page 'key))
+                                    args))
+       ,@content
+       ,@(wiliki-page-footer page (the-formatter) args)))
+    ))
 
 (provide "wiliki/format")

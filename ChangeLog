@@ -1,3 +1,8 @@
+2003-12-31  Shiro Kawai  <shiro@acm.org>
+
+	* another snapshot of refactoring formatter.  wiliki.format is
+	  decoupled completely.  
+
 2003-12-30  Shiro Kawai  <shiro@acm.org>
 
 	* working snapshot of refactoring formatter.  more changes to come.

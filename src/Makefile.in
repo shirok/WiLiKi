@@ -11,7 +11,6 @@ SCMFILES = wiliki.scm \
            wiliki/log.scm \
            wiliki/mcatalog.scm \
            wiliki/macro.scm \
-           wiliki/page.scm \
            wiliki/rss.scm \
            wiliki/pasttime.scm
 

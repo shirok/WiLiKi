@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.17 2003-12-31 02:59:00 shirok Exp $
+;;; $Id: macro.scm,v 1.18 2004-01-01 08:11:16 shirok Exp $
 
 (select-module wiliki)
 (use srfi-19)
@@ -51,9 +51,12 @@
                       (lambda (p) (apply (cdr p) (cdr args))))))
 
 (define (handle-virtual-page name)
-  (handle-expansion name
-                    (lambda () (get-virtual-page name))
-                    (lambda (p) ((cdr p) name))))
+  (make <page>
+    :key name
+    :content
+    `((stree ,(handle-expansion name
+                                (lambda () (get-virtual-page name))
+                                (lambda (p) ((cdr p) name)))))))
 
 (define (handle-expansion name finder applier)
   (with-error-handler
@@ -190,7 +193,7 @@
         (badimg))))
 
 (define-reader-macro (toc . maybe-page)
-  (let1 pagename (get-optional maybe-page (ref (current-formatting-page) 'key))
+  (let1 pagename (get-optional maybe-page (ref (wiliki-current-page) 'key))
     (define (anchor id line)
       (html:a :href #`",(url \"~a\" pagename)#,id"
               (html-escape-string line)))

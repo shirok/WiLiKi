@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.99 2003-12-31 02:59:00 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.100 2004-01-01 08:11:16 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -44,7 +44,6 @@
   (use gauche.sequence)
   (use wiliki.mcatalog)
   (use wiliki.format)
-  (use wiliki.page)
   (export <wiliki> wiliki-main))
 (select-module wiliki)
 
@@ -85,14 +84,9 @@
 (define $$ gettext)
 
 ;; Parameters
-(define page-format-history (make-parameter '()))
 (define wiliki (make-parameter #f))     ;current instance
 (define lang   (make-parameter #f))     ;current language
 (define db     (make-parameter #f))     ;current database
-
-(define (current-formatting-page)
-  (let1 hist (page-format-history)
-    (if (null? hist) #f (car hist))))
 
 ;; Class <wiliki> ------------------------------------------
 ;;   A main data structure that holds run-time information.
@@ -212,6 +206,53 @@
 (define-method debug-level (obj) 0)
 
 ;; WiLiKi-specific formatting routines ----------------------
+
+(define-method wiliki-page-footer ((page <page>) fmtr opts)
+  (if (ref page 'mtime)
+    `((hr)
+      (div (@ (align right))
+           ,($$ "Last modified : ")
+           ,(wiliki-format-time fmtr (ref page 'mtime))))
+    '()))
+
+(define-method wiliki-page-header ((page <page>) fmtr opts)
+  (let-keywords* opts ((show-lang? #t)
+                       (show-edit? (ref (wiliki) 'editable?))
+                       (show-all?  #t)
+                       (show-recent-changes? #t)
+                       (show-search-box? #t)
+                       (show-history? (ref (wiliki) 'log-file))
+                       (page-id #f))
+    `((h1 ,(if (ref page 'mtime)
+             `(a (@ (href ,(url "c=s&key=[[~a]]" (ref page 'key))))
+                 ,(ref page 'key))
+             (ref page 'key)))
+      (div (@ (align right))
+           (form (@ (method POST) (action ,(cgi-name-of (wiliki))))
+                 (input (@ (type hidden) (name c) (value s)))
+                 ,@(cond-list
+                    (show-lang?
+                     `(stree ,(language-link page-id)))
+                    ((not (string=? page-id (top-page-of (wiliki))))
+                     `(a (@ (href ,(cgi-name-of (wiliki))))
+                         ,($$ "[Top Page]")))
+                    (show-edit?
+                     `(a (@ (href ,(url "p=~a&c=e" page-id)))
+                         ,($$ "[Edit]")))
+                    (show-history?
+                     `(a (@ (href ,(url "p=~a&c=h" page-id)))
+                         ,($$ "[Edit History]")))
+                    (show-all?
+                     `(a (@ (href ,(url "c=a")))
+                         ,($$ "[All Pages]")))
+                    (show-recent-changes?
+                     `(a (@ (href ,(url "c=r")))
+                         ,($$ "[Recent Changes]")))
+                    (show-search-box?
+                     `(span "[" ,($$ "Search:")
+                            (input (@ (type text) (name key) (size 10)))
+                            "]")))))
+      (hr))))
 
 (define (format-wikiname-anchor wikiname)
   ;; assumes wikiname already exist in the db.
@@ -355,41 +396,42 @@
 
 ;; CGI processing ---------------------------------
 
-(define (html-page head-elements . body-elements)
+(define-method wiliki-page-head-elements ((page <page>) fmtr opts)
+  `((title ,(ref page 'key))
+    ,@(or (and-let* ((w (wiliki))
+                     (sv (server-name-of w))
+                     (sc (script-name-of w)))
+            `((base (@ (href ,(full-script-path-of w))))))
+          '())
+    ,(or (and-let* ((w (wiliki)) (ss (style-sheet-of w)))
+           `(link (@ (rel "stylesheet") (href ,ss) (type "text/css"))))
+         ;; default
+         '(style (@ (type "text/css"))
+            "body { background-color: #eeeedd }"))
+    ))
+
+(define (html-page page . args)
   ;; NB: cgi-header should be able to handle extra header fields.
   ;; for now, I add extra headers manually.
   `("Content-Style-Type: text/css\n"
     ,(cgi-header
       :content-type #`"text/html; charset=,(output-charset)")
     ,(html-doctype :type :transitional)
-    ,(html:html
-      (html:head
-       head-elements
-       (or (and-let* ((w (wiliki))
-                      (sv (server-name-of w))
-                      (sc (script-name-of w)))
-             (html:base :href (full-script-path-of w)))
-           '())
-       (or (and-let* ((w (wiliki)) (ss (style-sheet-of w)))
-             (html:link :rel "stylesheet" :href ss :type "text/css"))
-           ;; default
-           "<style type=\"text/css\"> body { background-color: #eeeedd }</style>"))
-      (html:body
-       body-elements))))
+    ,(wiliki:sxml->stree (apply format-page page args))))
 
 (define (error-page e)
   (html-page
-   (html:title #`",(title-of (wiliki)) : Error")
-   (list (html:h1 "Error")
-         (html:p (html-escape-string (ref e 'message)))
-         (if (positive? (debug-level (wiliki)))
-           (html:pre (html-escape-string
-                      (call-with-output-string
-                        (cut with-error-to-port <>
-                             (cut report-error e)))))
-           '())
-         ))
-  )
+   (make <page>
+     :key #`",(title-of (wiliki)) : Error"
+     :content
+     `((p ,(html-escape-string (ref e 'message)))
+       ,@(if (positive? (debug-level (wiliki)))
+           `((pre (html-escape-string
+                   (call-with-output-string
+                     (cut with-error-to-port <>
+                          (cut report-error e))))))
+           '())))
+   ))
 
 (define (redirect-page key)
   (cons "Status: 302 Moved\n"
@@ -398,10 +440,9 @@
 (define (cmd-view pagename)
   ;; NB: see the comment in format-wiki-name about the order of
   ;; wdb-get and virtual-page? check.
-  (cond ((wdb-get (db) pagename) => (cut format-page (wiliki) pagename <>))
+  (cond ((wdb-get (db) pagename) => html-page)
         ((virtual-page? pagename)
-         (format-page (wiliki) pagename (handle-virtual-page pagename)
-                      :show-edit? #f))
+         (html-page (handle-virtual-page pagename) :show-edit? #f))
         ((equal? pagename (top-page-of (wiliki)))
          (let ((toppage (make <page> :key pagename :mtime (sys-time))))
            ;; Top page is non-existent, or its name may be changed.
@@ -409,62 +450,64 @@
            (if (editable? (wiliki))
              (with-db (lambda ()
                         (wdb-put! (db) (top-page-of (wiliki)) toppage)
-                        (format-page (wiliki) (top-page-of (wiliki)) toppage))
+                        (html-page toppage))
                :write)
              (errorf "Top-page (~a) doesn't exist, and the database is read-only" toppage))))
         ((or (string-index pagename #[\s\[\]])
              (string-prefix? "$" pagename))
          (error "Invalid page name" pagename))
         (else
-         (format-page
-          (wiliki)
-          (string-append ($$ "Nonexistent page: ") pagename)
-          `(,(html:p
-              ($$ "Create a new page: ")
-              (format-wiki-name pagename)))
+         (html-page
+          (make <page>
+            :key (string-append ($$ "Nonexistent page: ") pagename)
+            :content `((p ,($$ "Create a new page: ")
+                          (stree ,(format-wiki-name pagename)))))
           :show-edit? #f :show-history? #f))
         ))
 
 (define (cmd-all)
-  (format-page
-   (wiliki)
-   (string-append (title-of (wiliki))": "($$ "All Pages"))
-   (html:ul
-    (map (lambda (k) (html:li (format-wikiname-anchor k)))
-         (sort (wdb-map (db) (lambda (k v) k)) string<?)))
+  (html-page
+   (make <page>
+     :key (string-append (title-of (wiliki))": "($$ "All Pages"))
+     :content `((ul
+                 ,@(map (lambda (k)
+                          `(li (stree ,(format-wikiname-anchor k))))
+                        (sort (wdb-map (db) (lambda (k v) k)) string<?)))))
    :page-id "c=a"
    :show-edit? #f
    :show-all? #f
    :show-history? #f))
 
 (define (cmd-recent-changes)
-  (format-page
-   (wiliki)
-   (string-append (title-of (wiliki))": "($$ "Recent Changes"))
-   (html:table
-    (map (lambda (p)
-           (html:tr
-            (html:td (format-time (cdr p)))
-            (html:td "(" (how-long-since (cdr p)) " ago)")
-            (html:td (format-wikiname-anchor (car p)))))
-         (wdb-recent-changes (db))))
+  (html-page
+   (make <page>
+     :key (string-append (title-of (wiliki))": "($$ "Recent Changes"))
+     :content
+     `((table
+        ,@(map (lambda (p)
+                 `(tr
+                   (td ,(format-time (cdr p)))
+                   (td "(" ,(how-long-since (cdr p)) " ago)")
+                   (td (stree ,(format-wikiname-anchor (car p))))))
+               (wdb-recent-changes (db))))))
    :page-id "c=r"
    :show-edit? #f
    :show-recent-changes? #f
    :show-history? #f))
 
 (define (cmd-search key)
-  (format-page
-   (wiliki)
-   (string-append (title-of (wiliki))": "($$ "Search results"))
-   (html:ul
-    (map (lambda (p)
-           (html:li
-            (format-wikiname-anchor (car p))
-            (or (and-let* ((mtime (get-keyword :mtime (cdr p) #f)))
-                  #`"(,(how-long-since mtime))")
-                "")))
-         (wdb-search-content (db) key)))
+  (html-page
+   (make <page>
+     :key (string-append (title-of (wiliki))": "($$ "Search results"))
+     :content
+     `((ul
+        ,@(map (lambda (p)
+                 `(li
+                   (stree ,(format-wikiname-anchor (car p)))
+                   ,(or (and-let* ((mtime (get-keyword :mtime (cdr p) #f)))
+                          #`"(,(how-long-since mtime))")
+                        "")))
+               (wdb-search-content (db) key)))))
    :page-id (format #f "c=s&key=~a" (html-escape-string key))
    :show-edit? #f
    :show-history? #f))

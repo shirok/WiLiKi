@@ -23,14 +23,15 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: db.scm,v 1.8 2003-12-31 02:59:00 shirok Exp $
+;;; $Id: db.scm,v 1.9 2004-01-01 08:11:16 shirok Exp $
 
 (define-module wiliki.db
+  (use srfi-1)
   (use srfi-13)
   (use gauche.parameter)
   (use util.list)
   (use dbm)
-  (use wiliki.page)
+  (use wiliki.format)
   (extend wiliki)
   (export with-db
           wdb-exists? wdb-record->page wdb-get wdb-put! wdb-delete!

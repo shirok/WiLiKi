@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: history.scm,v 1.9 2003-12-31 02:59:00 shirok Exp $
+;;;  $Id: history.scm,v 1.10 2004-01-01 08:11:16 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -101,18 +101,19 @@
                            "Diff from epoch")
                    "]")))))
   
-  (format-page
-   (wiliki)
-   ($$ "Edit History")
-   (or (and-let* ((logfile (log-file-path (wiliki)))
-                  (picked (wiliki-log-pick-from-file pagename logfile))
-                  ((not (null? picked)))
-                  )
-         `(,(html:h2 (format ($$ "Edit history of ~a")
-                             (tree->string
-                              (format-wikiname-anchor pagename))))
-           ,(history-table (map wiliki-log-parse-entry picked))))
-       (no-history-info pagename))
+  (html-page
+   (make <page>
+     :key ($$ "Edit History")
+     :content
+     (or (and-let* ((logfile (log-file-path (wiliki)))
+                    (picked (wiliki-log-pick-from-file pagename logfile))
+                    ((not (null? picked)))
+                    )
+           `((stree (,(html:h2 (format ($$ "Edit history of ~a")
+                                       (tree->string
+                                        (format-wikiname-anchor pagename))))
+                     ,(history-table (map wiliki-log-parse-entry picked))))))
+         (no-history-info pagename)))
    :show-lang? #f :show-edit? #f :show-history? #f)
   )
 
@@ -120,19 +121,18 @@
 (define (cmd-diff pagename old-time new-time)
 
   (define (explanation)
-    (html:ul (html:li (format-diff-line `(+ . ,($$ "added lines"))))
-             (html:li (format-diff-line `(- . ,($$ "deleted lines"))))))
+    `(ul (li (stree ,(format-diff-line `(+ . ,($$ "added lines")))))
+         (li (stree ,(format-diff-line `(- . ,($$ "deleted lines")))))))
   
   (define (diff-to-current entries current)
     (let* ((diffpage (wiliki-log-diff* entries current)))
-      (list
-       (html:h2 (format ($$ "Changes of ~a since ~a")
-                        (tree->string
-                         (format-wikiname-anchor pagename))
-                        (format-time old-time)))
-       (explanation)
-       (return-to-edit-history pagename)
-       (format-diff-pre diffpage))))
+      `((h2 (stree ,(format ($$ "Changes of ~a since ~a")
+                            (tree->string
+                             (format-wikiname-anchor pagename))
+                            (format-time old-time))))
+        ,(explanation)
+        ,(return-to-edit-history pagename)
+        (stree ,(format-diff-pre diffpage)))))
 
   (define (diff2 entries current)
     (let* ((oldpage (wiliki-log-revert* entries current))
@@ -145,63 +145,63 @@
                             (cut acons '+ <> <>)
                             cons
                             '() oldpage newpage)))
-      (list
-       (html:h2 (format ($$ "Changes of ~a between ~a and ~a")
-                        (tree->string
-                         (format-wikiname-anchor pagename))
-                        (format-time old-time)
-                        (format-time new-time)))
-       (explanation)
-       (return-to-edit-history pagename)
-       (format-diff-pre (reverse! rdiff)))))
+      `((h2 (stree ,(format ($$ "Changes of ~a between ~a and ~a")
+                            (tree->string
+                             (format-wikiname-anchor pagename))
+                            (format-time old-time)
+                            (format-time new-time))))
+        ,(explanation)
+        ,(return-to-edit-history pagename)
+        (stree ,(format-diff-pre (reverse! rdiff))))))
 
-  (format-page
-   (wiliki)
-   ($$ "Edit History:Diff")
-   (or (and-let* ((logfile (log-file-path (wiliki)))
-                  (page    (wdb-get (db) pagename))
-                  (picked  (wiliki-log-pick-from-file pagename logfile)))
-         (let ((entries  (wiliki-log-entries-after picked old-time)))
-           (if (>= old-time new-time)
-             (diff-to-current entries (ref page 'content))
-             (diff2 entries (ref page 'content)))))
-       (no-history-info pagename))
+  (html-page
+   (make <page>
+     :key ($$ "Edit History:Diff")
+     :content
+     (or (and-let* ((logfile (log-file-path (wiliki)))
+                    (page    (wdb-get (db) pagename))
+                    (picked  (wiliki-log-pick-from-file pagename logfile)))
+           (let ((entries  (wiliki-log-entries-after picked old-time)))
+             (if (>= old-time new-time)
+               (diff-to-current entries (ref page 'content))
+               (diff2 entries (ref page 'content)))))
+         (no-history-info pagename)))
    :show-lang? #f :show-edit? #f :show-history? #f)
   )
 
 ;; "Edit History:View" page. -----------------------------------
 (define (cmd-viewold pagename old-time)
-  (format-page
-   (wiliki)
-   ($$ "Edit History:View")
-   (or (and-let* ((logfile (log-file-path (wiliki)))
-                  (page    (wdb-get (db) pagename))
-                  (picked  (wiliki-log-pick-from-file pagename logfile)))
-         (let* ((entries  (wiliki-log-entries-after picked old-time))
-                (reverted (wiliki-log-revert* entries (ref page 'content))))
-           (list
-            (html:h2 (format ($$ "Content of ~a at ~a")
-                             (tree->string
-                              (format-wikiname-anchor pagename))
-                             (format-time old-time)))
-            (html:p :style "text-align:right"
-                    (html:a :href (url "~a&c=hd&t=~a"
-                                       (cv-out pagename) old-time)
-                            ($$ "View diff from current version")))
-            (return-to-edit-history pagename)
-            (format-diff-pre reverted))))
-       (no-history-info pagename))
+  (html-page
+   (make <page>
+     :key ($$ "Edit History:View")
+     :content
+     (or (and-let* ((logfile (log-file-path (wiliki)))
+                    (page    (wdb-get (db) pagename))
+                    (picked  (wiliki-log-pick-from-file pagename logfile)))
+           (let* ((entries  (wiliki-log-entries-after picked old-time))
+                  (reverted (wiliki-log-revert* entries (ref page 'content))))
+             `((h2 (stree ,(format ($$ "Content of ~a at ~a")
+                                   (tree->string
+                                    (format-wikiname-anchor pagename))
+                                   (format-time old-time))))
+               (p (@ (style "text-align:right"))
+                  (a (@ (href ,(url "~a&c=hd&t=~a"
+                                    (cv-out pagename) old-time)))
+                     ,($$ "View diff from current version")))
+               ,(return-to-edit-history pagename)
+               (stree ,(format-diff-pre reverted)))))
+         (no-history-info pagename)))
    :show-lang? #f :show-edit? #f :show-history? #f)
   )
 
 (define (no-history-info pagename)
-  (html:p (format ($$ "No edit history available for page ~a")
-                  (tree->string
-                   (format-wikiname-anchor pagename)))))
+  `((p (stree ,(format ($$ "No edit history available for page ~a")
+                       (tree->string
+                        (format-wikiname-anchor pagename)))))))
 
 (define (return-to-edit-history pagename)
-  (html:p :style "text-align:right"
-          (html:a :href (url "~a&c=h" (cv-out pagename))
-                  ($$ "Return to the edit history"))))
+  `(p (@ (style "text-align:right"))
+      (a (@ (href ,(url "~a&c=h" (cv-out pagename))))
+         ,($$ "Return to the edit history"))))
 
 (provide "wiliki/history")

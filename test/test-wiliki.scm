@@ -1,7 +1,7 @@
 ;;
 ;; test for wiliki
 ;;
-;; $Id: test-wiliki.scm,v 1.6 2003-12-31 02:59:00 shirok Exp $
+;; $Id: test-wiliki.scm,v 1.7 2004-01-01 08:11:16 shirok Exp $
 
 (use gauche.test)
 (use gauche.parameter)
@@ -44,8 +44,8 @@
   (sys-chmod *cgi-path* #o700))
 
 (test-start "wiliki")
-(use wiliki)
-(test-module 'wiliki)
+;(use wiliki)
+;(test-module 'wiliki)
 
 (sys-system "rm -rf _test")
 (sys-mkdir "_test" #o755)
@@ -346,5 +346,70 @@
          (test-sxml-select-matcher
           '(html body p)))
   )
+
+;;--------------------------------------------------------
+(test-section "Some special pages")
+
+(test* "All Pages"
+       `(body
+         (!contain (h1 "Test: All Pages")
+                   (ul (li (a (@ (href "wiliki.cgi?InterWikiName"))
+                              "InterWikiName"))
+                       (li (a (@ (href "wiliki.cgi?TEST"))
+                              "TEST")))))
+       (values-ref (run-cgi-script->sxml
+                    *cgi-path*
+                    :environment '((REQUEST_METHOD . "GET"))
+                    :parameters '((c . a)))
+                   1)
+       (test-sxml-select-matcher '(html body)))
+
+(test* "Recent Changes"
+       `(body
+         (!contain (h1 "Test: Recent Changes")
+                   (table
+                    ;; table row consists of (timestamp ago link)
+                    (tr (td ?*) (td ?*)
+                        (td (a (@ (href "wiliki.cgi?TEST"))
+                               "TEST")))
+                    (tr (td ?*) (td ?*)
+                        (td (a (@ (href "wiliki.cgi?InterWikiName"))
+                               "InterWikiName"))))))
+       (values-ref (run-cgi-script->sxml
+                    *cgi-path*
+                    :environment '((REQUEST_METHOD . "GET"))
+                    :parameters '((c . r)))
+                   1)
+       (test-sxml-select-matcher '(html body)))
+
+(test* "Recent Changes (via virtual page)"
+       `(body
+         (!contain (h1 "RecentChanges")
+                   (table
+                    ;; table row consists of (timestamp ago link)
+                    (tr (td ?*) (td ?*)
+                        (td (a (@ (href "wiliki.cgi?TEST"))
+                               "TEST")))
+                    (tr (td ?*) (td ?*)
+                        (td (a (@ (href "wiliki.cgi?InterWikiName"))
+                               "InterWikiName"))))))
+       (values-ref (run-cgi-script->sxml
+                    *cgi-path*
+                    :environment '((REQUEST_METHOD . "GET")
+                                   (PATH_INFO . "/RecentChanges")))
+                   1)
+       (test-sxml-select-matcher '(html body)))
+
+(test* "Search result"
+       `(body
+         (!contain (h1 "Test: Search results")
+                   (ul
+                    (li (a (@ (href "wiliki.cgi?InterWikiName")) ?*) ?*))))
+       (values-ref (run-cgi-script->sxml
+                    *cgi-path*
+                    :environment '((REQUEST_METHOD . "GET"))
+                    :parameters '((c . s) (key . "dreamhost")))
+                   1)
+       (test-sxml-select-matcher '(html body)))
 
 (test-end)
