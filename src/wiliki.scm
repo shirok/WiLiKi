@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.3 2001-11-23 10:04:06 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.4 2001-11-23 22:19:00 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -18,30 +18,6 @@
   (export <wiliki> wiliki-main))
 (select-module wiliki)
 
-(define *edit-helper* "
-  <h2>テキスト編集ルール</h2>
-  <p>HTMLは使えない。
-  <p>空行は段落の区切り (&lt;p&gt;)
-  <p>行頭の`<tt>- </tt>', `<tt>-- </tt>', `<tt>--- </tt>'
-     はそれぞれネストレベル1, 2, 3の順序無しリスト (&lt;ul&gt;)。
-     ダッシュの後に空白が必要。
-  <p>行頭の`<tt>1. </tt>', `<tt>1.. </tt>', `<tt>1... </tt>'
-     はそれぞれネストレベル1, 2, 3の順序つきリスト (&lt;ol&gt;)。
-     ピリオドの後に空白が必要。数字は整形時にリナンバーされる。
-  <p>行頭の`<tt>----</tt>' は &lt;hr&gt;
-  <p>行頭の `<tt>:項目:説明</tt>' は &lt;dl&gt;
-  <p><tt>[[名前]]</tt> と書くと `名前' がWikiNameになる。
-  <p>2つのシングルクオートで囲む (<tt>''ほげ''</tt>) と
-     強調 (&lt;em&gt;)
-  <p>3つのシングルクオートで囲む (<tt>'''ほげ'''</tt>) と
-     もっと強調 (&lt;strong&gt;)
-  <p>行頭の `<tt>*</tt>', `<tt>**</tt>'' は
-     それぞれ見出し、小見出し。アスタリスクの後に空白が必要。
-  <p>行頭に空白があると &lt;pre&gt;。
-  <p>行頭に上記の特殊な文字をそのまま入れたい場合は、ダミーの強調項目(6つの連続するシングルクオート)
-     を行頭に入れると良い。
- ")
-
 ;; Class <wiliki> ------------------------------------------
 
 (define-class <wiliki> ()
@@ -51,9 +27,88 @@
              :init-value "TopPage")
    (cgi-name :accessor cgi-name-of :init-keyword :cgi-name
              :init-value "wiliki.cgi")
+   (language :accessor language-of :init-keyword :language
+             :init-value 'jp)
    ;; internal
    (db       :accessor db-of)
    ))
+
+;; Language-specific parameters ----------------------------
+;; ** This should be in separate databases.
+
+(define (msg-edit-helper wiliki)
+  (case (language-of wiliki)
+    ((jp)
+      "<h2>テキスト整形ルール</h2>
+       <p>HTMLは使えない。
+       <p>空行は段落の区切り (&lt;p&gt;)
+       <p>行頭の`<tt>- </tt>', `<tt>-- </tt>', `<tt>--- </tt>'
+       はそれぞれネストレベル1, 2, 3の順序無しリスト (&lt;ul&gt;)。
+       ダッシュの後に空白が必要。
+       <p>行頭の`<tt>1. </tt>', `<tt>1.. </tt>', `<tt>1... </tt>'
+       はそれぞれネストレベル1, 2, 3の順序つきリスト (&lt;ol&gt;)。
+       ピリオドの後に空白が必要。数字は整形時にリナンバーされる。
+       <p>行頭の`<tt>----</tt>' は &lt;hr&gt;
+       <p>行頭の `<tt>:項目:説明</tt>' は &lt;dl&gt;
+       <p><tt>[[名前]]</tt> と書くと `名前' がWikiNameになる。
+       <p>2つのシングルクオートで囲む (<tt>''ほげ''</tt>) と
+          強調 (&lt;em&gt;)
+       <p>3つのシングルクオートで囲む (<tt>'''ほげ'''</tt>) と
+          もっと強調 (&lt;strong&gt;)
+       <p>行頭の `<tt>*</tt>', `<tt>**</tt>' は
+          それぞれ見出し、小見出し。アスタリスクの後に空白が必要。
+       <p>行頭に空白があると &lt;pre&gt;。
+       <p>行頭に上記の特殊な文字をそのまま入れたい場合は、ダミーの強調項目
+          (6つの連続するシングルクオート)を行頭に入れると良い。")
+    (else
+     "<h2>Text Formatting Rules</h2>
+      <p>No HTML.</p>
+      <p>Empty line to separating paragraphs (&lt;p&gt;)
+      <p>`<tt>- </tt>', `<tt>-- </tt>' and `<tt>--- </tt>' at the
+         beginning of a line for an item of unordered list (&lt;ul&gt;)
+         of level 1, 2 and 3, respectively.
+         Put a space after dash(es).
+      <p>`<tt>1. </tt>', `<tt>1.. </tt>', `<tt>1... </tt>' at the
+         beginning of a line for an item of ordered list (&lt;ol&gt;)
+         of level 1, 2 and 3, respectively.
+         Put a space after dot(s).
+      <p>`<tt>----</tt>' at the beginning of a line is &lt;hr&gt;.
+      <p>`<tt>:item:description</tt>' at the beginning of a line is &lt;dl&gt;.
+      <p><tt>[[Name]]</tt> to make `Name' a WikiName.  Note that
+         a simple mixed-case word doesn't become a WikiName.
+      <p>Words surrounded by two single quotes (<tt>''foo''</tt>)
+         to emphasize.
+      <p>Words surrounded by three single quotes (<tt>'''foo'''</tt>)
+         to emphasize more.
+      <p>`<tt>*</tt>' and `<tt>**</tt>' at the beginning of a line
+         is a level 1 and 2 header, respectively.  Put a space
+         after an asterisk.
+      <p>Whitespace(s) at the beginning of line for preformatted text.
+      <p>If you want to use characters of special meaning at the
+         beginning of line, put six consecutive single quotes.
+         It emphasizes a null string, so it's effectively nothing.")))
+
+(define (msg-top-link wiliki)
+  (case (language-of wiliki)
+    ((jp) "[トップ]")
+    (else "[Top Page]")))
+
+(define (msg-edit-link wiliki)
+  (case (language-of wiliki)
+    ((jp) "[編集]")
+    (else "[Edit]")))
+
+(define (msg-all-link wiliki)
+  (case (language-of wiliki)
+    ((jp) "[一覧]")
+    (else "[All Pages]")))
+
+(define (msg-all-pages wiliki)
+  (case (language-of wiliki)
+    ((jp) "Wiliki: 一覧")
+    (else "Wiliki: All Pages")))
+
+;; Database access ------------------------------------------
 
 (define-method with-db ((self <wiliki>) thunk)
   (let ((db (dbm-open <gdbm> :path (db-path-of self) :rwmode :write)))
@@ -61,13 +116,6 @@
      (lambda () (set! (db-of self) db))
      (lambda () (thunk))
      (lambda () (set! (db-of self) #f) (dbm-close db)))))
-
-
-;; Character conv ---------------------------------
-;;  string-null? check is to avoid a bug in Gauche-0.4.9
-(define (ccv str) (if (string-null? str) "" (ces-convert str "*JP")))
-
-;; Class <page> ------------------------------------------
 
 (define-class <page> ()
   ((ctime :initform (sys-time) :init-keyword :ctime :accessor ctime-of)
@@ -77,11 +125,11 @@
    (content :initform "" :init-keyword :content :accessor content-of)
    ))
 
-(define-method db-page-exists? ((db <dbm>) key)
+(define-method wdb-exists? ((db <dbm>) key)
   (dbm-exists? db key))
 
-;; DB-GET-PAGE db key &optional create-new
-(define-method db-get-page ((db <dbm>) key . option)
+;; WDB-GET db key &optional create-new
+(define-method wdb-get ((db <dbm>) key . option)
   (cond ((dbm-get db key #f)
          => (lambda (s)
               ;; backward compatibility
@@ -97,7 +145,7 @@
         (else #f)))
 
 ;; DB-PUT-PAGE db key page
-(define-method db-put-page! ((db <dbm>) key (page <page>))
+(define-method wdb-put! ((db <dbm>) key (page <page>))
   (let ((s (with-output-to-string
              (lambda ()
                (write (list :ctime (ctime-of page)
@@ -107,13 +155,18 @@
                (display (content-of page))))))
     (dbm-put! db key s)))
 
-(define-method db-map ((db <dbm>) proc)
+(define-method wdb-map ((db <dbm>) proc)
   (dbm-map db proc))
+
+;; Character conv ---------------------------------
+;;  string-null? check is to avoid a bug in Gauche-0.4.9
+(define (ccv str) (if (string-null? str) "" (ces-convert str "*JP")))
 
 ;; Formatting html --------------------------------
 
 (define (url self fmt . args)
-  (apply format #f (string-append "~a?" fmt) (cgi-name-of self)
+  (apply format #f
+         (format #f "~a?~a&l=~s" (cgi-name-of self) fmt (language-of self))
          (map uri-encode-string args)))
 
 (define (format-line self line)
@@ -124,7 +177,7 @@
      (lambda (match)
        (let ((name (rxmatch-substring match 1)))
          (tree->string
-          (if (db-page-exists? (db-of self) name)
+          (if (wdb-exists? (db-of self) name)
               (html:a :href (url self "~a" name) name)
               `(,name ,(html:a :href (url self "p=~a&c=e" name) "?"))))))))
   (define (uri line)
@@ -229,12 +282,13 @@
          (html:div :align "right"
                    (if (string=? title (top-page-of self))
                        ""
-                       (html:a :href (cgi-name-of self) "[トップ]"))
+                       (html:a :href (cgi-name-of self) (msg-top-link self)))
                    (if show-edit?
-                       (html:a :href (url self "p=~a&c=e" title) "[編集]")
+                       (html:a :href (url self "p=~a&c=e" title)
+                               (msg-edit-link self))
                        "")
                    (if show-all?
-                       (html:a :href (url self "c=a") "[一覧]")
+                       (html:a :href (url self "c=a") (msg-all-link self))
                        ""))
          (html:hr)
          content)))))
@@ -255,17 +309,17 @@
   )
 
 (define (cmd-view self pagename)
-  (cond ((db-get-page (db-of self) pagename)
+  (cond ((wdb-get (db-of self) pagename)
          => (lambda (page)
               (format-page self pagename page)))
         ((equal? pagename (top-page-of self))
          (let ((toppage (make <page>)))
-           (db-put-page! (db-of self) (top-page-of self) toppage)
+           (wdb-put! (db-of self) (top-page-of self) toppage)
            (format-page self (top-page-of self) toppage)))
         (else (error "No such page" pagename))))
 
 (define (cmd-edit self pagename)
-  (let ((page (db-get-page (db-of self) pagename #t)))
+  (let ((page (wdb-get (db-of self) pagename #t)))
     (format-page
      self pagename
      (html:form :method "POST" :action (cgi-name-of self)
@@ -277,23 +331,23 @@
                 (html:input :type "submit" :name "submit" :value "Submit")
                 (html:input :type "reset"  :name "reset"  :value "Reset")
                 (html:br)
-                *edit-helper*
+                (msg-edit-helper self)
                 ))))
 
 (define (cmd-commit-edit self pagename content)
-  (let ((page (db-get-page (db-of self) pagename #t)))
+  (let ((page (wdb-get (db-of self) pagename #t)))
     (set! (mtime-of page) (sys-time))
     (set! (content-of page) content)
-    (db-put-page! (db-of self) pagename page)
+    (wdb-put! (db-of self) pagename page)
     (format-page self pagename page)))
 
 (define (cmd-all self)
   (format-page
-   self "Wiliki: 一覧"
+   self (msg-all-pages self)
    (html:ul
     (map (lambda (k)
            (html:li (html:a :href (url self "~a" k) (html-escape-string k))))
-         (sort (db-map (db-of self) (lambda (k v) k)) string<?)))
+         (sort (wdb-map (db-of self) (lambda (k v) k)) string<?)))
    :show-edit? #f
    :show-all? #f))
 
@@ -309,7 +363,9 @@
                             (cgi-get-parameter "p" param
                                                :default (top-page-of self)
                                                :convert ccv))))
-           (command  (cgi-get-parameter "c" param)))
+           (command  (cgi-get-parameter "c" param))
+           (lang     (cgi-get-parameter "l" param :convert string->symbol)))
+       (when lang (set! (language-of self) lang))
        `(,(cgi-header)
          ,(with-db self
                    (lambda ()
