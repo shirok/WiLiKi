@@ -1,5 +1,9 @@
 2003-08-31  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki/format.scm (format-colored-box): use :style attribute
+	  instead of :bgcolor, so that it won't interfere with different
+	  style sheets.
+
 	* src/wiliki.scm (language-link): fixed a broken url generation
 
 	* src/wiliki/edit.scm, src/wiliki/format.scm, src/wiliki/history.scm:

@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.11 2003-08-31 23:28:10 shirok Exp $
+;;; $Id: format.scm,v 1.12 2003-08-31 23:48:26 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -62,8 +62,11 @@
     "-"))
 
 (define (format-colored-box content)
-  (html:table :width "100%" :cellpadding 5
-              (html:tr (html:td :class "preview" :bgcolor "#eeddaa" content))))
+  (html:table
+   :width "100%" :cellpadding 5
+   (html:tr (html:td :class "preview"
+                     :style "background-color:#eeddaa; color:#000000"
+                     content))))
 
 (define (format-wikiname-anchor wikiname)
   ;; assumes wikiname already exist in the db.
