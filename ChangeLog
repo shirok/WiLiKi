@@ -1,0 +1,5 @@
+2001-11-22  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm : added per-page parameters
+	
+
