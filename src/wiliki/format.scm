@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.14 2003-09-01 09:00:09 shirok Exp $
+;;; $Id: format.scm,v 1.15 2003-10-08 07:28:26 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -99,14 +99,21 @@
  
 (define (inter-wiki-name-prefix head)
   (and-let* ((page (wdb-get (db) "InterWikiName"))
-             (rx   (string->regexp #`"^:,|head|:(\\S+)")))
+             (rx   (string->regexp #`"^:,|head|:\\s*")))
     (call-with-input-string (content-of page)
       (lambda (p)
         (let loop ((line (read-line p)))
           (cond ((eof-object? line) #f)
-                ((rx line) => (cut <> 1))
+                ((rx line) =>
+                 (lambda (m)
+                   (let ((prefix (m 'after)))
+                     (if (string-null? prefix)
+                       (let ((prefix (read-line p)))
+                         (if (or (eof-object? prefix) (string-null? prefix))
+                           #f
+                           (string-trim-both prefix)))
+                       (string-trim-both prefix)))))
                 (else (loop (read-line p)))))))))
-
 
 (define (reader-macro-wiki-name? name)
   (cond ((string-prefix? "$$" name)
@@ -128,10 +135,12 @@
   (receive (prefix inner) (inter-wiki-name? name)
     (cond ((reader-macro-wiki-name? name))
           (prefix
-           (tree->string (html:a
-                          :href (format #f "http://~a~a" prefix
-                                        (uri-encode-string (cv-out inner)))
-                          (html-escape-string name))))
+           (let ((scheme
+                  (if (#/^(https?|ftp|mailto):/ prefix) "" "http://")))
+             (tree->string (html:a
+                            :href (format "~a~a~a" scheme prefix
+                                          (uri-encode-string (cv-out inner)))
+                            (html-escape-string name)))))
           ;; NB: the order of checks here is debatable.  Should a virtual
           ;; page shadow an existing page, or an existing page shadow a
           ;; virtual one?  Note also the order of this check must match
