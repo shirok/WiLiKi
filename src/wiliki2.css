@@ -54,6 +54,8 @@ blockquote {
 
 dt { font-weight: bold }
 
+table.content-table { table-layout : fixed }
+
 td.inbody { background-color: #eeeeee }   /* used in formatted body */
 td.preview { background-color: #ddeeee }  /* used in preview page */
 

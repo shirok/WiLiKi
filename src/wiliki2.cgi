@@ -22,7 +22,7 @@
 
 (define (my-page-content page opts)
   `((table
-     (@ (border 0) (cellspacing 8) (width "100%"))
+     (@ (border 0) (cellspacing 8) (width "100%") (class "content-table"))
      (tr (td (@ (class "menu-strip")
                 (valign "top") (style "font-size:80%;width:10em"))
              (div (@ (class "menu-title")) "Topics")
