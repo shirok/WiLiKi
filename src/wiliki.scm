@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.60 2003-02-11 14:03:16 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.61 2003-02-11 22:12:18 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -382,6 +382,8 @@
            `(,nestings "<pre>" ,(pre line id)))
           ((string=? "{{{" line)
            `(,nestings "<pre>" ,(pre* (read-line) id)))
+          ((string-prefix? ";;" line)
+           (loop (read-line) nestings id))
           ((rxmatch #/^(\*\*?\*?) / line)
            => (lambda (m)
                 (let* ((lev (- (rxmatch-end m 1) (rxmatch-start m 1)))
@@ -429,8 +431,9 @@
     `(,(html:tr :class "inbody"
                 (map (lambda (seg) (html:td :class "inbody" (format-line seg)))
                      (string-split body  #\|)))
-      ,(let1 next (read-line)
+      ,(let tloop ((next (read-line)))
          (cond ((eof-object? next) '("</table>"))
+               ((string-prefix? ";;" next) (tloop (read-line)))
                ((rxmatch #/^\|(.*)\|$/ next)
                 => (lambda (m) (table (m 1) id)))
                (else `("</table>\n" ,@(loop next '() id)))))))
