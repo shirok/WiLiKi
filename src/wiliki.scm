@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.64 2003-02-12 10:30:48 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.65 2003-02-12 10:55:52 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -633,42 +633,46 @@
    (html:br)
    ($$ "<h2>Text Formatting Rules</h2>
       <p>No HTML.</p>
+      <p>A line begins with \";;\" doesn't appear in the output (comment).</p>
+      <p>A line begins with \"~\" is treated as if it is continued
+         from the previous line, except comments.  (line continuation).</p>
       <p>Empty line to separating paragraphs (&lt;p&gt;)
-      <p>`<tt>- </tt>', `<tt>-- </tt>' and `<tt>--- </tt>' at the
-         beginning of a line for an item of unordered list (&lt;ul&gt;)
-         of level 1, 2 and 3, respectively.
-         Put a space after dash(es).
-      <p>`<tt>1. </tt>', `<tt>1.. </tt>', `<tt>1... </tt>' at the
-         beginning of a line for an item of ordered list (&lt;ol&gt;)
-         of level 1, 2 and 3, respectively.
-         Put a space after dot(s).
-      <p>A line with only `<tt>----</tt>' is &lt;hr&gt;.
-      <p>`<tt>:item:description</tt>' at the beginning of a line is &lt;dl&gt;.
+      <p>\"<tt>- </tt>\", \"<tt>-- </tt>\" and \"<tt>--- </tt>\" ... at the
+         beginning of a line for an item of unordered list (&lt;ul&gt;).
+         Put a space after dash(es).</p>
+      <p>\"<tt># </tt>\", \"<tt>## </tt>\", \"<tt>### </tt>\" ... at the
+         beginning of a line for an item of ordered list (&lt;ol&gt;).
+         Put a space after dot(s).</p>
+      <p>A line with only \"<tt>----</tt>\" is &lt;hr&gt;.</p>
+      <p>\"<tt>:item:description</tt>\" at the beginning of a line is &lt;dl&gt;.
          The item includes all colons but the last one.  If you want to include
-         a colon in the description, put it in the next line.
-      <p><tt>[[Name]]</tt> to make `Name' a WikiName.  Note that
+         a colon in the description, put it in the next line.</p>
+      <p><tt>[[Name]]</tt> to make \"Name\" a WikiName.  Note that
          a simple mixed-case word doesn't become a WikiName.
-         `Name' beginning with `$' has special meanings (e.g. 
-         `[[$date]]' is replaced for the time at the editing.)
-      <p>A URL-like string beginning with `<tt>http:</tt>' becomes
-         a link.  `<tt>[URL name]</tt>' becomes a <tt>name</tt> that linked
-         to <tt>URL</tt>.
+         \"Name\" beginning with \"$\" has special meanings (e.g. 
+         \"[[$date]]\" is replaced for the time at the editing.)</p>
+      <p>A URL-like string beginning with \"<tt>http:</tt>\" becomes
+         a link.  \"<tt>[URL name]</tt>\" becomes a <tt>name</tt> that linked
+         to <tt>URL</tt>.</p>
       <p>Surround words by two single quotes (<tt>''foo''</tt>)
-         to emphasize.
+         to emphasize.</p>
       <p>Surround words by three single quotes (<tt>'''foo'''</tt>)
-         to emphasize more.
-      <p>`<tt>*</tt>', `<tt>**</tt>' and `<tt>***</tt>'' at the beginning
-         of a lineis a level 1, 2 and 3 header, respectively.  Put a space
-         after the asterisk(s).
-      <p>Whitespace(s) at the beginning of line for preformatted text.
-      <p>A line of \"{{{\" also starts a preformatted text, until
+         to emphasize more.</p>
+      <p>\"<tt>*</tt>\", \"<tt>**</tt>\" and \"<tt>***</tt>\"' ... 
+         at the beginning of a line is a header.  Put a space
+         after the asterisk(s).</p>
+      <p>Whitespace(s) at the beginning of line for preformatted text.</p>
+      <p>A line of \"{{{\" starts verbatim text, which ends with
          a line of \"}}}\".
-      <p>A line begins with `|' and also ends with `|' becomes a
+         No formatting is done in verbatim text.  Even comments and line
+         continuation don't have effect.</p>
+      <p>A line begins with \"||\" and also ends with \"||\" becomes a
          row of a table.  Consecutive rows forms a table.  Inside a row,
-         `|' delimits columns.
+         \"||\" delimits columns.</p>
+      <p>\"~%\" is replaced for \"&lt;br&gt;\".</p>
       <p>If you want to use special characters at the
          beginning of line, put six consecutive single quotes.
-         It emphasizes a null string, so it's effectively nothing.")
+         It emphasizes a null string, so it's effectively nothing.</p>")
    ))
 
 (define (cmd-edit pagename)

@@ -1,161 +1,168 @@
-;; wiliki.scm : line 467
+;; wiliki.scm : line 514
 ("Last modified : "
  "最終更新 : "
 )
 
-;; wiliki.scm : line 497
+;; wiliki.scm : line 544
 ("[Top Page]"
  "[トップ]"
 )
 
-;; wiliki.scm : line 499
+;; wiliki.scm : line 546
 ("[Edit]"
  "[編集]"
 )
 
-;; wiliki.scm : line 501
+;; wiliki.scm : line 548
 ("[All Pages]"
  "[一覧]"
 )
 
-;; wiliki.scm : line 503
+;; wiliki.scm : line 550
 ("[Recent Changes]"
  "[最近の更新]"
 )
 
-;; wiliki.scm : line 505
+;; wiliki.scm : line 552
 ("Search:"
  "検索:"
 )
 
-;; wiliki.scm : line 544
+;; wiliki.scm : line 591
 ("Update Conflict"
  "更新の衝突"
 )
 
-;; wiliki.scm : line 545
+;; wiliki.scm : line 592
 ("<p>It seems that somebody has updated this page while you're editing.  The most recent content is shown below.</p>"
  "<p>あなたが編集している間に、他の人がこのページを更新したようです。最新の内容を以下に表示します。</p>"
 )
 
-;; wiliki.scm : line 549
+;; wiliki.scm : line 596
 ("<p>The following shows what you are about to submit.  Please re-edit the content and submit again.</p>"
  "<p>以下に示すのがあなたが更新しようとした内容です。最新の内容をもとに再編集して再び更新して下さい。</p>"
 )
 
-;; wiliki.scm : line 565
+;; wiliki.scm : line 612
 ("Preview"
  "プレビュー"
 )
 
-;; wiliki.scm : line 566
+;; wiliki.scm : line 613
 ("Commit without preview"
  "コミット(プレビュー無し)"
 )
 
-;; wiliki.scm : line 567
+;; wiliki.scm : line 614
 ("Preview again"
  "もう一度プレビュー"
 )
 
-;; wiliki.scm : line 568
+;; wiliki.scm : line 615
 ("Commit"
  "コミット"
 )
 
-;; wiliki.scm : line 572
+;; wiliki.scm : line 619
 ("Don't update 'Recent Changes'"
  "「最近の更新」に登録しない"
 )
 
-;; wiliki.scm : line 587
+;; wiliki.scm : line 634
 ("<h2>Text Formatting Rules</h2>
       <p>No HTML.</p>
+      <p>A line begins with \";;\" doesn't appear in the output (comment).</p>
+      <p>A line begins with \"~\" is treated as if it is continued
+         from the previous line, except comments.  (line continuation).</p>
       <p>Empty line to separating paragraphs (&lt;p&gt;)
-      <p>`<tt>- </tt>', `<tt>-- </tt>' and `<tt>--- </tt>' at the
-         beginning of a line for an item of unordered list (&lt;ul&gt;)
-         of level 1, 2 and 3, respectively.
-         Put a space after dash(es).
-      <p>`<tt>1. </tt>', `<tt>1.. </tt>', `<tt>1... </tt>' at the
-         beginning of a line for an item of ordered list (&lt;ol&gt;)
-         of level 1, 2 and 3, respectively.
-         Put a space after dot(s).
-      <p>A line with only `<tt>----</tt>' is &lt;hr&gt;.
-      <p>`<tt>:item:description</tt>' at the beginning of a line is &lt;dl&gt;.
+      <p>\"<tt>- </tt>\", \"<tt>-- </tt>\" and \"<tt>--- </tt>\" ... at the
+         beginning of a line for an item of unordered list (&lt;ul&gt;).
+         Put a space after dash(es).</p>
+      <p>\"<tt># </tt>\", \"<tt>## </tt>\", \"<tt>### </tt>\" ... at the
+         beginning of a line for an item of ordered list (&lt;ol&gt;).
+         Put a space after dot(s).</p>
+      <p>A line with only \"<tt>----</tt>\" is &lt;hr&gt;.</p>
+      <p>\"<tt>:item:description</tt>\" at the beginning of a line is &lt;dl&gt;.
          The item includes all colons but the last one.  If you want to include
-         a colon in the description, put it in the next line.
-      <p><tt>[[Name]]</tt> to make `Name' a WikiName.  Note that
+         a colon in the description, put it in the next line.</p>
+      <p><tt>[[Name]]</tt> to make \"Name\" a WikiName.  Note that
          a simple mixed-case word doesn't become a WikiName.
-         `Name' beginning with `$' has special meanings (e.g. 
-         `[[$date]]' is replaced for the time at the editing.)
-      <p>A URL-like string beginning with `<tt>http:</tt>' becomes
-         a link.  `<tt>[URL name]</tt>' becomes a <tt>name</tt> that linked
-         to <tt>URL</tt>.
+         \"Name\" beginning with \"$\" has special meanings (e.g. 
+         \"[[$date]]\" is replaced for the time at the editing.)</p>
+      <p>A URL-like string beginning with \"<tt>http:</tt>\" becomes
+         a link.  \"<tt>[URL name]</tt>\" becomes a <tt>name</tt> that linked
+         to <tt>URL</tt>.</p>
       <p>Surround words by two single quotes (<tt>''foo''</tt>)
-         to emphasize.
+         to emphasize.</p>
       <p>Surround words by three single quotes (<tt>'''foo'''</tt>)
-         to emphasize more.
-      <p>`<tt>*</tt>', `<tt>**</tt>' and `<tt>***</tt>'' at the beginning
-         of a lineis a level 1, 2 and 3 header, respectively.  Put a space
-         after the asterisk(s).
-      <p>Whitespace(s) at the beginning of line for preformatted text.
-      <p>A line of \"{{{\" also starts a preformatted text, until
+         to emphasize more.</p>
+      <p>\"<tt>*</tt>\", \"<tt>**</tt>\" and \"<tt>***</tt>\"' ... 
+         at the beginning of a line is a header.  Put a space
+         after the asterisk(s).</p>
+      <p>Whitespace(s) at the beginning of line for preformatted text.</p>
+      <p>A line of \"{{{\" starts verbatim text, which ends with
          a line of \"}}}\".
-      <p>A line begins with `|' and also ends with `|' becomes a
+         No formatting is done in verbatim text.  Even comments and line
+         continuation don't have effect.</p>
+      <p>A line begins with \"||\" and also ends with \"||\" becomes a
          row of a table.  Consecutive rows forms a table.  Inside a row,
-         `|' delimits columns.
+         \"||\" delimits columns.</p>
+      <p>\"~%\" is replaced for \"&lt;br&gt;\".</p>
       <p>If you want to use special characters at the
          beginning of line, put six consecutive single quotes.
-         It emphasizes a null string, so it's effectively nothing."
- "<h2>テキスト整形ルール</h2>
-   <p>HTMLは使えない。
-   <p>空行は段落の区切り (&lt;p&gt;)
-   <p>行頭の`<tt>- </tt>', `<tt>-- </tt>', `<tt>--- </tt>'
-      はそれぞれネストレベル1, 2, 3の順序無しリスト (&lt;ul&gt;)。
-      ダッシュの後に空白が必要。
-   <p>行頭の`<tt>1. </tt>', `<tt>1.. </tt>', `<tt>1... </tt>'
-      はそれぞれネストレベル1, 2, 3の順序つきリスト (&lt;ol&gt;)。
-      ピリオドの後に空白が必要。数字は整形時にリナンバーされる。
-   <p>`<tt>----</tt>' だけの行は &lt;hr&gt;
-   <p>行頭の `<tt>:項目:説明</tt>' は &lt;dl&gt;。
-      項目は最後に現われるコロンまで取られる。説明中にコロンを入れたければ次の行に。
-   <p><tt>[[名前]]</tt> と書くと `名前' がWikiNameになる。
-      名前が `$' で始まっていると特殊な意味(例: `[[$date]]' は書き込み時に
-      その時間を表す文字列に変換される)。
-   <p>`<tt>http:</tt>'で始まるURLはリンクになる。
-      `<tt>[URL name]</tt>' と書くと<tt>name</tt>に対して<tt>URL</tt>への
-      リンクが貼られる。
+         It emphasizes a null string, so it's effectively nothing.</p>"
+"<h2>テキスト整形ルール</h2>
+   <p>HTMLは使えない。</p>
+   <p>\";;\" で始まる行は出力に現れない (コメント)</p>
+   <p>\"~\" で始まる行はコメントを除いた前の行に連結される (行の継続)</p>
+   <p>空行は段落の区切り (&lt;p&gt;)</p>
+   <p>行頭の\"<tt>- </tt>\", \"<tt>-- </tt>\", \"<tt>--- </tt>\" …
+      は順序無しリスト (&lt;ul&gt;)。ダッシュの後に空白が必要。</p>
+   <p>行頭の\"<tt># </tt>\", \"<tt>## </tt>\", \"<tt>### </tt>\" …
+      は順序つきリスト (&lt;ol&gt;)。ピリオドの後に空白が必要。</p>
+   <p>\"<tt>----</tt>\" だけの行は &lt;hr&gt;</p>
+   <p>行頭の \"<tt>:項目:説明</tt>\" は &lt;dl&gt;。
+      項目は最後に現われるコロンまで取られる。説明中にコロンを入れたければ次の行に。</p>
+   <p><tt>[[名前]]</tt> と書くと \"名前\" がWikiNameになる。
+      名前が \"$\" で始まっていると特殊な意味(例: \"[[$date]]\" は書き込み時に
+      その時間を表す文字列に変換される)。</p>
+   <p>\"<tt>http:</tt>\"で始まるURLはリンクになる。
+      \"<tt>[URL name]</tt>\" と書くと<tt>name</tt>に対して<tt>URL</tt>への
+      リンクが貼られる。</p>
    <p>2つのシングルクオートで囲む (<tt>''ほげ''</tt>) と
-      強調 (&lt;em&gt;)
+      強調 (&lt;em&gt;)</p>
    <p>3つのシングルクオートで囲む (<tt>'''ほげ'''</tt>) と
-      もっと強調 (&lt;strong&gt;)
-   <p>行頭の `<tt>*</tt>', `<tt>**</tt>', `<tt>***</tt>' は
-      それぞれ見出し、小見出し。もっと小見出し。アスタリスクの後に空白が必要。
-   <p>行頭に空白があると &lt;pre&gt;。
-   <p>\"{{{\"だけの行も &lt;pre&gt;。これは\"}}}\"だけの行で終わる。
-   <p>`|' で始まり `|' で終る行はテーブルの一行となる。
-      連続する行でテーブルが構成される。行の中では `|' でカラムが区切られる。
+      もっと強調 (&lt;strong&gt;)</p>
+   <p>行頭の \"<tt>*</tt>\", \"<tt>**</tt>\", \"<tt>***</tt>\" …
+      は見出し。アスタリスクの後に空白が必要。</p>
+   <p>行頭に空白があるとプレフォーマットテキスト(&lt;pre&gt;)。
+      文字強調やWikiNameの変換は行われる。</p>
+   <p>\"{{{\"だけの行から\"}}}\"だけの行は文字通りの(varbatim)テキスト。
+      &lt;pre&gt; と似ているが、一切の変換が行われない。
+      コメントや行の継続も無効になる。ソースコード等を貼りつけるのに便利。</p>
+   <p>\"||\" で始まり \"||\" で終る行はテーブルの一行となる。
+      連続する行でテーブルが構成される。行の中では \"||\" でカラムが区切られる。
+   <p>\"~%\" は \"&lt;br&gt;\"。</p>
    <p>行頭に上記の特殊な文字をそのまま入れたい場合は、ダミーの強調項目
-       (6つの連続するシングルクオート)を行頭に入れると良い。"
+       (6つの連続するシングルクオート)を行頭に入れると良い。</p>"
 )
 
-;; wiliki.scm : line 640
+;; wiliki.scm : line 691
 ("Preview of ~a"
  "~a のプレビュー"
 )
 
-;; wiliki.scm : line 672
+;; wiliki.scm : line 723
 ("All Pages"
  "一覧"
 )
 
-;; wiliki.scm : line 682
+;; wiliki.scm : line 733
 ("Recent Changes"
  "最近の更新"
 )
 
-;; wiliki.scm : line 695
+;; wiliki.scm : line 746
 ("Search results"
  "検索結果"
 )
-
