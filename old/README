@@ -1,0 +1,7 @@
+This directory contains the original "quick and dirty" version of
+WiLiKi script.  The first version is 131 lines of code (without
+comments & blank lines), which is simple enough for those who want
+to grasp the basic idea of Wiki engine.
+
+Note that the scripts contain EUC-JP characters, so it won't run
+unless your Gauche is compiled with EUC-JP as the native encoding.

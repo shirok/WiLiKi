@@ -1,5 +1,7 @@
 2003-04-06  Shiro Kawai  <shiro@acm.org>
 
+	* Makefile.am and other files : adapted to automake
+
 	* src/wiliki.scm, src/wiliki/format.scm : separated formatting stuff
 	  into a module.
 

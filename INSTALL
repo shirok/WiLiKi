@@ -1,0 +1,25 @@
+[Quick instruction to install wiliki]
+
+  See the following URL for detailed instruction in Japanese:
+  http://www.shiro.dreamhost.com/scheme/wiliki/wiliki.cgi?WiLiKi%3a%a5%ea%a5%d5%a5%a1%a5%ec%a5%f3%a5%b9%a5%de%a5%cb%a5%e5%a5%a2%a5%eb&l=jp
+
+
+Requirements
+------------
+
+  Gauche 0.6.7.1 or later
+
+
+Installation
+------------
+
+The standard configure+make installs necessary modules.
+
+  % ./configure
+  % make
+  % make install
+
+Then you need to copy src/wiliki.cgi to your cgi script
+diretory, and edit the settings.
+
+

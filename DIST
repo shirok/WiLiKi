@@ -5,30 +5,21 @@ RPMDIR="$HOME/rpm"
 
 while [ $# -gt 0 ]; do
   case $1 in
-    tgz) tgz=yes; shift ;;
-    *) echo "DIST [tgz]"; exit 0;;
+    gen) gen=yes; shift ;;
+    tgz) gen=yes; tgz=yes; shift ;;
+    *) echo "DIST [gen|tgz]"; exit 0;;
   esac
 done
 
-if [ "$tgz" = "yes" ]; then
-  rm -rf ../WiLiKi-$VERSION
-  if [ -f Makefile -a -f src/Makefile ]; then make realclean; fi
-  autoconf -I `gauche-config --ac`
+if [ "$gen" = "yes" ]; then
+  cp `gauche-config --ac`/aclocal.m4 acinclude.m4
+  aclocal
+  automake -a -c
+  autoconf
   ./configure
-  make distclean
+fi
 
-  rm -f DIST_EXCLUDE_X
-  cat DIST_EXCLUDE > DIST_EXCLUDE_X
-  find . -name CVS -print -prune >> DIST_EXCLUDE_X
-
-#  escm -i gosh -o INSTALL INSTALL.esc
-#  LANG=ja_JP escm -i gosh -o INSTALL.eucjp INSTALL.esc
-
-  mkdir ../WiLiKi-$VERSION
-  tar cvfX - DIST_EXCLUDE_X . | (cd ../WiLiKi-$VERSION; tar xf -)
-  (cd ..; tar cvf - WiLiKi-$VERSION | gzip -9 > WiLiKi-$VERSION.tgz)
-  if [ -d $TGZ_DEST ]; then
-    mv ../WiLiKi-$VERSION.tgz $TGZ_DEST
-  fi
+if [ "$tgz" = "yes" ]; then
+  make dist
 fi
 

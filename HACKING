@@ -1,0 +1,12 @@
+To build from CVS sources:
+
+Requirements:
+  automake 1.4-p5
+  autoconf 2.52
+
+After checking out the source tree, run
+
+  ./DIST gen
+
+which calls automake and autoconf to create necessary files.
+

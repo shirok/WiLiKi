@@ -1,7 +1,0 @@
-AUTOCONF
-DIST
-DIST_EXCLUDE
-DIST_EXCLUDE_X
-INSTALL.esc
-autom4te.cache
-old
