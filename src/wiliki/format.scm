@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.24 2004-01-12 12:11:47 shirok Exp $
+;;; $Id: format.scm,v 1.25 2004-01-12 12:50:16 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -137,16 +137,17 @@
                            "=\"" ,(html-escape-string (x->string (cadar lis)))
                            "\"")
                          r)))))
-    (define (rest lis)
-      (if (null? lis)
+    (define (rest type lis)
+      (if (and (null? lis)
+               (memq type '(br area link img param hr input col base meta)))
         '(" />")
         (list* ">" (reverse! (fold node '() lis)) "</" type "\n>")))
 
     (if (and (pair? body)
              (pair? (car body))
              (eq? (caar body) '@))
-      (list* "<" type (attr (cdar body) '()) (rest (cdr body)))
-      (list* "<" type (rest body)))
+      (list* "<" type (attr (cdar body) '()) (rest type (cdr body)))
+      (list* "<" type (rest type body)))
     )
 
   (define (node n r)
