@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.32 2002-03-03 09:20:23 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.33 2002-03-03 21:16:48 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -23,7 +23,7 @@
 ;; Some constants
 
 (define *recent-changes* " %recent-changes")
-
+(define *lwp-version* "1.0")            ;''lightweight protocol'' version
 (define $$ gettext)
 
 ;; simple parameter interface
@@ -631,16 +631,16 @@
    :page-id (format #f "c=s&key=~a" (html-escape-string key))
    :show-edit? #f))
 
-(define (cmd-plain-text key)
+(define (cmd-lwp-view key)
   (let ((page (wdb-get (db) key #f)))
     `(,(format-header 'plain)
+      ,#`"title: ,|key|\n"
+      ,#`"wiliki-lwp-version: ,|*lwp-version*|\n"
       ,(if page
-           `(,#`"title: ,|key|\n"
-             ,#`"mtime: ,(mtime-of page)\n"
+           `(,#`"mtime: ,(mtime-of page)\n"
              "\n"
              ,(content-of page))
-           `(,#`"title: ,|key|\n"
-             ,#`"mtime: 0\n"
+           `(,#`"mtime: 0\n"
              "\n")))))
 
 ;; Entry ------------------------------------------
@@ -667,8 +667,8 @@
             ;; command may #t if we're looking at the page named "c".
             ((or (not command) (eq? command #t))
              (cmd-view pagename))
+            ((equal? command "lv") (cmd-lwp-view pagename))
             ((equal? command "e") (cmd-edit pagename))
-            ((equal? command "t") (cmd-plain-text pagename))
             ((equal? command "a") (cmd-all))
             ((equal? command "r") (cmd-recent-changes))
             ((equal? command "s")
