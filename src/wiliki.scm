@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.55 2003-02-09 02:30:57 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.56 2003-02-09 03:06:18 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -48,6 +48,7 @@
 (autoload dbm.gdbm <gdbm>)
 (autoload "wiliki/macro" handle-reader-macro handle-writer-macro)
 (autoload "wiliki/rss"   rss-page)
+(autoload "wiliki/pasttime" how-long-since)
 
 ;; Version check.
 (when (version<? (gauche-version) "0.6.7.1")

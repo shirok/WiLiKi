@@ -4,7 +4,7 @@ INSTALL_TYPE = @INSTALL_TYPE@
 INSTALL = @INSTALL@
 
 TARGET = wiliki.scm wiliki/mcatalog.scm wiliki/msgs.jp \
-	 wiliki/macro.scm wiliki/rss.scm
+	 wiliki/macro.scm wiliki/rss.scm wiliki/pasttime.scm 
 SCM_INSTALL_DIR     = `$(GAUCHE_CONFIG) --$(INSTALL_TYPE)libdir`
 
 all: wiliki/msgs.jp

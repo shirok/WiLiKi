@@ -1,5 +1,7 @@
 2003-02-08  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki/pasttime.scm : a feature to display the time
+	  since last modified.
 	* src/wiliki/rss.scm : added RSS support.
 	* src/wiliki.scm : Removed cgi-name slot from <wiliki>.  It is
 	  now derived from CGI metavariables SCRIPT_NAME.
