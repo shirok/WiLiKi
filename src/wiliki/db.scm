@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: db.scm,v 1.4 2003-07-10 08:57:59 shirok Exp $
+;;; $Id: db.scm,v 1.5 2003-08-18 06:48:07 shirok Exp $
 
 (define-module wiliki.db
   (use srfi-13)
@@ -63,7 +63,11 @@
             (cond ((>= retry *retry-limit*) (raise e))
                   ((string-contains-ci (ref e 'message) *EAVAIL-message*)
                    (sys-sleep 1) (try (+ retry 1) mode))
-                  (else (raise e))))
+                  (else
+                   ;; we don't want to show the path of db to unknown
+                   ;; visitors
+                   (raise
+                    (make <error> :message #`"Couldn't open database file to ,|rwmode|.")))))
         (lambda ()
           (dbm-open dbtype :path dbpath :rw-mode mode))))
 

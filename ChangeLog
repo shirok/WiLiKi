@@ -1,3 +1,16 @@
+2003-08-17  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.cgi, src/wiliki.scm (error-page),
+	  src/wiliki/db.scm (db-try-open),
+	  src/wiliki/macro.scm (handle-expansion):
+	  Added debug-level to <wiliki>, and controls whether the diagnostic
+	  messages should be shown on webpage or not.  The default is set so
+	  that it won't give away internal information (such as database path,
+	  stack trace, etc).
+
+	* src/wiliki-sample.css : added "macroerror" class in pre, for
+	  error diagnostic messages.
+
 2003-07-09  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/db.scm (db-try-open): fixed the bug that wiliki didn't

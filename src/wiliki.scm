@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.80 2003-07-04 10:30:57 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.81 2003-08-18 06:48:07 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -117,6 +117,8 @@
    (script-name :accessor script-name-of :init-keyword :script-name
                 :init-form (or (sys-getenv "SCRIPT_NAME")
                                "wiliki.cgi"))
+   (debug-level :accessor debug-level :init-keyword :debug-level
+                :init-value 0)
    ))
 
 (define (cgi-name-of wiliki)
@@ -218,10 +220,12 @@
    (html:title #`",(title-of (wiliki)): Error")
    (list (html:h1 "Error")
          (html:p (html-escape-string (ref e 'message)))
-         (html:pre (html-escape-string
-                    (call-with-output-string
-                      (cut with-error-to-port <>
-                           (cut report-error e)))))
+         (if (positive? (debug-level (wiliki)))
+           (html:pre (html-escape-string
+                      (call-with-output-string
+                        (cut with-error-to-port <>
+                             (cut report-error e)))))
+           '())
          ))
   )
 

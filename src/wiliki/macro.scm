@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.12 2003-05-11 10:55:04 shirok Exp $
+;;; $Id: macro.scm,v 1.13 2003-08-18 06:48:07 shirok Exp $
 
 (select-module wiliki)
 (use srfi-19)
@@ -57,7 +57,18 @@
 
 (define (handle-expansion name finder applier)
   (with-error-handler
-      (lambda (e) (unrecognized name))
+      (lambda (e)
+        (if (positive? (debug-level (wiliki)))
+          (html:pre
+           :class "macroerror"
+           (list
+            (html-escape-string
+             #`"Macro error in ,|name|: ,(ref e 'message)\n")
+            (html-escape-string
+             (call-with-output-string
+               (cut with-error-to-port <>
+                    (cut report-error e))))))
+          (unrecognized name)))
     (lambda ()
       (cond ((finder) => applier)
             (else (unrecognized name))))))
@@ -222,6 +233,9 @@
     (cond ((wdb-get (db) pagename) => make-toc)
           (else #f"`[[$$toc]]"))
     ))
+
+(define-reader-macro (testerr . x)
+  (error (x->string x)))
 
 ;;----------------------------------------------
 ;; Virtual page definitions

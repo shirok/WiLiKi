@@ -44,6 +44,10 @@
 ;;               and implement wdb* methods (see wiliki.scm).
 ;;               Don't add this argument if you're not sure about these stuff.
 ;;
+;;    :debug-level - if more than 0, wiliki shows diagnostic messages when
+;;               it encounters an error during processing (including macro
+;;               expansion error).  Useful while debugging, but should be
+;;               turned off for the sites open to public.
 
 (define (main args)
   (wiliki-main
@@ -56,6 +60,7 @@
      :language 'jp
      :charsets '((jp . euc-jp) (en . euc-jp))
      :image-urls '((#/^http:\/\/sourceforge.net\/sflogo/ allow))
+     :debug-level 0
      )))
 
 ;; Local variables:
