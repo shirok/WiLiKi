@@ -1,0 +1,37 @@
+/* sample style sheet for wiliki */
+
+body {
+  font-family: sans-serif;
+  color: black;
+  background-color: #eeeedd;
+  margin-left: 2em;
+}
+
+th, td { /* ns 4 */
+  font-family: sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+   text-align: left;
+   color: #006655;
+   background: transparent;
+}
+h1 { font: bold 190% sans-serif }
+h2 { font: bold 160% sans-serif }
+h3 { font: bold 130% sans-serif }
+h4 { font: bold 110% sans-serif }
+h5 { font: italic 100% sans-serif }
+h6 { font: small-caps 100% sans-serif }
+
+pre {
+    margin-left: 2em;
+    margin-right: 2em;
+    font-family: monospace;
+    background-color: #ddeeee;
+    border: solid thin #aacccc;
+}
+
+dt { font-weight: bold }
+
+
+
