@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.10 2003-08-31 23:11:16 shirok Exp $
+;;; $Id: format.scm,v 1.11 2003-08-31 23:28:10 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -56,8 +56,10 @@
 
 (define (format-time time)
   (if time
-      (sys-strftime "%Y/%m/%d %T %Z" (sys-localtime time))
-      "-"))
+    (if (zero? time)
+      ($$ "Epoch")
+      (sys-strftime "%Y/%m/%d %T %Z" (sys-localtime time)))
+    "-"))
 
 (define (format-colored-box content)
   (html:table :width "100%" :cellpadding 5

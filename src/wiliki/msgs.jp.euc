@@ -1,94 +1,99 @@
-;; wiliki/history.scm : line 83
+;; wiliki/history.scm : line 90
 ("Edit History"
  "編集履歴"
 )
 
-;; wiliki/history.scm : line 88
+;; wiliki/history.scm : line 95
 ("Edit history of ~a"
  "~aの編集履歴"
 )
 
-;; wiliki/history.scm : line 98
+;; wiliki/history.scm : line 105
 ("Edit History:Diff"
  "編集履歴:差分"
 )
 
-;; wiliki/history.scm : line 105
+;; wiliki/history.scm : line 112
 ("Changes of ~a since ~a"
  "~1@*~a以来の~0@*~aの変更箇所"
 )
 
-;; wiliki/history.scm : line 109
+;; wiliki/history.scm : line 116
 ("added lines"
  "追加された行"
 )
 
-;; wiliki/history.scm : line 110
+;; wiliki/history.scm : line 117
 ("deleted lines"
  "削除された行"
 )
 
-;; wiliki/history.scm : line 113
+;; wiliki/history.scm : line 120
 ("Return to the edit history"
  "編集履歴ページに戻る"
 )
 
-;; wiliki/history.scm : line 121
+;; wiliki/history.scm : line 128
 ("Edit History:View"
  "編集履歴:過去のバージョン"
 )
 
-;; wiliki/history.scm : line 128
+;; wiliki/history.scm : line 135
 ("Content of ~a at ~a"
  "~1@*~a時点での~0@*~aの内容"
 )
 
-;; wiliki/history.scm : line 135
+;; wiliki/history.scm : line 142
 ("View diff from current version"
  "現在のバージョンとの差分を見る"
 )
 
-;; wiliki/history.scm : line 138
+;; wiliki/history.scm : line 145
 ("Return to the edit history"
  "編集履歴ページに戻る"
 )
 
-;; wiliki/history.scm : line 145
+;; wiliki/history.scm : line 152
 ("No edit history available for page ~a"
  "~aのページには編集履歴情報がありません"
 )
 
-;; wiliki/format.scm : line 492
+;; wiliki/format.scm : line 60
+("Epoch"
+ "記録開始"
+)
+
+;; wiliki/format.scm : line 494
 ("Last modified : "
  "最終更新 : "
 )
 
-;; wiliki/format.scm : line 525
+;; wiliki/format.scm : line 527
 ("[Top Page]"
  "[トップ]"
 )
 
-;; wiliki/format.scm : line 527
+;; wiliki/format.scm : line 529
 ("[Edit]"
  "[編集]"
 )
 
-;; wiliki/format.scm : line 529
+;; wiliki/format.scm : line 531
 ("[All Pages]"
  "[一覧]"
 )
 
-;; wiliki/format.scm : line 531
+;; wiliki/format.scm : line 533
 ("[Recent Changes]"
  "[最近の更新]"
 )
 
-;; wiliki/format.scm : line 533
+;; wiliki/format.scm : line 535
 ("[Edit History]"
  "[編集履歴]"
 )
 
-;; wiliki/format.scm : line 535
+;; wiliki/format.scm : line 537
 ("Search:"
  "検索:"
 )

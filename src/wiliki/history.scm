@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: history.scm,v 1.4 2003-08-31 23:11:16 shirok Exp $
+;;;  $Id: history.scm,v 1.5 2003-08-31 23:28:10 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -77,7 +77,14 @@
      (html:tr (th :colspan 3 "Log"))
      (map history-table-row
           entries
-          (iota (length entries) (length entries) -1))))
+          (iota (length entries) (length entries) -1))
+     (html:tr (td :colspan 4
+                  (html:div
+                   :style "text-align:right"
+                   "["
+                   (html:a :href (url "p=~a&c=hd&t=0" (cv-out pagename))
+                           "Diff from epoch")
+                   "]")))))
   
   (format-page
    ($$ "Edit History")
