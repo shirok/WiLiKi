@@ -1,7 +1,7 @@
 ;;;
 ;;; wiliki/format.scm - wiliki markup -> SXML converter
 ;;;
-;;;  Copyright (c) 2003 Shiro Kawai, All rights reserved.
+;;;  Copyright (c) 2003-2004 Shiro Kawai, All rights reserved.
 ;;;
 ;;;  Permission is hereby granted, free of charge, to any person
 ;;;  obtaining a copy of this software and associated documentation
@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.19 2004-01-09 13:28:07 shirok Exp $
+;;; $Id: format.scm,v 1.20 2004-01-10 11:07:33 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -40,16 +40,23 @@
   (use gauche.charconv)
   (use gauche.sequence)
   (export <wiliki-formatter>
-          wiliki-format-wiki-name
-          wiliki-format-time
-          wiliki:format
+          <wiliki-page>
+          wiliki:persistent-page?
+          wiliki:transient-page?
+          wiliki:format-wiki-name
+          wiliki:format-time
+          wiliki:format-content
+          wiliki:formatter
+          wiliki:page-stack
+          wiliki:current-page
+          wiliki:format-page-header
+          wiliki:format-page-footer
+          wiliki:format-page-body
+          wiliki:format-head-elements
+          wiliki:format-page
           wiliki:sxml->stree
-          format-diff-pre
-          format-diff-line
-          <page> format-page format-content the-formatter
-          wiliki-page-header wiliki-page-footer
-          wiliki-page-stack wiliki-current-page
-          wiliki-page-head-elements
+          wiliki:format-diff-pre
+          wiliki:format-diff-line
           )
   )
 (select-module wiliki.format)
@@ -59,45 +66,31 @@
 ;; WiLiKi so that it can be used for other applications that needs
 ;; wiki-like formatting capability.
 
-;; The formatter needs a certain knowledge about how to handle
-;; external links.
-
 (define-class <wiliki-formatter> ()
-  ((bracket :init-keyword :bracket
-            :init-form (lambda (f name) #`"[[,|name|]]"))
-   (time    :init-keyword :time
-            :init-form (lambda (f time) (x->string time)))
+  ((bracket       :init-keyword :bracket
+                  :init-value (lambda (name) #`"[[,|name|]]"))
+   (time          :init-keyword :time
+                  :init-value (lambda (time) (x->string time)))
+   (body          :init-keyword :body
+                  :init-value (lambda (page opts) (fmt-body page opts)))
+   (header        :init-keyword :header
+                  :init-value (lambda (page opts) '()))
+   (footer        :init-keyword :footer
+                  :init-value (lambda (page opts) '()))
+   (head-elements :init-keyword :head-elements
+                  :init-value (lambda (page opts) '()))
    ))
 
-(define (wiliki-format-wiki-name fmtr name)
-  ((ref fmtr 'bracket) fmtr name))
+(define (fmt-wiki-name name)
+  ((ref (the-formatter) 'bracket) name))
 
-(define (wiliki-format-time fmtr time)
-  ((ref fmtr 'time) fmtr time))
+(define (fmt-time time)
+  ((ref (the-formatter) 'time) time))
 
 (define the-formatter
   (make-parameter (make <wiliki-formatter>)))
 
 ;; Utilities
-
-(define (format-diff-pre difflines)
-  `(pre (@ (class "diff")
-           (style "background-color:#ffffff; color:#000000; margin:0"))
-        ,@(map format-diff-line difflines)))
-
-(define (format-diff-line line)
-  (define (aline . c)
-    `(span (@ (class "diff_added")
-              (style "background-color:#ffffff; color: #4444ff"))
-           ,@c))
-  (define (dline . c)
-    `(span (@ (class "diff_deleted")
-              (style "background-color:#ffffff; color: #ff4444"))
-           ,@c))
-  (cond ((string? line) `(span "  " ,line "\n"))
-        ((eq? (car line) '+) (aline "+ " (cdr line) "\n"))
-        ((eq? (car line) '-) (dline "- " (cdr line) "\n"))
-        (else "???")))
 
 ;; Expands tabs in a line.
 (define expand-tab 
@@ -187,7 +180,7 @@
 
 ;; Find wiki name in the line.
 ;; Correctly deal with nested "[[" and "]]"'s.
-(define (format-line fmtr line seed)
+(define (fmt-line line seed)
   ;; parse to next "[[" or "]]"
   (define (token s)
     (cond ((#/\[\[|\]\]/ s)
@@ -262,7 +255,7 @@
           (receive (wikiname rest) (find-closer post 0 '())
             (if wikiname
               (loop rest
-                    (cons `(stree ,(wiliki-format-wiki-name fmtr wikiname))
+                    (cons `(stree ,(fmt-wiki-name wikiname))
                           (bold pre seed)))
               (loop rest (bold pre seed))))
           (loop "" (bold line seed))))))
@@ -270,7 +263,7 @@
 
 ;; Read lines from generator and format them.  This is the main
 ;; parser/transformer of WiLiKi format.
-(define (format-lines fmtr generator)
+(define (fmt-lines generator)
 
   (define gen-id (let ((n 0)) (lambda () (begin0 n (inc! n)))))
 
@@ -309,7 +302,7 @@
     (let loop ((tok tok) (seed seed) (p '()))
       (if (eq? (token-type tok) 'p)
         (loop (next-token ctx) seed
-              (format-line fmtr (token-value tok) p))
+              (fmt-line (token-value tok) p))
         (let1 seed (if (null? p) seed (cons `(p ,@(reverse! p)) seed))
           (case (token-type tok)
             ((eof)  (reverse! seed))
@@ -349,9 +342,7 @@
     (let loop ((tok tok) (r '()))
       (if (eq? (token-type tok) 'pre)
         (loop (next-token ctx)
-              (format-line fmtr
-                                (tree->string (expand-tab (token-value tok)))
-                                r))
+              (fmt-line (tree->string (expand-tab (token-value tok))) r))
         (cont tok ctx `(pre ,@(reverse! r))))))
 
   ;; Heading
@@ -373,7 +364,7 @@
     `(tr (@ (class "inbody"))
          ,@(map (lambda (seq)
                   `(td (@ (class "inbody"))
-                       ,@(reverse! (format-line fmtr seq '()))))
+                       ,@(reverse! (fmt-line seq '()))))
                 (string-split (m 1) "||"))))
 
   ;; Blockquote
@@ -419,7 +410,7 @@
       (define (fold-content tok ctx items)
         (let loop ((tok (next-token ctx))
                    (ctx ctx)
-                   (r (format-line fmtr ((token-value tok) 'after) '())))
+                   (r (fmt-line ((token-value tok) 'after) '())))
           (case (token-type tok)
             ((eof null hr heading ul ol close-quote)
              (wrap tok (cons `(li ,@(reverse! r)) items) ctx))
@@ -428,7 +419,7 @@
             ((table) (table tok ctx (>> loop ctx r)))
             ((dl) (def-item tok ctx (>> loop ctx r)))
             (else (loop (next-token ctx) ctx
-                        (format-line fmtr (token-value tok) r))))))
+                        (fmt-line (token-value tok) r))))))
 
       ;; body of list-item
       (receive (tok elts) (wrap tok '() newctx)
@@ -440,8 +431,8 @@
       (cont nextok ctx `(dl ,@(reverse! r)))))
 
   (define (def-item-rec tok ctx seed)
-    (let ((dt (reverse! (format-line fmtr ((token-value tok) 1) '())))
-          (dd (format-line fmtr ((token-value tok) 2) '())))
+    (let ((dt (reverse! (fmt-line ((token-value tok) 1) '())))
+          (dd (fmt-line ((token-value tok) 2) '())))
       (let loop ((tok (next-token ctx))
                  (p dd)
                  (r '()))
@@ -456,7 +447,7 @@
            (def-item-rec tok ctx (finish)))
           ((p)
            (loop (next-token ctx)
-                 (format-line fmtr (token-value tok) p) r))
+                 (fmt-line (token-value tok) p) r))
           ((pre)
            (pre tok ctx (lambda (tok ctx elt)
                           (loop tok '() (cons elt (fold-p))))))
@@ -477,11 +468,11 @@
              (values tok (finish))))
           (else
            (loop (next-token ctx) '()
-                 (format-line fmtr (token-value tok) p) r))
+                 (fmt-line (token-value tok) p) r))
           ))))
 
   ;; Main body
-  (map wiliki:sxml->stree (block (next-token '()) '() '()))
+  (block (next-token '()) '() '())
   )
 
 ;; Create a line scanner method
@@ -518,68 +509,119 @@
             )))
   )
   
-(define (wiliki:format fmtr content)
-  (call-with-input-string content
-    (lambda (p)
-      (with-port-locking p
-        (lambda ()
-          (format-lines fmtr (make-line-scanner p)))))))
-
 ;; Page ======================================================
 
-(define wiliki-page-stack
+(define page-stack
   (make-parameter '()))
 
-(define (wiliki-current-page)
-  (let1 hist (wiliki-page-stack)
+(define (current-page)
+  (let1 hist (page-stack)
     (if (null? hist) #f (car hist))))
 
-;; Class <page> ---------------------------------------------
+;; Class <wiliki-page> ---------------------------------------------
 ;;   Represents a page.
 ;;
-(define-class <page> ()
-  ((key   :init-keyword :key)
-   (ctime :initform (sys-time) :init-keyword :ctime)
-   (cuser :initform #f :init-keyword :cuser)
-   (mtime :initform #f :init-keyword :mtime)
-   (muser :initform #f :init-keyword :muser)
-   (content :initform "" :init-keyword :content)
+;;   persistent page: a page that is (or will be) stored in DB.
+;;         - has 'key' value.
+;;         - if mtime is #f, it is a freshly created page before saved.
+;;   transient page: other pages created procedurally just for display.
+;;         - 'key' slot has #f.
+
+(define-class <wiliki-page> ()
+  (;; title - Page title.  For persistent pages, this is set to
+   ;;         the same value as the database key.
+   (title   :init-value #f :init-keyword :title)
+   ;; key   - Database key.  For transient pages, this is #f.
+   (key     :init-value #f :init-keyword :key)
+   ;; command - A URL parameters to reproduce this page.  Only meaningful
+   ;;           for transient pages.
+   (command :init-value #f :init-keyword :command)
+   ;; content - Either a wiliki-marked-up string or SXML.
+   (content :init-value "" :init-keyword :content)
+   ;; creation and modification times, and users (users not used now).
+   (ctime   :init-value (sys-time) :init-keyword :ctime)
+   (cuser   :init-value #f :init-keyword :cuser)
+   (mtime   :init-value #f :init-keyword :mtime)
+   (muser   :init-value #f :init-keyword :muser)
    ))
 
-(define-method format-content ((page <page>))
-  (if (member page (wiliki-page-stack)
-              (lambda (p1 p2) (string=? (ref p1 'key) (ref p2 'key))))
-      ;; loop in $$include chain detected
-      ">>>$$include loop detected<<<"
-      (parameterize
-          ((wiliki-page-stack (cons page (wiliki-page-stack))))
-        (format-content (ref page 'content)))))
+(define (fmt-content page)
+  (define (do-fmt content)
+    (call-with-input-string content
+      (lambda (p)
+        (with-port-locking p
+          (cut fmt-lines (make-line-scanner p))))))
+  (cond ((string? page) (do-fmt page))
+        ((is-a? page <wiliki-page>)
+         (if (member page (page-stack)
+                     (lambda (p1 p2)
+                       (and (ref p1 'key) (ref p2 'key)
+                            (string=? (ref p1 'key) (ref p2 'key)))))
+           ;; loop in $$include chain detected
+           `(p ">>>$$include loop detected<<<")
+           (parameterize
+               ((page-stack (cons page (page-stack))))
+             (if (string? (ref page 'content))
+               (do-fmt (ref page 'content))
+               (ref page 'content)))))
+        (else page)))
 
-(define-method format-content ((content <string>))
-  (wiliki:format (the-formatter) content))
+;; default page body formatter
+(define (fmt-body page opts)
+  `(,@(wiliki:format-page-header page opts)
+    ,@(fmt-content page)
+    ,@(wiliki:format-page-footer page opts)))
 
-;; Default methods
-(define-method wiliki-page-footer ((page <top>) fmtr opts)
-  '())
+;;;
+;;; Exported functions
+;;;
 
-(define-method wiliki-page-header ((page <top>) fmtr opts)
-  '())
+(define wiliki:format-wiki-name fmt-wiki-name)
+(define wiliki:format-time      fmt-time)
+(define wiliki:format-content   fmt-content)
+(define wiliki:formatter        the-formatter)
+(define wiliki:page-stack       page-stack)
+(define wiliki:current-page     current-page)
 
-(define-method wiliki-page-head-elements ((page <top>) fmtr opts)
-  '())
+(define (wiliki:persistent-page? page)
+  (not (wiliki:transient-page? page)))
+(define (wiliki:transient-page? page)
+  (not (ref page 'key)))
 
-(define-method format-page ((page <page>) . args)
-  (let* ((content (if (string? (ref page 'content))
-                    `((stree ,(format-content page)))
-                    (ref page 'content))))
-    `(html
-      (head ,@(wiliki-page-head-elements page (the-formatter) args))
-      (body
-       ,@(wiliki-page-header page (the-formatter)
-                             (list* :page-id (get-keyword :page-id args (ref page 'key))
-                                    args))
-       ,@content
-       ,@(wiliki-page-footer page (the-formatter) args)))
-    ))
+(define (wiliki:format-page-header page opts)
+  ((ref (the-formatter) 'header) page opts))
+
+(define (wiliki:format-page-footer page opts)
+  ((ref (the-formatter) 'footer) page opts))
+
+(define (wiliki:format-page-body page opts)
+  ((ref (the-formatter) 'body) page opts))
+
+(define (wiliki:format-head-elements page opts)
+  ((ref (the-formatter) 'head-elements) page opts))
+
+(define (wiliki:format-page page . opts)
+  `(html
+    (head ,@(wiliki:format-head-elements page opts))
+    (body ,@(wiliki:format-page-body page opts))))
+
+(define (wiliki:format-diff-pre difflines)
+  `(pre (@ (class "diff")
+           (style "background-color:#ffffff; color:#000000; margin:0"))
+        ,@(map wiliki:format-diff-line difflines)))
+
+(define (wiliki:format-diff-line line)
+  (define (aline . c)
+    `(span (@ (class "diff_added")
+              (style "background-color:#ffffff; color: #4444ff"))
+           ,@c))
+  (define (dline . c)
+    `(span (@ (class "diff_deleted")
+              (style "background-color:#ffffff; color: #ff4444"))
+           ,@c))
+  (cond ((string? line) `(span "  " ,line "\n"))
+        ((eq? (car line) '+) (aline "+ " (cdr line) "\n"))
+        ((eq? (car line) '-) (dline "- " (cdr line) "\n"))
+        (else "???")))
 
 (provide "wiliki/format")

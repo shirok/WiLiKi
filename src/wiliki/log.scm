@@ -1,7 +1,7 @@
 ;;;
 ;;; wiliki/log.scm - logging & history management
 ;;;
-;;;  Copyright (c) 2003 Shiro Kawai, All rights reserved.
+;;;  Copyright (c) 2003-2004 Shiro Kawai, All rights reserved.
 ;;;
 ;;;  Permission is hereby granted, free of charge, to any person
 ;;;  obtaining a copy of this software and associated documentation
@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: log.scm,v 1.9 2003-08-31 23:11:16 shirok Exp $
+;;; $Id: log.scm,v 1.10 2004-01-10 11:07:33 shirok Exp $
 
 (define-module wiliki.log
   (use srfi-1)

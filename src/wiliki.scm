@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  Copyright (c) 2000-2003 Shiro Kawai, All rights reserved.
+;;;  Copyright (c) 2000-2004 Shiro Kawai, All rights reserved.
 ;;;
 ;;;  Permission is hereby granted, free of charge, to any person
 ;;;  obtaining a copy of this software and associated documentation
@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.101 2004-01-01 22:24:13 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.102 2004-01-10 11:07:32 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -153,19 +153,20 @@
 ;; Various gadgets -----------------------------------------
 
 (define (cgi-name-of wiliki)
-  (sys-basename (script-name-of wiliki)))
+  (and wiliki (sys-basename (script-name-of wiliki))))
 
 (define (full-script-path-of wiliki)
-  (format "~a://~a~a~a"
-          (protocol-of wiliki)
-          (server-name-of wiliki)
-          (if (or (and (= (server-port-of wiliki) 80)
-                       (string=? (protocol-of wiliki) "http"))
-                  (and (= (server-port-of wiliki) 443)
-                       (string=? (protocol-of wiliki) "https")))
-            ""
-            #`":,(server-port-of wiliki)")
-          (script-name-of wiliki)))
+  (and wiliki
+       (format "~a://~a~a~a"
+               (protocol-of wiliki)
+               (server-name-of wiliki)
+               (if (or (and (= (server-port-of wiliki) 80)
+                            (string=? (protocol-of wiliki) "http"))
+                       (and (= (server-port-of wiliki) 443)
+                            (string=? (protocol-of wiliki) "https")))
+                 ""
+                 #`":,(server-port-of wiliki)")
+               (script-name-of wiliki))))
 
 (define (lang-spec language prefix)
   (if (equal? language (language-of (wiliki)))
@@ -193,13 +194,15 @@
      )))
 
 ;; Creates a link to switch language
-(define (language-link pagename)
-  (receive (target label)
-      (case (lang)
-        ((jp) (values 'en "->English"))
-        (else (values 'jp "->Japanese")))
-    `(a (@ (href ,(string-append (cgi-name-of (wiliki)) "?" pagename (lang-spec target '&))))
-        "[" ,label "]")))
+(define (language-link page)
+  (and-let* ((target (or (ref page 'command) (ref page 'key))))
+    (receive (language label)
+        (case (lang)
+          ((jp) (values 'en "->English"))
+          (else (values 'jp "->Japanese")))
+      `(a (@ (href ,(string-append (cgi-name-of (wiliki)) "?" target
+                                   (lang-spec language '&))))
+          "[" ,label "]"))))
 
 ;; fallback
 (define-method title-of (obj) "WiLiKi")
@@ -207,53 +210,76 @@
 
 ;; WiLiKi-specific formatting routines ----------------------
 
-(define-method wiliki-page-footer ((page <page>) fmtr opts)
+;; Default menu link composers
+(define (wiliki:top-link page)
+  (and (not (string=? (ref page 'title) (top-page-of (wiliki))))
+       `(a (@ (href ,(cgi-name-of (wiliki)))) ,($$ "[Top Page]"))))
+
+(define (wiliki:edit-link page)
+  (and (ref (wiliki) 'editable?)
+       (wiliki:persistent-page? page)
+       `(a (@ (href ,(url "p=~a&c=e" (ref page 'key)))) ,($$ "[Edit]"))))
+
+(define (wiliki:history-link page)
+  (and (ref (wiliki) 'log-file)
+       (wiliki:persistent-page? page)
+       `(a (@ (href ,(url "p=~a&c=h" (ref page 'key))))
+           ,($$ "[Edit History]"))))
+
+(define (wiliki:all-link page)
+  (and (not (equal? (ref page 'command) "c=a"))
+       `(a (@ (href ,(url "c=a"))) ,($$ "[All Pages]"))))
+
+(define (wiliki:recent-link page)
+  (and (not (equal? (ref page 'command) "c=r"))
+       `(a (@ (href ,(url "c=r"))) ,($$ "[Recent Changes]"))))
+
+(define (wiliki:search-box page)
+  `(span "[" ,($$ "Search:") (input (@ (type text) (name key) (size 10))) "]"))
+
+(define (wiliki:menu-links page)
+  `(div (@ (align right))
+        (form (@ (method POST) (action ,(cgi-name-of (wiliki))))
+              (input (@ (type hidden) (name c) (value s)))
+              ,@(cond-list
+                 ((language-link page))
+                 ((wiliki:top-link page))
+                 ((wiliki:edit-link page))
+                 ((wiliki:history-link page))
+                 ((wiliki:all-link page))
+                 ((wiliki:recent-link page))
+                 ((wiliki:search-box page))))))
+
+(define (wiliki:page-title page)
+  `(h1 ,(if (wiliki:persistent-page? page)
+          `(a (@ (href ,(url "c=s&key=[[~a]]" (ref page 'key))))
+              ,(ref page 'title))
+          (ref page 'title))))
+
+(define (wiliki:default-page-header page opts)
+  `(,(wiliki:page-title page)
+    ,(wiliki:menu-links page)
+    (hr)))
+
+(define (wiliki:default-page-footer page opts)
   (if (ref page 'mtime)
     `((hr)
       (div (@ (align right))
            ,($$ "Last modified : ")
-           ,(wiliki-format-time fmtr (ref page 'mtime))))
+           ,(wiliki:format-time (ref page 'mtime))))
     '()))
 
-(define-method wiliki-page-header ((page <page>) fmtr opts)
-  (let-keywords* opts ((show-lang? #t)
-                       (show-edit? (ref (wiliki) 'editable?))
-                       (show-all?  #t)
-                       (show-recent-changes? #t)
-                       (show-search-box? #t)
-                       (show-history? (ref (wiliki) 'log-file))
-                       (page-id #f))
-    `((h1 ,(if (ref page 'mtime)
-             `(a (@ (href ,(url "c=s&key=[[~a]]" (ref page 'key))))
-                 ,(ref page 'key))
-             (ref page 'key)))
-      (div (@ (align right))
-           (form (@ (method POST) (action ,(cgi-name-of (wiliki))))
-                 (input (@ (type hidden) (name c) (value s)))
-                 ,@(cond-list
-                    (show-lang?
-                     (language-link page-id))
-                    ((not (string=? page-id (top-page-of (wiliki))))
-                     `(a (@ (href ,(cgi-name-of (wiliki))))
-                         ,($$ "[Top Page]")))
-                    (show-edit?
-                     `(a (@ (href ,(url "p=~a&c=e" page-id)))
-                         ,($$ "[Edit]")))
-                    (show-history?
-                     `(a (@ (href ,(url "p=~a&c=h" page-id)))
-                         ,($$ "[Edit History]")))
-                    (show-all?
-                     `(a (@ (href ,(url "c=a")))
-                         ,($$ "[All Pages]")))
-                    (show-recent-changes?
-                     `(a (@ (href ,(url "c=r")))
-                         ,($$ "[Recent Changes]")))
-                    (show-search-box?
-                     `(span "[" ,($$ "Search:")
-                            (input (@ (type text) (name key) (size 10)))
-                            "]")))))
-      (hr))))
-
+(define (wiliki:default-head-elements page opts)
+  `((title ,(ref page 'title))
+    ,@(or (and-let* ((w (wiliki)))
+            `((base (@ (href ,(full-script-path-of w))))))
+          '())
+    ,(or (and-let* ((w (wiliki)) (ss (style-sheet-of w)))
+           `(link (@ (rel "stylesheet") (href ,ss) (type "text/css"))))
+         ;; default
+         '(style (@ (type "text/css"))
+            "body { background-color: #eeeedd }"))
+    ))
 
 (define (format-wikiname-anchor wikiname) ;; for backward compatibility
   (html:a :href (url "~a" (cv-out wikiname)) (html-escape-string wikiname)))
@@ -262,14 +288,16 @@
   `(a (@ (href ,(url "~a" (cv-out wikiname))))
       ,(html-escape-string wikiname)))
 
-(define (format-time time)
+(define (default-format-time time)
   (if time
     (if (zero? time)
       ($$ "Epoch")
       (sys-strftime "%Y/%m/%d %T %Z" (sys-localtime time)))
     "-"))
 
-(define (format-wiki-name name)
+(define format-time default-format-time)  ;; for backward compatibility
+
+(define (default-format-wiki-name name)
   (define (inter-wiki-name-prefix head)
     (and-let* ((page (wdb-get (db) "InterWikiName"))
                (rx   (string->regexp #`"^:,|head|:\\s*")))
@@ -322,10 +350,13 @@
             `(,(html-escape-string name)
               ,(html:a :href (url "p=~a&c=e" (cv-out name)) "?")))))))
 
-(the-formatter
+(wiliki:formatter
  (make <wiliki-formatter>
-   :bracket (lambda (fmtr name) (format-wiki-name name))
-   :time    (lambda (fmtr time) (format-time time))))
+   :bracket       default-format-wiki-name
+   :time          default-format-time
+   :header        wiliki:default-page-header
+   :footer        wiliki:default-page-footer
+   :head-elements wiliki:default-head-elements))
 
 ;; Macros -----------------------------------------
 
@@ -401,20 +432,6 @@
 
 ;; CGI processing ---------------------------------
 
-(define-method wiliki-page-head-elements ((page <page>) fmtr opts)
-  `((title ,(ref page 'key))
-    ,@(or (and-let* ((w (wiliki))
-                     (sv (server-name-of w))
-                     (sc (script-name-of w)))
-            `((base (@ (href ,(full-script-path-of w))))))
-          '())
-    ,(or (and-let* ((w (wiliki)) (ss (style-sheet-of w)))
-           `(link (@ (rel "stylesheet") (href ,ss) (type "text/css"))))
-         ;; default
-         '(style (@ (type "text/css"))
-            "body { background-color: #eeeedd }"))
-    ))
-
 (define (html-page page . args)
   ;; NB: cgi-header should be able to handle extra header fields.
   ;; for now, I add extra headers manually.
@@ -422,12 +439,12 @@
     ,(cgi-header
       :content-type #`"text/html; charset=,(output-charset)")
     ,(html-doctype :type :transitional)
-    ,(wiliki:sxml->stree (apply format-page page args))))
+    ,(wiliki:sxml->stree (apply wiliki:format-page page args))))
 
 (define (error-page e)
   (html-page
-   (make <page>
-     :key #`",(title-of (wiliki)) : Error"
+   (make <wiliki-page>
+     :title #`",(title-of (wiliki)) : Error"
      :content
      `((p ,(html-escape-string (ref e 'message)))
        ,@(if (positive? (debug-level (wiliki)))
@@ -447,9 +464,10 @@
   ;; wdb-get and virtual-page? check.
   (cond ((wdb-get (db) pagename) => html-page)
         ((virtual-page? pagename)
-         (html-page (handle-virtual-page pagename) :show-edit? #f))
+         (html-page (handle-virtual-page pagename)))
         ((equal? pagename (top-page-of (wiliki)))
-         (let ((toppage (make <page> :key pagename :mtime (sys-time))))
+         (let ((toppage (make <wiliki-page>
+                          :title pagename :key pagename :mtime (sys-time))))
            ;; Top page is non-existent, or its name may be changed.
            ;; create it automatically.  We need to ensure db is writable.
            (if (editable? (wiliki))
@@ -463,47 +481,41 @@
          (error "Invalid page name" pagename))
         (else
          (html-page
-          (make <page>
-            :key (string-append ($$ "Nonexistent page: ") pagename)
+          (make <wiliki-page>
+            :title (string-append ($$ "Nonexistent page: ") pagename)
             :content `((p ,($$ "Create a new page: ")
-                          (stree ,(format-wiki-name pagename)))))
-          :show-edit? #f :show-history? #f))
+                          (stree ,(wiliki:format-wiki-name pagename)))))))
         ))
 
 (define (cmd-all)
   (html-page
-   (make <page>
-     :key (string-append (title-of (wiliki))": "($$ "All Pages"))
+   (make <wiliki-page>
+     :title (string-append (title-of (wiliki))": "($$ "All Pages"))
+     :command "c=a"
      :content `((ul
                  ,@(map (lambda (k)
                           `(li ,(wiki-name-anchor k)))
-                        (sort (wdb-map (db) (lambda (k v) k)) string<?)))))
-   :page-id "c=a"
-   :show-edit? #f
-   :show-all? #f
-   :show-history? #f))
+                        (sort (wdb-map (db) (lambda (k v) k)) string<?)))))))
 
 (define (cmd-recent-changes)
   (html-page
-   (make <page>
-     :key (string-append (title-of (wiliki))": "($$ "Recent Changes"))
+   (make <wiliki-page>
+     :title (string-append (title-of (wiliki))": "($$ "Recent Changes"))
+     :command "c=r"
      :content
      `((table
         ,@(map (lambda (p)
                  `(tr
-                   (td ,(format-time (cdr p)))
+                   (td ,(wiliki:format-time (cdr p)))
                    (td "(" ,(how-long-since (cdr p)) " ago)")
                    (td ,(wiki-name-anchor (car p)))))
-               (wdb-recent-changes (db))))))
-   :page-id "c=r"
-   :show-edit? #f
-   :show-recent-changes? #f
-   :show-history? #f))
+               (wdb-recent-changes (db))))))))
 
 (define (cmd-search key)
   (html-page
-   (make <page>
-     :key (string-append (title-of (wiliki))": "($$ "Search results"))
+   (make <wiliki-page>
+     :title (string-append (title-of (wiliki))": "($$ "Search results"))
+     :command (format #f "c=s&key=~a" (html-escape-string key))
      :content
      `((ul
         ,@(map (lambda (p)
@@ -512,10 +524,7 @@
                    ,(or (and-let* ((mtime (get-keyword :mtime (cdr p) #f)))
                           #`"(,(how-long-since mtime))")
                         "")))
-               (wdb-search-content (db) key)))))
-   :page-id (format #f "c=s&key=~a" (html-escape-string key))
-   :show-edit? #f
-   :show-history? #f))
+               (wdb-search-content (db) key)))))))
 
 (define (cmd-lwp-view key)
   (let ((page (wdb-get (db) key #f)))

@@ -2,7 +2,7 @@
 ;;;
 ;;; wiliki2html - converts wiliki database to a static HTML document
 ;;;
-;;;  Copyright (c) 2003 Shiro Kawai, All rights reserved.
+;;;  Copyright (c) 2003-2004 Shiro Kawai, All rights reserved.
 ;;;
 ;;;  Permission is hereby granted, free of charge, to any person
 ;;;  obtaining a copy of this software and associated documentation
@@ -24,7 +24,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki2html,v 1.2 2003-12-17 20:11:55 shirok Exp $
+;;;  $Id: wiliki2html,v 1.3 2004-01-10 11:07:32 shirok Exp $
 
 ;; NB: This is just a quick hack.  The next version of wiliki
 ;; will provide enough APIs so that users can create applications
@@ -46,12 +46,6 @@
 (use file.util)
 
 (require "wiliki/macro")
-
-;; Wiliki 0.4 lacks these 'provide' directives, causing some undesirable
-;; reloading of these modules.
-(provide "wiliki")
-(provide "wiliki/macro")
-(provide "wiliki/db")
 
 ;; utilities ---------------------------------------------
 

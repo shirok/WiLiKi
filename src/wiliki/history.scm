@@ -1,7 +1,7 @@
 ;;;
 ;;; wiliki/history - handles history and diff page
 ;;;
-;;;  Copyright (c) 2000-2003 Shiro Kawai, All rights reserved.
+;;;  Copyright (c) 2000-2004 Shiro Kawai, All rights reserved.
 ;;;
 ;;;  Permission is hereby granted, free of charge, to any person
 ;;;  obtaining a copy of this software and associated documentation
@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: history.scm,v 1.11 2004-01-01 22:24:14 shirok Exp $
+;;;  $Id: history.scm,v 1.12 2004-01-10 11:07:33 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -101,8 +101,8 @@
                 "]"))))
   
   (html-page
-   (make <page>
-     :key ($$ "Edit History")
+   (make <wiliki-page>
+     :title ($$ "Edit History")
      :content
      (or (and-let* ((logfile (log-file-path (wiliki)))
                     (picked (wiliki-log-pick-from-file pagename logfile))
@@ -114,15 +114,14 @@
                                    (wiki-name-anchor pagename))))))
              ,(history-table (map wiliki-log-parse-entry picked))))
          (no-history-info pagename)))
-   :show-lang? #f :show-edit? #f :show-history? #f)
-  )
+   ))
 
 ;; "Edit History:Diff" page. -----------------------------------
 (define (cmd-diff pagename old-time new-time)
 
   (define (explanation)
-    `(ul (li ,(format-diff-line `(+ . ,($$ "added lines"))))
-         (li ,(format-diff-line `(- . ,($$ "deleted lines"))))))
+    `(ul (li ,(wiliki:format-diff-line `(+ . ,($$ "added lines"))))
+         (li ,(wiliki:format-diff-line `(- . ,($$ "deleted lines"))))))
   
   (define (diff-to-current entries current)
     (let* ((diffpage (wiliki-log-diff* entries current)))
@@ -133,7 +132,7 @@
                             (format-time old-time))))
         ,(explanation)
         ,(return-to-edit-history pagename)
-        ,(format-diff-pre diffpage))))
+        ,(wiliki:format-diff-pre diffpage))))
 
   (define (diff2 entries current)
     (let* ((oldpage (wiliki-log-revert* entries current))
@@ -154,11 +153,11 @@
                             (format-time new-time))))
         ,(explanation)
         ,(return-to-edit-history pagename)
-        ,(format-diff-pre (reverse! rdiff)))))
+        ,(wiliki:format-diff-pre (reverse! rdiff)))))
 
   (html-page
-   (make <page>
-     :key ($$ "Edit History:Diff")
+   (make <wiliki-page>
+     :title ($$ "Edit History:Diff")
      :content
      (or (and-let* ((logfile (log-file-path (wiliki)))
                     (page    (wdb-get (db) pagename))
@@ -168,13 +167,12 @@
                (diff-to-current entries (ref page 'content))
                (diff2 entries (ref page 'content)))))
          (no-history-info pagename)))
-   :show-lang? #f :show-edit? #f :show-history? #f)
-  )
+   ))
 
 ;; "Edit History:View" page. -----------------------------------
 (define (cmd-viewold pagename old-time)
   (html-page
-   (make <page>
+   (make <wiliki-page>
      :key ($$ "Edit History:View")
      :content
      (or (and-let* ((logfile (log-file-path (wiliki)))
@@ -192,10 +190,9 @@
                                     (cv-out pagename) old-time)))
                      ,($$ "View diff from current version")))
                ,(return-to-edit-history pagename)
-               ,(format-diff-pre reverted))))
+               ,(wiliki:format-diff-pre reverted))))
          (no-history-info pagename)))
-   :show-lang? #f :show-edit? #f :show-history? #f)
-  )
+   ))
 
 (define (no-history-info pagename)
   `((p (stree ,(format ($$ "No edit history available for page ~a")

@@ -1,7 +1,7 @@
 ;;;
 ;;; wiliki/macro.scm - macro handling (to be autoloaded)
 ;;;
-;;;  Copyright (c) 2000-2003 Shiro Kawai, All rights reserved.
+;;;  Copyright (c) 2000-2004 Shiro Kawai, All rights reserved.
 ;;;
 ;;;  Permission is hereby granted, free of charge, to any person
 ;;;  obtaining a copy of this software and associated documentation
@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.18 2004-01-01 08:11:16 shirok Exp $
+;;; $Id: macro.scm,v 1.19 2004-01-10 11:07:33 shirok Exp $
 
 (select-module wiliki)
 (use srfi-19)
@@ -51,8 +51,8 @@
                       (lambda (p) (apply (cdr p) (cdr args))))))
 
 (define (handle-virtual-page name)
-  (make <page>
-    :key name
+  (make <wiliki-page>
+    :title name
     :content
     `((stree ,(handle-expansion name
                                 (lambda () (get-virtual-page name))
@@ -173,7 +173,7 @@
 ;  (html:a :name name 
 
 (define-reader-macro (include page)
-  (cond ((wdb-get (db) page) => format-content)
+  (cond ((wdb-get (db) page) => wiliki:format-content)
         (else #`"[[$$include ,(html-escape-string page)]]")))
 
 (define-reader-macro (img url . maybe-alt)
@@ -193,7 +193,7 @@
         (badimg))))
 
 (define-reader-macro (toc . maybe-page)
-  (let1 pagename (get-optional maybe-page (ref (wiliki-current-page) 'key))
+  (let1 pagename (get-optional maybe-page (ref (wiliki:current-page) 'key))
     (define (anchor id line)
       (html:a :href #`",(url \"~a\" pagename)#,id"
               (html-escape-string line)))

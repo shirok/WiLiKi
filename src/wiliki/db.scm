@@ -1,7 +1,7 @@
 ;;;
 ;;; wiliki/db.scm - database access layer
 ;;;
-;;;  Copyright (c) 2003 Shiro Kawai, All rights reserved.
+;;;  Copyright (c) 2003-2004 Shiro Kawai, All rights reserved.
 ;;;
 ;;;  Permission is hereby granted, free of charge, to any person
 ;;;  obtaining a copy of this software and associated documentation
@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: db.scm,v 1.9 2004-01-01 08:11:16 shirok Exp $
+;;; $Id: db.scm,v 1.10 2004-01-10 11:07:33 shirok Exp $
 
 (define-module wiliki.db
   (use srfi-1)
@@ -102,17 +102,18 @@
     (lambda (p)
       (let* ((params  (read p))
              (content (port->string p)))
-        (apply make <page> :key key :content content params)))))
+        (apply make <wiliki-page>
+               :title key :key key :content content params)))))
 
 ;; WDB-GET db key &optional create-new
 (define-method wdb-get ((db <dbm>) key . option)
   (cond ((dbm-get db key #f) => (cut wdb-record->page db key <>))
         ((and (pair? option) (car option))
-         (make <page> :key key))
+         (make <wiliki-page> :title key :key key))
         (else #f)))
 
 ;; WDB-PUT! db key page
-(define-method wdb-put! ((db <dbm>) key (page <page>) . option)
+(define-method wdb-put! ((db <dbm>) key (page <wiliki-page>) . option)
   (let ((s (with-output-to-string
              (lambda ()
                (write (list :ctime (ref page 'ctime)

@@ -1,7 +1,7 @@
 ;;;
 ;;; wiliki/edit - handles edit, preview, and conflict page
 ;;;
-;;;  Copyright (c) 2000-2003 Shiro Kawai, All rights reserved.
+;;;  Copyright (c) 2000-2004 Shiro Kawai, All rights reserved.
 ;;;
 ;;;  Permission is hereby granted, free of charge, to any person
 ;;;  obtaining a copy of this software and associated documentation
@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: edit.scm,v 1.8 2004-01-01 22:24:14 shirok Exp $
+;;;  $Id: edit.scm,v 1.9 2004-01-10 11:07:33 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -114,26 +114,22 @@
   (unless (editable? (wiliki))
     (errorf "Can't edit the page ~s: the database is read-only" pagename))
   (let ((page (wdb-get (db) pagename #t)))
-    (html-page (make <page>
-                   :key pagename
+    (html-page (make <wiliki-page>
+                   :title pagename
                    :content
                    (edit-form #t pagename
                               (ref page 'content)
-                              (ref page 'mtime) "" #f))
-               :show-edit? #f :show-lang? #f :show-history? #f)))
+                              (ref page 'mtime) "" #f)))))
 
 (define (cmd-preview pagename content mtime logmsg donttouch)
   (let ((page (wdb-get (db) pagename #t)))
     (html-page
-     (make <page>
-       :key (format #f ($$ "Preview of ~a") pagename)
+     (make <wiliki-page>
+       :title (format #f ($$ "Preview of ~a") pagename)
        :content
-       `(,(preview-box (format-content (make <page>
-                                         :key pagename
-                                         :content content)))
+       `(,(preview-box (wiliki:format-content content))
          (hr)
-         ,@(edit-form #f pagename content mtime logmsg donttouch)))
-     :show-edit? #f :show-lang? #f :show-history? #f)))
+         ,@(edit-form #f pagename content mtime logmsg donttouch))))))
 
 (define (cmd-commit-edit pagename content mtime logmsg donttouch)
   (let ((p   (wdb-get (db) pagename #t))
@@ -202,24 +198,23 @@
 
 (define (conflict-page page diff content logmsg donttouch)
   (html-page
-   (make <page>
-     :key (string-append (title-of (wiliki))": "($$ "Update Conflict"))
+   (make <wiliki-page>
+     :title (string-append (title-of (wiliki))": "($$ "Update Conflict"))
      :content
      `((stree ,($$ "<p>It seems that somebody has updated this page
        while you're editing.  The difference is snown below.
        Please revise <a href=\"#edit\">your edit</a> and commit again.</p>"))
        (hr)
        (ul
-        (li ,(format-diff-line
+        (li ,(wiliki:format-diff-line
               `(+ . ,($$ "lines you added (or somebody else deleted)"))))
-        (li ,(format-diff-line
+        (li ,(wiliki:format-diff-line
               `(- . ,($$ "lines somebody else added (or you deleted)")))))
-       ,(format-diff-pre diff)
+       ,(wiliki:format-diff-pre diff)
        (a (@ (name "edit")) (hr))
        ,($$ "<p>The following shows what you are about to submit.  Please re-edit the content and submit again.</p>")
        ,@(edit-form #t (ref page 'key) content (ref page 'mtime) logmsg donttouch)
-       ))
-   :show-lang? #f :show-edit? #f :show-history? #f))
+       ))))
 
 (define (preview-box content)
   `(table

@@ -84,7 +84,9 @@
 
 (define-macro (tp label expected-sxml page)
   `(tf ,label ,expected-sxml
-       (list "<result>" (wiliki:format #f ,page) "</result>")))
+       (list "<result>"
+             (map wiliki:sxml->stree (wiliki:format-content ,page))
+             "</result>")))
 
 ;;------------------------------------------------
 (test-section "inline elements")
