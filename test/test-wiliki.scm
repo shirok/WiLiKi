@@ -1,14 +1,16 @@
 ;;
 ;; test for wiliki
 ;;
-;; $Id: test-wiliki.scm,v 1.2 2003-12-19 04:11:55 shirok Exp $
+;; $Id: test-wiliki.scm,v 1.3 2003-12-21 21:37:02 shirok Exp $
 
 (use gauche.test)
 (use gauche.parameter)
 (use gauche.version)
 (use www.cgi)
 (use sxml.ssax)
+(use sxml.sxpath)
 (use rfc.822)
+(use util.list)
 
 (when (version<=? (gauche-version) "0.7.3")
   ;; need some modules that aren't available until later.
@@ -49,50 +51,90 @@
 
 (generate-cgi)
 
+ ;;--------------------------------------------------------
+(test-section "basic operation")
+
 (test* "initial database generation"
-       '(*TOP*
-         (html
-          (head (title "TEST")
-                (base (@ (href "http://localhost/wiliki.cgi")))
-                ?*)
-          (body ?@
-                (h1 (a (@ (href "wiliki.cgi?c=s&key=[[TEST]]")) "TEST"))
-                (div ?*)
-                (hr)
-                (hr)
-                (div ?*))))
-       (receive (_ body)       
-           (run-cgi-script->sxml *cgi-path*)
-         body)
-       test-sxml-match?)
+       '(html
+         (head (title "TEST")
+               (base (@ (href "http://localhost/wiliki.cgi")))
+               ?*)
+         (body ?@
+               (h1 (a (@ (href "wiliki.cgi?c=s&key=[[TEST]]")) "TEST"))
+               (div ?*)
+               (hr)
+               (hr)
+               (div ?*)))
+       (values-ref (run-cgi-script->sxml *cgi-path*) 1)
+       (test-sxml-select-matcher '(html)))
 
 (test* "base uri test"
-       '(*TOP* (html (head (title "TEST")
-                           (base (@ (href "https://foo.com/cgi-bin/w.cgi")))
-                           ?*)
-                     ?*))
-       (receive (_ body)       
-           (run-cgi-script->sxml
-            *cgi-path*
-            :environment '((HTTPS . 1)
-                           (SERVER_NAME . "foo.com")
-                           (SERVER_PORT . 443)
-                           (SCRIPT_NAME . "/cgi-bin/w.cgi")))
-         body)
-       test-sxml-match?)
+       '(base (@ (href "https://foo.com/cgi-bin/w.cgi")))
+       (values-ref (run-cgi-script->sxml
+                    *cgi-path*
+                    :environment '((HTTPS . 1)
+                                   (SERVER_NAME . "foo.com")
+                                   (SERVER_PORT . 443)
+                                   (SCRIPT_NAME . "/cgi-bin/w.cgi")))
+                   1)
+       (test-sxml-select-matcher '(html head base)))
 
 (test* "base uri test"
-       '(*TOP* (html (head (title "TEST")
-                           (base (@ (href "http://foo.com:8080/cgi-bin/w.cgi")))
-                           ?*)
-                     ?*))
-       (receive (_ body)       
-           (run-cgi-script->sxml
-            *cgi-path*
-            :environment '((SERVER_NAME . "foo.com")
-                           (SERVER_PORT . 8080)
-                           (SCRIPT_NAME . "/cgi-bin/w.cgi")))
-         body)
-       test-sxml-match?)
+       '(base (@ (href "http://foo.com:8080/cgi-bin/w.cgi")))
+       (values-ref (run-cgi-script->sxml
+                    *cgi-path*
+                    :environment '((SERVER_NAME . "foo.com")
+                                   (SERVER_PORT . 8080)
+                                   (SCRIPT_NAME . "/cgi-bin/w.cgi")))
+                   1)
+       (test-sxml-select-matcher '(html head base)))
+
+ ;;--------------------------------------------------------
+(test-section "editing")
+
+(let ((mtime-save #f))
+
+  (test* "edit screen"
+         '(!contain
+           (input (@ (type "submit") (name "preview") ?*))
+           (input (@ (type "submit") (name "commit") ?*))
+           (input (@ (type "hidden") (name "c") (value "c")))
+           (input (@ (type "hidden") (name "p") (value "TEST")))
+           (input (@ (type "checkbox") (name "donttouch") ?*))
+           (input (@ (name "mtime") (value ?mtime) ?*))
+           (textarea (@ (name "content") ?*) ?*))
+         (values-ref (run-cgi-script->sxml
+                      *cgi-path*
+                      :environment '((REQUEST_METHOD . "GET"))
+                      :parameters '((c . e)))
+                     1)
+         (test-sxml-select-matcher
+          '(html body form (or@ input textarea))
+          (lambda (alist)
+            (set! mtime-save (x->integer (assq-ref alist '?mtime)))
+            alist)))
+
+  (test* "commiting"
+         '(("status" "302 Moved")
+           ("location" "wiliki.cgi?TEST"))
+         (values-ref (run-cgi-script->string
+                      *cgi-path*
+                      :environment '((REQUEST_METHOD . "GET"))
+                      :parameters `((c . c) (p . "TEST") (commit . "Commit")
+                                    (mtime . ,mtime-save)
+                                    (content . "This is a test page.  [[LINK]]\r\n")))
+                     0))
+
+  (test* "check commit"
+         '(!contain (p "This is a test page.  LINK"
+                       (a (@ (href "wiliki.cgi?p=LINK&c=e")) "?")))
+         (values-ref (run-cgi-script->sxml
+                      *cgi-path*
+                      :environment '((REQUEST_METHOD . "GET"))
+                      :parameters '((p . "TEST")))
+                     1)
+         (test-sxml-select-matcher
+          '(html body p)))
+  )
 
 (test-end)

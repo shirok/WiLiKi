@@ -1,39 +1,11 @@
 ;;
 ;; generic framework to test XML generation code
 ;;
-
-;; NB: this code is originally developed in the Kahua project.
-
-;;
 ;;  Copyright (c) 2003 Scheme Arts, L.L.C., All rights reserved.
 ;;  Copyright (c) 2003 Time Intermedia Corporation, All rights reserved.
+;;  See COPYING for terms and conditions of using this software
 ;;
-;;  Redistribution and use in source and binary forms, with or without
-;;  modification, are permitted provided that the following conditions
-;;  are met:
-;;
-;;   1. Redistributions of source code must retain the above copyright
-;;      notice, this list of conditions and the following disclaimer.
-;;
-;;   2. Redistributions in binary form must reproduce the above copyright
-;;      notice, this list of conditions and the following disclaimer in the
-;;      documentation and/or other materials provided with the distribution.
-;;
-;;   3. Neither the name of the authors nor the names of its contributors
-;;      may be used to endorse or promote products derived from this
-;;      software without specific prior written permission.
-;;
-;;  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-;;  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-;;  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-;;  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-;;  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-;;  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
-;;  TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-;;  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-;;  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-;;  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-;;  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+;; $Id: xml-test.scm,v 1.2 2003-12-21 21:37:02 shirok Exp $
 
 ;; This module provides the means of test the result of HTML
 ;; generating code, such as CGI programs.   The output of
@@ -96,6 +68,9 @@
 ;;     A special pattern variable ?* matches as if (!repeat ?_), that is,
 ;;     matches everything after.
 ;;
+;;     Attr node is treated specially.  Its contents matches arbitrary
+;;     permutation of the pattern.
+;;
 ;;     (!seq <pattern> ...)
 ;;         Matches the sequcne of <pattern> ....  When it appears as
 ;;         a <content>, <pattern> ... is taken as if it is spliced
@@ -142,6 +117,14 @@
 ;;
 ;;          (dl (dt "foo") (dd "bar") (dt "foo2") (dd "bar2"))
 ;;
+;;     (!contain <pattern> ...)
+;;
+;;         Matches any sequence that includes all of <pattern>s, in any
+;;         order.  The input pattern may contain items that doesn't
+;;         match any of <pattern>s.  It can be achieved by
+;;         (!permute ?* <pattern> ?* <pattern> ... <pattern> ?*),
+;;         but !contain is much more efficient.
+;;
 ;;     When an optional argument extra-check is given, it is 
 ;;     called with one argument, an assoc list of pattern variable
 ;;     and the matched value.  It can perform extra check, and returns
@@ -153,7 +136,9 @@
   (use util.combinations)
   (use text.tree)
   (use sxml.ssax)
-  (export test-xml-match? test-sxml-match?))
+  (use sxml.sxpath)
+  (export test-xml-match? test-sxml-match?
+          test-xml-select-matcher test-sxml-select-matcher))
 (select-module sxml.xml-test)
 
 (define (pattern-var? obj)
@@ -166,6 +151,22 @@
 
 (define (attr-node? node)
   (and (pair? node) (eq? (car node) '@)))
+
+(define (sort-nodes nodes)
+  (sort nodes
+        (lambda (a b)
+          (if (pair? a)
+            (if (pair? b)
+              (string<? (x->string (car a)) (x->string (car b)))
+              #t)
+            #f))))
+
+(define (any-permutation pred seq)
+  (call/cc
+   (lambda (break)
+     (permutations*-for-each (lambda (seq) (cond ((pred seq) => break)))
+                             seq equal?)
+     #f)))
 
 ;; Match one pattern item.
 ;; Because of "splicing" nature of the pattern, it takes a list of inputs.
@@ -187,22 +188,30 @@
     (and (not (null? ls))
          (equal? pat (car ls))
          (cont (cdr ls) r)))
+   ((attr-node? pat)
+    (and (not (null? ls))
+         (attr-node? (car ls))
+         (any-permutation (cute match-contents (sort-nodes (cdr pat)) <>
+                                (lambda (more r)
+                                  (and (null? more) (cont (cdr ls) r)))
+                                r)
+                          (sort-nodes (cdar ls)))))
    ((not (pattern-key? (car pat)))
     (and (pair? ls)
          (pair? (car ls))
          (eq? (car pat) (caar ls))
          (match-contents (cdr pat) (cdar ls)
                          (lambda (more r)
-                           (and (null? more)
-                                (cont (cdr ls) r)))
+                           (and (null? more) (cont (cdr ls) r)))
                          r)))
    (else
     (case (car pat)
       ((!seq)
        (match-contents (cdr pat) ls cont r))
       ((!permute)
-       (any (cut match-contents <> ls cont r)
-            (permutations (cdr pat))))
+       (any-permutation (cut match-contents <> ls cont r) (cdr pat)))
+      ((!contain)
+       (any-permutation (cut match-contain <> ls cont r) (cdr pat)))
       ((!or)
        (any (cut match-pattern <> ls cont r)
             (cdr pat)))
@@ -220,6 +229,16 @@
                    (cut match-contents (cdr pats) <> cont <>)
                    r)))
 
+(define (match-contain pats ls cont r)
+  (cond
+   ((null? pats) (cont '() r)) ;; discards remaining inputs
+   ((null? ls)   #f) ;; ran out inputs
+   (else
+    (or (match-pattern (car pats) ls
+                       (cute match-contain (cdr pats) <> cont <>)
+                       r)
+        (match-contain pats (cdr ls) cont r)))))
+
 (define (match-input pattern input . opts)
   (let ((extra-check (get-optional opts (lambda (r) #t))))
     (match-pattern pattern input
@@ -236,5 +255,23 @@
          (cdr (call-with-input-string (tree->string input)
                 (cut ssax:xml->sxml <> '())))
          opts))
+
+(define (test-sxml-select-matcher path . maybe-extra-check)
+  (let ((selector (sxpath path)))
+    (lambda (pattern input)
+      (apply match-input pattern
+             ;; kludge to deal with *TOP*
+             (selector (if (and (pair? input) (eq? (car input) '*TOP*))
+                         input
+                         `(*TOP* ,input)))
+             maybe-extra-check))))
+
+(define (test-xml-select-matcher path . maybe-extra-check)
+  (let ((selector (sxpath path)))
+    (lambda (pattern input)
+      (let ((parsed (call-with-input-string (tree->string input)
+                      (cut ssax:xml->sxml <> '()))))
+        (apply match-input pattern (selector parsed)
+               maybe-extra-check)))))
 
 (provide "sxml/xml-test")

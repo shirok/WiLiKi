@@ -1,5 +1,7 @@
 2003-12-21  Shiro Kawai  <shiro@acm.org>
 
+	* test/test-wiliki.scm : more tests.
+
 	* src/wiliki/edit.scm: added missing </p> in the text editing help
 	message.
 
