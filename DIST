@@ -12,6 +12,7 @@ while [ $# -gt 0 ]; do
 done
 
 if [ "$gen" = "yes" ]; then
+  rm -f acinclude.m4
   cp `gauche-config --ac`/aclocal.m4 acinclude.m4
   aclocal
   automake -a -c
