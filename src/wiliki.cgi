@@ -22,6 +22,9 @@
 ;;               is used in some places, like in the title of the 
 ;;               "Search results" or "Recent changes" pages.
 ;;
+;;    :description - A short description of this Wiki site.  This is
+;;               used in RDF site summary.
+;;
 ;;    :editable? - If #f, editing is prohibited.
 ;;
 ;;    :language - default language, either 'jp or 'en
