@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.71 2003-02-26 11:18:49 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.72 2003-03-05 20:16:24 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -348,19 +348,26 @@
 (define (format-parts line)
   (define (uri line)
     (regexp-replace-all
-     #/(\[)?((http|https|ftp):(\/\/[^\/?#\s]*)?[^?#\s]*(\?[^#\s]*)?(#\S*)?)(\s([^\]]+)\])?/
+     #/(\[)?(http|https|ftp):(\/\/[^\/?#\s]*)?([^?#\s]*(\?[^#\s]*)?(#\S*)?)(\s([^\]]+)\])?/
      line
      (lambda (match)
-       (let ((url    (match 2))
-             (openp  (match 1))
-             (name   (match 8)))
+       ;; NB: If a server name is not given, we omit the protocol scheme in
+       ;; href attribute, so that the same page would work on both
+       ;; http and https access. (Patch from YAEGASHI Takeshi).
+       (let* ((scheme (match 2))
+              (server (match 3))
+              (path   (match 4))
+              (openp  (match 1))
+              (name   (match 8))
+              (url    (if server #`",|scheme|:,|server|,|path|" path)))
          ;; NB: url is already HTML-escaped.  we can't use
          ;; (html:a :href url url) here, for it will escape the first URL
          ;; again.
          (if (and openp name)
              (format #f "<a href=\"~a\">~a</a>" url name)
-             (format #f "~a<a href=\"~a\">~a</a>"
-                     (if openp "[" "") url url))))))
+             (format #f "~a<a href=\"~a\">~a:~a~a</a>"
+                     (if openp "[" "") url
+                     scheme (or server "") path))))))
   (define (bold line)
     (regexp-replace-all #/'''([^']*)'''/ line "<strong>\\1</strong>"))
   (define (italic line)
