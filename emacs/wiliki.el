@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2004 Tokuya Kameshima.  All rights reserved.
 
-;; $Id: wiliki.el,v 1.7 2004-03-19 15:12:29 tkame Exp $
+;; $Id: wiliki.el,v 1.8 2004-03-24 15:36:51 tkame Exp $
 
 ;;; Installation:
 
@@ -29,12 +29,9 @@
 ;;; TODO:
 
 ;; - font lock for `wiliki-edit-mode'.
-;; - WikiName completion.
-;; - Fetching recent changes.
-;; - Search
 ;; - Don't ask the log message if the site doesn't have change logs.
 ;; - Page rendering.
-;; - Charset detection.
+;; - Character encoding detection.
 ;; - Proxy authentication.
 ;; - Code refactoring.
 ;; - Documentation.
@@ -858,37 +855,51 @@ Return the base URL as a string."
   ;; Use `wiliki-view-page', instead.
   (message "Retrieving %s from %s ..."
 	   (if (string= page "") "{top page}" page) base-url)
-  (let* ((fmt (cond ((string= page "$all")
-		     "%s?c=a")
-		    ((string= page "$recent")
-		     "%s?c=r")
-		    ((string= page "")
-		     "%s?c=lv") ; workaround for the empty WikiName problem
-		    (t "%s?%s&c=lv")))
-	 (url (format fmt base-url (wiliki-url-hexify-string page)))
-	 (proc (wiliki-http-get url))
-	 (buf (cond
-	       ((string= page "$all")
-		(wiliki-fetch-page-sentinel-html
-		 base-url page (process-buffer proc)
-		 "<h1>" nil "<li><a href=\"[^\"]*\">\\(.*\\)</a"
-		 (lambda () (concat "- [[" (match-string 1) "]]\n"))))
-	       ((string= page "$recent")
-		(wiliki-fetch-page-sentinel-html
-		 base-url page (process-buffer proc)
-		 "<h1>" nil (concat "<tr><td>\\(.*\\)</td\n*>"
-				    "<td>\\(.*\\)</td\n*>"
-				    "<td><a href=\"[^\"]*\">\\(.*\\)</a")
-		 (lambda () (concat "||" (match-string 1)
-				    "||" (match-string 2)
-				    "||[[" (match-string 3) "]]||\n"))))
-	       (t
-		(wiliki-fetch-page-sentinel base-url (process-buffer proc))))))
-    (if (string= page "")
-	(setf (wiliki-site-info-top-page (wiliki-site-info base-url))
-	      (with-current-buffer buf wiliki-title)))
-    (message "")
-    buf))
+  ;; TODO: refactoring...
+  (if (string-match "^\\$search:\\(.*\\)" page)
+      (let* ((content `(("c" . "s") ("key" . ,(match-string 1 page))))
+	     (proc (wiliki-http-post base-url
+				     (wiliki-get-param-string content))))
+	(prog1
+	    (wiliki-fetch-page-sentinel-html
+	     base-url page (process-buffer proc)
+	     "<h1>" nil
+	     "<li><a href=\"[^\"]*\">\\(.*\\)</a\n*>\\(.*\\)</li"
+	     (lambda () (concat "- [[" (match-string 1) "]]"
+				(match-string 2) "\n")))
+	  (message "")))
+    (let* ((fmt (cond ((string= page "$all")
+		       "%s?c=a")
+		      ((string= page "$recent")
+		       "%s?c=r")
+		      ((string= page "")
+		       "%s?c=lv") ; workaround for the empty WikiName problem
+		      (t "%s?%s&c=lv")))
+	   (url (format fmt base-url (wiliki-url-hexify-string page)))
+	   (proc (wiliki-http-get url))
+	   (buf (cond
+		 ((string= page "$all")
+		  (wiliki-fetch-page-sentinel-html
+		   base-url page (process-buffer proc)
+		   "<h1>" nil "<li><a href=\"[^\"]*\">\\(.*\\)</a"
+		   (lambda () (concat "- [[" (match-string 1) "]]\n"))))
+		 ((string= page "$recent")
+		  (wiliki-fetch-page-sentinel-html
+		   base-url page (process-buffer proc)
+		   "<h1>" nil (concat "<tr><td>\\(.*\\)</td\n*>"
+				      "<td>\\(.*\\)</td\n*>"
+				      "<td><a href=\"[^\"]*\">\\(.*\\)</a")
+		   (lambda () (concat "||" (match-string 1)
+				      "||" (match-string 2)
+				      "||[[" (match-string 3) "]]||\n"))))
+		 (t
+		  (wiliki-fetch-page-sentinel base-url
+					      (process-buffer proc))))))
+      (if (string= page "")
+	  (setf (wiliki-site-info-top-page (wiliki-site-info base-url))
+		(with-current-buffer buf wiliki-title)))
+      (message "")
+      buf)))
 
 (defun wiliki-page-buffer (base-url page &optional force-fetch)
   "Return the buffer of PAGE on BASE-URL.
@@ -977,21 +988,26 @@ If COUNT is a negative number, moving forward is performed."
       (wiliki-view-wikiname upper-page refetch))))
 
 (defun wiliki-refetch ()
-  "Re-fetch (update) current page."
+  "Refetch the current page."
   (interactive)
-  (setq buffer-read-only nil)
-  (if (equal wiliki-title "Recent Changes") ;;; XXX
-      (wiliki-view-recent)
-    (wiliki-view-page wiliki-base-url wiliki-title t t)))
+  (wiliki-view-page wiliki-base-url wiliki-title t t))
 
-(defun wiliki-view-recent ()
+(defvar wiliki-search-hist nil)
+
+(defun wiliki-search (key &optional force-fetch)
+  "Search pages."
+  (interactive (list (read-string "Search for: " nil 'wiliki-search-hist)
+		     current-prefix-arg))
+  (wiliki-view-wikiname (concat "$search:" key)))
+
+(defun wiliki-view-recent (&optional force-fetch)
   "View recent changes."
-  (interactive)
+  (interactive "P")
   (wiliki-view-wikiname "$recent"))
 
-(defun wiliki-view-all ()
+(defun wiliki-view-all (&optional force-fetch)
   "View list of all the pages."
-  (interactive)
+  (interactive "P")
   (wiliki-view-wikiname "$all"))
 
 (defun wiliki-view-top (&optional force-fetch)
@@ -1001,6 +1017,13 @@ If COUNT is a negative number, moving forward is performed."
       (error "Alreay on the top page"))
   (wiliki-view-wikiname (wiliki-base-url->top-page wiliki-base-url)
 			force-fetch))
+
+(defun wiliki-backlink (&optional force-fetch)
+  "Search for the current page name."
+  (interactive "P")
+  (if (string-match "^\\$" wiliki-title)
+      (error "Not a regular page.")
+    (wiliki-search (format "[[%s]]" wiliki-title) force-fetch)))
 
 (defun wiliki-next-wikiname ()
   "Move to next wikiname"
@@ -1231,7 +1254,6 @@ If DONT-TOUCH is non-nil, the page does not update 'Recent Changes'."
   (define-key wiliki-mode-map "e" 'wiliki-edit-this-page)
   (define-key wiliki-mode-map "f" 'wiliki-view-wikiname)
   (define-key wiliki-mode-map "g" 'wiliki-view-page)
-  (define-key wiliki-mode-map "i" 'wiliki-refetch)
   (define-key wiliki-mode-map "l" 'wiliki-view-previous-page)
   (define-key wiliki-mode-map "n" 'wiliki-view-next-page)
   (define-key wiliki-mode-map "m" 'wiliki-view-with-w3m)
@@ -1241,6 +1263,7 @@ If DONT-TOUCH is non-nil, the page does not update 'Recent Changes'."
   (define-key wiliki-mode-map "Q" 'wiliki-quit)
   (define-key wiliki-mode-map "r" 'wiliki-view-recent)
   (define-key wiliki-mode-map "R" 'wiliki-refetch)
+  (define-key wiliki-mode-map "s" 'wiliki-search)
   (define-key wiliki-mode-map "t" 'wiliki-view-top)
   (define-key wiliki-mode-map "u" 'wiliki-view-up-page))
 
