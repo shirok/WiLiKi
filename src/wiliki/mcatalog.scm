@@ -2,7 +2,7 @@
 ;;; message catalog feature for wiliki
 ;;;
 
-;;; $Id: mcatalog.scm,v 1.1 2002-01-14 09:27:32 shirok Exp $
+;;; $Id: mcatalog.scm,v 1.2 2002-01-14 10:14:27 shirok Exp $
 
 (define-module wiliki.mcatalog
   (export textdomain gettext))
@@ -31,7 +31,7 @@
 (define (load-domain dom)
   (letrec ((fname (string-append "/wiliki/msgs." (symbol->string dom)))
            (try-open (lambda (dir)
-                       (open-input-file #?(string-append dir fname)
+                       (open-input-file (string-append dir fname)
                                         :if-does-not-exist #f))))
     (let loop ((dirs *load-path*))
       (cond ((null? dirs) #f)
