@@ -2,7 +2,7 @@
 
 	* src/wiliki.scm : added a checkbox in editing screen to set
 	  "don't update 'Recent Changes'" option (so called "sage" feature).
-	
+	  Also hide "Edit" link in the edit screen.
 
 2002-03-30  Shiro Kawai  <shiro@acm.org>
 

@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.37 2002-05-22 04:38:55 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.38 2002-05-22 04:43:42 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -536,7 +536,8 @@
   (let ((page (wdb-get (db) pagename #t)))
     (format-page pagename
                  (edit-form #t pagename
-                            (content-of page) (mtime-of page) #f))))
+                            (content-of page) (mtime-of page) #f)
+                 :show-edit? #f)))
 
 (define (cmd-preview pagename content mtime donttouch)
   (let ((page (wdb-get (db) pagename #t)))
@@ -548,7 +549,8 @@
                                            :content content)))
            ,(html:hr)
            ,(edit-form #f pagename content mtime donttouch))
-         ))))
+         :show-edit? #f)
+        )))
 
 (define (cmd-commit-edit pagename content mtime donttouch)
   (unless (editable? (wiliki))
@@ -574,7 +576,8 @@
            ,(html:hr)
            ,($$ "<p>The following shows what you are about to submit.  Please re-edit the content and submit again.</p>")
            ,(edit-form #t pagename content (mtime-of page) donttouch)
-           )))))
+           )
+         :show-edit? #f))))
 
 (define (cmd-all)
   (format-page
