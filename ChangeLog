@@ -1,3 +1,8 @@
+2002-10-07  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm: fixed a problem that the text in the textarea
+	  of preview and edit screen wasn't html-escaped.
+
 2002-09-29  Shiro Kawai  <shiro@acm.org>
 
 	* release 0.1 (alpha)
