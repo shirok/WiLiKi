@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.6 2001-11-24 10:05:18 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.7 2001-11-24 11:10:07 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -429,7 +429,7 @@
            (command  (cgi-get-parameter "c" param))
            (lang     (cgi-get-parameter "l" param :convert string->symbol)))
        (when lang (set! (language-of self) lang))
-       `(,(cgi-header)
+       `(,(cgi-header :content-type "text/html; charset=euc-jp")
          ,(with-db self
                    (lambda ()
                      (cond
