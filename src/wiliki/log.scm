@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: log.scm,v 1.6 2003-08-28 11:25:35 shirok Exp $
+;;; $Id: log.scm,v 1.7 2003-08-30 12:19:29 shirok Exp $
 
 (define-module wiliki.log
   (use srfi-1)
@@ -45,7 +45,7 @@
   )
 (select-module wiliki.log)
 
-;; When 'logfile' slot contains a file name, wiliki writes out
+;; When wiliki's 'logfile' slot contains a file name, wiliki writes out
 ;; a commit log to it when any changes are done.
 ;; Each entry of commit log is like follows:
 ;;
@@ -131,7 +131,7 @@
 
 ;; Picks entries of the specified pagename ---------------
 ;; Returns a list of entries, where each entry is just
-;; a list of lines.  Then entries are in reverse chronological order.
+;; a list of lines.  The entries are in reverse chronological order.
 
 (define (wiliki-log-pick pagename iport)
   (define pick-prefix (format "C ~s" pagename))
@@ -280,10 +280,16 @@
 
     (define (accum! . fragments)
       (for-each (lambda (fragment)
-                  (unless (null? fragment)
-                    (apply enqueue! r fragment)))
+                  (unless (null? fragment) (apply enqueue! r fragment)))
                 fragments))
 
+    ;; hunk accessors for convenience
+    (define (.from hunk) (ref hunk 0))
+    (define (.size hunk) (ref hunk 1))
+    (define (.to   hunk) (+ (ref hunk 0) (ref hunk 1)))
+    (define (.added hunk) (ref hunk 2))
+
+    ;; main loop
     (define (dispatch a-edits b-edits lines)
       (if (null? a-edits)
         (if (null? b-edits)
@@ -291,8 +297,7 @@
           (finish b-edits lines))
         (if (null? b-edits)
           (finish a-edits lines)
-          (merge a-edits b-edits lines)
-          )))
+          (merge a-edits b-edits lines))))
 
     (define (finish edits lines)
       (if (null? edits)
@@ -301,47 +306,82 @@
         (apply-hunk (car edits) lines (cut finish (cdr edits) <>))))
 
     (define (apply-hunk hunk lines cont)
-      (receive (pre post) (split-at lines (- (ref hunk 0) count))
-        (accum! pre (ref hunk 2))
-        (inc! count (+ (length pre) (ref hunk 1)))
-        (cont (drop post (ref hunk 1)))))
+      (receive (pre post) (split-at lines (- (.from hunk) count))
+        (accum! pre (.added hunk))
+        (inc! count (+ (length pre) (.size hunk)))
+        (cont (drop post (.size hunk)))))
 
     (define (merge a-edits b-edits lines)
-      (let* ((a-from (ref (car a-edits) 0))
-             (a-to   (+ a-from (ref (car a-edits) 1)))
-             (b-from (ref (car b-edits) 0))
-             (b-to   (+ b-from (ref (car b-edits) 1))))
+      (let* ((a-from (.from (car a-edits)))
+             (a-to   (.to   (car a-edits)))
+             (b-from (.from (car b-edits)))
+             (b-to   (.to   (car b-edits))))
         (cond
-         ((<= a-to b-from)
+         ((and (<= a-to b-from) (< a-from b-from))
           (apply-hunk (car a-edits) lines
                       (cut dispatch (cdr a-edits) b-edits <>)))
-         ((<= b-to a-from)
+         ((and (<= b-to a-from) (< b-from a-from))
           (apply-hunk (car b-edits) lines
                       (cut dispatch a-edits (cdr b-edits) <>)))
+         ((equal? (car a-edits) (car b-edits))
+          ;; when both have exactly the same edit, we can safely apply
+          ;; one of it.
+          (apply-hunk (car a-edits) lines
+                      (cut dispatch (cdr a-edits) (cdr b-edits) <>)))
          (else
-          ; we got conflict.
+          ;; We got conflict.
           (set! success? #f)
-          (let ((from (min a-from b-from))
-                (to   (max a-to b-to)))
-            (receive (pre post) (split-at lines (- from count))
-              (inc! count (length pre))
-              (accum! pre)
-              (receive (mid post) (split-at post (- to from))
-                (let ((a-only (extract-hunk (car a-edits) mid))
-                      (b-only (extract-hunk (car b-edits) mid)))
-                  (inc! count (- to from))
-                  (if (equal? a-only b-only)
-                    (accum! a-only)
-                    (accum! (cond-list
-                             ((pair? a-only) (cons 'a a-only))
-                             ((pair? b-only) (cons 'b b-only)))))
-                  (dispatch (cdr a-edits) (cdr b-edits) post))))))
-         )))
+          (conflict (min a-from b-from) (max a-to b-to) a-edits b-edits lines)
+          ))))
 
-    (define (extract-hunk hunk lines)
-      (append (take lines (- (ref hunk 0) count))
-              (ref hunk 2)
-              (drop lines (+ (- (ref hunk 0) count) (ref hunk 1)))))
+    (define (conflict from to a-edits b-edits lines)
+      ;; It is possible that the conflicting range touches the next
+      ;; hunk of either a-edits or b-edits.  In such cases, we extend
+      ;; the conflicting range to include the touching hunk.
+      (let loop ((to to)
+                 (ah (list (car a-edits)))
+                 (at (cdr a-edits))
+                 (bh (list (car b-edits)))
+                 (bt (cdr b-edits)))
+        (cond ((and (pair? at) (pair? bt) (equal? (car at) (car bt)))
+               ;; a rare case, where the conflict range is immeidately
+               ;; followed by both hunks which are exactly the same.
+               (resolve from to (reverse! ah) at (reverse! bh) bt lines))
+              ((and (pair? at) (>= to (.from (car at))))
+               (loop (max to (.to (car at)))
+                     (cons (car at) ah) (cdr at) bh bt))
+              ((and (pair? bt) (>= to (.from (car bt))))
+               (loop (max to (.to (car bt)))
+                     ah at (cons (car bt) bh) (cdr bt)))
+              (else
+               (resolve from to (reverse! ah) at (reverse! bh) bt lines)))))
+
+    (define (resolve from to a-hunks a-tail b-hunks b-tail lines)
+      ;; From and to indicates conflicting range.  We emit
+      ;; the content of ranges in a-page and b-page in parallel
+      (receive (pre post) (split-at lines (- from count))
+        (inc! count (- from count))
+        (accum! pre)
+        (receive (mid post) (split-at post (- to from))
+          (let ((a-only (extract a-hunks mid))
+                (b-only (extract b-hunks mid)))
+            (inc! count (- to from))
+            (accum! (cond-list
+                     ((pair? a-only) (cons 'a a-only))
+                     ((pair? b-only) (cons 'b b-only))))
+            (dispatch a-tail b-tail post)))))
+
+    (define (extract hunks lines)
+      (let loop ((hunks hunks) (lines lines) (count count) (r '()))
+        (if (null? hunks)
+          (apply append! (reverse! (cons lines r)))
+          (let* ((h  (car hunks))
+                 (lt (drop lines (- (.to h) count))))
+            (loop (cdr hunks) lt
+                  (.to h)
+                  (list* (.added h)
+                         (take lines (- (.from h) count))
+                         r))))))
 
     ;; Main body
     (dispatch a-edits b-edits c-lines)

@@ -295,6 +295,21 @@ for user-defined classes.
        (mg '("a" "b" "c" "d") '("d") '("a")))
 (test* "delete&delete (conflict) 1" '((a "b") (b "c"))
        (mg '("a" "b" "c" "d") '("b") '("c")))
+(test* "delete&delete (conflict) 2" '("a" (a "c") (b "d"))
+       (mg '("a" "b" "c" "d") '("a" "c") '("a" "d")))
+(test* "delete&delete (conflict) 3" '((a "a") (b "c") "d")
+       (mg '("a" "b" "c" "d") '("a" "d") '("c" "d")))
+(test* "delete&delete (conflict) 4" '("a" (a "c" "e") (b "d" "f"))
+       (mg '("a" "b" "c" "d" "e" "f") '("a" "c" "e") '("a" "d" "f")))
+(test* "delete&delete (conflict) 5" '("a" (a "c" "d") (b "e" "f"))
+       (mg '("a" "b" "c" "d" "e" "f") '("a" "c" "d") '("a" "e" "f")))
+
+;; This test actually shows the deficiencies of the current algorithm,
+;; which is forward-only.  To get more plausible result,
+;; ((a "a" "b") (b "c" "d") "f"), we need to merge hunk backwards from
+;; the common line "f".
+(test* "delete&delete (conflict) 6" '((b "c" "d") "f")
+       (mg '("a" "b" "c" "d" "e" "f") '("a" "b" "f") '("c" "d" "f")))
 
 ;; add & add
 
@@ -308,11 +323,73 @@ for user-defined classes.
        (mg '("c" "e")
            '("a" "b" "c" "e")
            '("c" "d" "e" "f")))
-(test* "add&add (non conflict) 3" '("a" "b" "c" "d" "e" "f")
+(test* "add&add (non conflict) 3" '("a" "b" "c" "d")
+       (mg '("a" "d") '("a" "b" "c" "d") '("a" "b" "c" "d")))
+(test* "add&add (non conflict) 4" '("a" "b" "c" "d")
+       (mg '("d") '("a" "b" "c" "d") '("a" "b" "c" "d")))
+(test* "add&add (non conflict) 5" '("a" "b" "c" "d")
+       (mg '("a") '("a" "b" "c" "d") '("a" "b" "c" "d")))
+(test* "add&add (non conflict) 6" '("a" "b" "c" "d")
+       (mg '() '("a" "b" "c" "d") '("a" "b" "c" "d")))
+
+(test* "add&add (conflict) 0" '("a" (a "b" "d") (b "c" "d") "e")
+       (mg '("a" "e") '("a" "b" "d" "e") '("a" "c" "d" "e")))
+(test* "add&add (conflict) 1" '((a "a" "b") (b "a") "c" "d" "e" "f")
        (mg '("c" "e") '("a" "b" "c" "e") '("a" "c" "d" "e" "f")))
+(test* "add&add (conflict) 2" '("a" "b" "c" (a "d" "e") (b "d" "f"))
+       (mg '("a" "b" "c") '("a" "b" "c" "d" "e") '("a" "b" "c" "d" "f")))
+(test* "add&add (conflict) 3" '((a "a" "b") (b "b" "c"))
+       (mg '() '("a" "b") '("b" "c")))
+(test* "add&add (conflict) 4" '("a" "b" (a "c" "d") (b "e" "f"))
+       (mg '("a" "b") '("a" "b" "c" "d") '("a" "b" "e" "f")))
+(test* "add&add (conflict) 4" '((a "x" "y") (b "z" "w") "a" "b")
+       (mg '("a" "b") '("x" "y" "a" "b") '("z" "w" "a" "b")))
 
 ;; add & delete
-(test* "add&delete 0" '("A" "b" "c" "C")
+(test* "add&delete 0" '("z" "a" "b")
+       (mg '("a" "b" "c" "d") '("z" "a" "b") '("a" "b" "c" "d")))
+(test* "add&delete 1" '("z" "a" "b" (b "c"))
+       (mg '("a" "b" "c" "d") '("z" "a" "b") '("a" "b" "c")))
+(test* "add&delete 2" '("z" "a" "b" (a "d"))
+       (mg '("a" "b" "c" "d") '("a" "b" "d") '("z" "a" "b")))
+(test* "add&delete 3" '("z" "a" "b" (b "d" "e"))
+       (mg '("a" "b" "c" "d") '("z" "a" "b") '("a" "b" "d" "e")))
+(test* "add&delete 4" '("z" "a" "b" "d" "e")
+       (mg '("a" "b" "c" "d") '("z" "a" "b" "d") '("a" "b" "d" "e")))
+(test* "add&delete 5" '("z" "a" "b" (a "d") "e")
+       (mg '("a" "b" "c" "d" "e") '("a" "b" "d" "e") '("z" "a" "b" "e")))
+
+(test* "add&delete 6" '((b "A" "a") "b" "c" (a "C" "d"))
        (mg '("a" "b" "c" "d") '("b" "c" "C" "d") '("A" "a" "b" "c")))
+(test* "add&delete 7" '("a" (a "P" "Q") (b "R" "Q") "d")
+       (mg '("a" "b" "c" "d") '("a" "P" "Q" "d") '("a" "R" "Q" "d")))
+
+;; Should probably be ("a" (b "b") "S" "T" (a "d") "e" "f")
+(test* "add&delete 8" '("a" (a "S" "T" "d" "e" "f") (b "b" "S" "T" "e" "f"))
+       (mg '("a" "b" "c" "d")
+           '("a" "S" "T" "d" "e" "f")
+           '("a" "b" "S" "T" "e" "f"))
+
+;; other patterns
+(test* "other 0" '("b" "a")
+       (mg '("a" "b") '("b" "a") '("b" "a")))
+;; This seems interesting.  It is thought that the third list is
+;; created by deleting first line, and adding "a" to the last.  Since
+;; the second list isn't changed, the last edit takes effect.
+(test* "other 1" '("b" "a")
+       (mg '("a" "b") '("a" "b") '("b" "a")))
+
+(test* "other 2" '("c" "b" "a")
+       (mg '("a" "b" "c") '("c" "b" "a") '("c" "b" "a")))
+;; Probably the first "c" should be factored out.
+(test* "other 3" '((a "c" "b" "a") (b "c" "a" "b"))
+       (mg '("a" "b" "c") '("c" "b" "a") '("c" "a" "b")))
+
+(test* "other 4" '("d" "c" "b" "a")
+       (mg '("a" "b" "c" "d") '("d" "c" "b" "a") '("d" "c" "b" "a")))
+(test* "other 5" '("d" "b" "c" "a")
+       (mg '("a" "b" "c" "d") '("d" "b" "c" "a") '("d" "b" "c" "a")))
+(test* "other 6" '((a "d" "b" "c" "a") (b "d" "c" "b" "a"))
+       (mg '("a" "b" "c" "d") '("d" "b" "c" "a") '("d" "c" "b" "a")))
 
 (test-end)
