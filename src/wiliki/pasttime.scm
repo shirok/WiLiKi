@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: pasttime.scm,v 1.1 2003-02-09 02:58:23 shirok Exp $
+;;;  $Id: pasttime.scm,v 1.2 2003-02-09 07:43:23 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -37,7 +37,7 @@
 (define-constant secs-in-a-month 2629800)
 (define-constant secs-in-a-day   86400)
 (define-constant secs-in-an-hour 3600)
-(define-constant secs-in-a-minute 3600)
+(define-constant secs-in-a-minute 60)
 
 (define (how-long-since time . opts)
   (define (pl num unit)
