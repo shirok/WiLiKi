@@ -1,3 +1,8 @@
+2004-02-10  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/format.scm (fmt-line): fixed a bug that caused infinite
+	  loop when there's an unmatched "[[" in a line.
+
 2004-02-09  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki2.cgi (my-page-content): make 'Topics' of side-bar

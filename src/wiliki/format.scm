@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.30 2004-02-09 11:34:27 shirok Exp $
+;;; $Id: format.scm,v 1.31 2004-02-11 08:38:49 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -213,7 +213,7 @@
     (cond ((#/\[\[|\]\]/ s)
            => (lambda (m) (values (m 'before) (m) (m 'after))))
           (else (values s #f #f))))
-  ;; return <str in paren> and <the rest of string>
+  ;; return <str in paren> and <the rest of string to scan>
   (define (find-closer s level in)
     (receive (pre tok post) (token s)
       (cond ((not tok)
@@ -289,7 +289,7 @@
                        (append (reverse! (parameterize ((fmt-context ctx))
                                            (fmt-wikiname wikiname)))
                                (bold pre seed)))
-              (bracket rest (bold pre seed))))
+              (bold rest (bold pre seed))))
           (bold line seed)))))
   (define (smacro line seed)
     (if (string-null? line)

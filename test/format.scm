@@ -628,4 +628,27 @@
              (h4 (@ (id ,(hid "ee" "cc" "aa"))) "ee\n"))
     (page "aaa" "* aa" "- bb" "** cc" " dd" "*** ee"))
 
+;;------------------------------------------------
+(test-section "wikiname")
+
+;; default handler
+(tp "wikiname"
+    `(result (p "[[aa]]\n"))
+    (page "[[aa]]"))
+(tp "wikiname"
+    `(result (p "bb[[aa]]\n"))
+    (page "bb[[aa]]"))
+(tp "wikiname"
+    `(result (p "bb[[aa\n"))
+    (page "bb[[aa"))
+(tp "wikiname"
+    `(result (p "bb[[aa[[cc\n"))
+    (page "bb[[aa[[cc"))
+(tp "wikiname"
+    `(result (p "bb[[[[cc\n"))
+    (page "bb[[[[cc"))
+(tp "wikiname"
+    `(result (p "bb[[[[cc]]\n"))
+    (page "bb[[[[cc]]"))
+
 (test-end)
