@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.18 2004-01-01 22:24:14 shirok Exp $
+;;; $Id: format.scm,v 1.19 2004-01-09 13:28:07 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -170,9 +170,24 @@
 ;; Formatting: Wiki -> HTML
 ;;
 
+(define (regexp-fold rx proc-nomatch proc-match seed line)
+  (let loop ((line line)
+             (seed seed))
+    (cond ((string-null? line) seed)
+          ((rx line)
+           => (lambda (m)
+                (let ((pre   (m 'before))
+                      (post  (m 'after)))
+                  (if (string-null? pre)
+                    (loop post (proc-match m seed))
+                    (loop post (proc-match m (proc-nomatch pre seed)))))))
+          (else
+           (proc-nomatch line seed)))
+    ))
+
 ;; Find wiki name in the line.
 ;; Correctly deal with nested "[[" and "]]"'s.
-(define (format-line fmtr line . expand-tabs?)
+(define (format-line fmtr line seed)
   ;; parse to next "[[" or "]]"
   (define (token s)
     (cond ((#/\[\[|\]\]/ s)
@@ -189,31 +204,20 @@
              (values (tree->string (reverse (cons pre in))) post))
             (else
              (find-closer post (- level 1) (list* "]]" pre in))))))
-
-  (let1 formatted 
-      (list
-       (let loop ((s line))
-         (receive (pre post) (string-scan s "[[" 'both)
-           (if pre
-             (cons (format-parts fmtr pre)
-                   (receive (wikiname rest) (find-closer post 0 '())
-                     (if wikiname
-                       (cons (wiliki-format-wiki-name fmtr wikiname)
-                             (loop rest))
-                       (list rest))))
-             (format-parts fmtr s))))
-       "\n")
-    (if (get-optional expand-tabs? #f)
-      (expand-tab (tree->string formatted))
-      formatted))
-  )
-
-(define (format-parts fmtr line)
-  (define (uri line)
-    (regexp-replace-all
+  ;; deal with other inline items between wikinames
+  ;; NB: the precedence is embedded to the order of calling regexp-fold.
+  (define (mailto line seed)
+    (regexp-fold
+     #/\[(mailto:[-\w]+(?:\.[-\w]+)*@[-\w]+(?:\.[-\w]+)+)\s+(.*)\]/
+     cons
+     (lambda (match seed)
+       (cons `(a (@ (href ,(match 1))) ,(match 2)) seed))
+     seed line))
+  (define (uri line seed)
+    (regexp-fold
      #/(\[)?(http|https|ftp):(\/\/[^\/?#\s]*)?([^?#\s]*(\?[^#\s]*)?(#\S*)?)(\s([^\]]+)\])?/
-     line
-     (lambda (match)
+     mailto
+     (lambda (match seed)
        ;; NB: If a server name is not given, we omit the protocol scheme in
        ;; href attribute, so that the same page would work on both
        ;; http and https access. (Patch from YAEGASHI Takeshi).
@@ -223,227 +227,262 @@
               (openp  (match 1))
               (name   (match 8))
               (url    (if server #`",|scheme|:,|server|,|path|" path)))
-         ;; NB: url is already HTML-escaped.  we can't use
-         ;; (html:a :href url url) here, for it will escape the first URL
-         ;; again.
          (if (and openp name)
-             (format #f "<a href=\"~a\">~a</a>" url name)
-             (format #f "~a<a href=\"~a\">~a:~a~a</a>"
-                     (if openp "[" "") url
-                     scheme (or server "") path))))))
-  (define (mailto line)
-    (regexp-replace-all
-     #/\[(mailto:[-\w]+(?:\.[-\w]+)*@[-\w]+(?:\.[-\w]+)+)\s+(.*)\]/ line
-     ;; NB: 'line' is already HTML-escaped, so no need to sanitize it.
-     "<a href=\"\\1\">\\2</a>"))
-  (define (bold line)
-    (regexp-replace-all #/'''([^']*)'''/ line "<strong>\\1</strong>"))
-  (define (italic line)
-    (regexp-replace-all #/''([^']*)''/ line "<em>\\1</em>"))
-  (define (nl line)
-    (regexp-replace-all #/~%/ line "<br />"))
-  (mailto (uri (nl (italic (bold (html-escape-string line)))))))
+           (cons `(a (@ (href ,url)) ,name) seed)
+           (list* (if openp "[" "")
+                  `(a (@ (href ,url)) ,scheme ":" ,(or server "") ,path)
+                  seed))))
+     seed line))
+  (define (nl line seed)
+    (regexp-fold
+     #/~%/
+     uri
+     (lambda (match seed) (cons '(br) seed))
+     seed line))
+  (define (italic line seed)
+    (regexp-fold
+     #/''([^']*)''/
+     nl
+     (lambda (match seed) (cons `(em ,@(reverse! (nl (match 1) '()))) seed))
+     seed line))
+  (define (bold line seed)
+    (regexp-fold
+     #/'''([^']*)'''/
+     italic
+     (lambda (match seed)
+       (cons `(strong ,@(reverse! (nl (match 1) '()))) seed))
+     seed line))
+
+  ;; Main body
+  (let loop ((line line) (seed seed))
+    (if (string-null? line)
+      (cons "\n" seed)
+      (receive (pre post) (string-scan line "[[" 'both)
+        (if pre
+          (receive (wikiname rest) (find-closer post 0 '())
+            (if wikiname
+              (loop rest
+                    (cons `(stree ,(wiliki-format-wiki-name fmtr wikiname))
+                          (bold pre seed)))
+              (loop rest (bold pre seed))))
+          (loop "" (bold line seed))))))
+  )
 
 ;; Read lines from generator and format them.  This is the main
 ;; parser/transformer of WiLiKi format.
 (define (format-lines fmtr generator)
-  ;; Common loop states:
-  ;;  ctx  - context; a list of symbols that represents the current stack
-  ;;         of elements.  Using this, this procedure is effectively a
-  ;          push-down automaton.
-
-  ;; Stateful closures:
-  ;;  (>> ctx item ...) accumulate item ... to output.  if ctx is not null,
-  ;;                  closing tags in ctx before adding items.
-  ;;  (get-id)        returns new integer incremented by one each time.
-
-  (define %acc (make-queue))
-  (define (>> ctx . args) (apply enqueue! %acc (ctag ctx) args))
 
   (define gen-id (let ((n 0)) (lambda () (begin0 n (inc! n)))))
 
-  ;; Main loop
-  (define (loop line ctx)
-    (cond ((eof-object? line) (>> ctx))
-          ((string-null? line)
-           (let1 ctx (flush-block ctx)
-             (>> '() "<p>")
-             (loop (generator) (cons 'p ctx))))
-          ((string=? "----" line)
-           (>> ctx "<hr />") (loop (generator) '()))
-          ((string=? "{{{" line)
-           (let1 ctx (ensure-block ctx)
-             (>> '() "<pre>")
-             (verb (generator) ctx)))
-          ((string=? "<<<" line)
-           (begin-quote ctx))
-          ((string=? ">>>" line)
-           (end-quote ctx))
-          ((and (string-prefix? " " line)
-                (or (null? ctx) (memq (car ctx) '(p))))
-           (let1 ctx (ensure-block ctx)
-             (>> '() "<pre>") (pre line (cons 'pre ctx))))
-          ((rxmatch #/^(\*{1,}) / line)
-           => (lambda (m)
-                (headings m (h-level m) ctx)))
-          ((rxmatch #/^(--*) / line)
-           => (lambda (m)
-                (list-item m (h-level m) 'ul ctx)))
-          ((rxmatch #/^(##*) / line)
-           => (lambda (m)
-                (list-item m (h-level m) 'ol ctx)))
-          ((rxmatch #/^:(.*):([^:]*)$/ line)
-           => (cut def-item <> ctx))
-          ((rxmatch #/^\|\|(.*)\|\|$/ line)
-           => (lambda (m)
-                (let1 ctx (ensure-block ctx)
-                  (>> '()
-                      "<table class=\"inbody\" border=\"1\" cellspacing=\"0\">\n")
-                  (table (m 1) ctx))))
-          ((block-bottom? ctx)
-           (>> '() "<p>" (format-line fmtr line))
-           (loop (generator) (cons 'p ctx)))
-          (else
-           (>> '() (format-line fmtr line))
-           (loop (generator) ctx))
-          ))
-
-  (define (symbol->tag p l)
-    (if (list? l) (map p l) (p l)))
-  (define (otag ctx)
-    (symbol->tag (lambda (t) #`"<,|t|>") ctx))
-  (define (ctag ctx)
-    (symbol->tag (lambda (t) #`"</,|t|>") ctx))
   (define (h-level m)
     (- (rxmatch-end m 1) (rxmatch-start m 1)))
+  (define (l-level ctx)
+    (count (cut memq <> '(ul ol)) ctx))
 
-  ;; flush pending <p> and/or <pre>
-  (define (ensure-block ctx)
-    (if (and (pair? ctx) (memq (car ctx) '(p pre)))
-      (begin (>> (car ctx)) (cdr ctx))
-      ctx))
+  (define (lex line ctx)
+    (cond ((eof-object? line)                '(eof))
+          ((string-null? line)               '(null))
+          ((string=? "----" line)            '(hr))
+          ((string=? "{{{" line)             '(open-verb))
+          ((string=? "<<<" line)             '(open-quote))
+          ((and (string=? ">>>" line)
+                (memq 'blockquote ctx))      '(close-quote))
+          ((string-prefix? " " line)         `(pre . ,line))
+          ((rxmatch #/^(\*{1,}) / line)      => (cut cons 'heading <>))
+          ((rxmatch #/^(--*) / line)         => (cut cons 'ul <>))
+          ((rxmatch #/^(##*) / line)         => (cut cons 'ol <>))
+          ((rxmatch #/^:(.*):([^:]*)$/ line) => (cut cons 'dl <>))
+          ((rxmatch #/^\|\|(.*)\|\|$/ line)  => (cut cons 'table <>))
+          (else                              `(p . ,line))))
 
-  ;; like ensure-block, but flush up to the most inner blockquote.
-  (define (flush-block ctx)
-    (receive (pre rest) (break (cut memq <> '(blockquote)) ctx)
-      (>> pre)
-      rest))
+  (define token-buffer #f)
+  (define (next-token ctx) (or token-buffer (lex (generator) ctx)))
+  (define (pushback-token tok) (set! token-buffer tok))
+  (define (token-type tok) (car tok))
+  (define (token-value tok) (cdr tok))
 
-  ;; See if current context is the "bottom" of the block---i.e.
-  ;; from where you can start a block element.  List elements within
-  ;; which you always want to contain block elements.
-  (define (block-bottom? ctx)
-    (or (null? ctx) (memq (car ctx) '(dd blockquote))))
+  (define (>> cont ctx seed)
+    (lambda (tok ctx r) (cont tok ctx (cons r seed))))
 
-  ;; Headings
-  (define (headings m level ctx)
-    (let* ((hfn (ref `(,html:h2 ,html:h3 ,html:h4 ,html:h5)
-                     (- level 1)
-                     html:h6)))
-      (>> ctx (hfn (html:a :name (gen-id) (format-line fmtr (m 'after)))))
-      (loop (generator) '())))
+  ;; Block-level loop
+  (define (block tok ctx seed)
+    (let loop ((tok tok) (seed seed) (p '()))
+      (if (eq? (token-type tok) 'p)
+        (loop (next-token ctx) seed
+              (format-line fmtr (token-value tok) p))
+        (let1 seed (if (null? p) seed (cons `(p ,@(reverse! p)) seed))
+          (case (token-type tok)
+            ((eof)  (reverse! seed))
+            ((null) (block (next-token ctx) ctx seed))
+            ((hr)   (block (next-token ctx) ctx (cons '(hr) seed)))
+            ((open-verb)
+             (verb ctx (>> block ctx seed)))
+            ((open-quote)
+             (blockquote ctx (>> block ctx seed)))
+            ((close-quote)
+             (reverse! seed))
+            ((pre)
+             (pre tok ctx (>> block ctx seed)))
+            ((heading)
+             (block (next-token ctx) ctx
+                    (cons (heading (token-value tok)) seed)))
+            ((ul ol)
+             (list-item tok ctx (>> block ctx seed)))
+            ((dl)
+             (def-item tok ctx (>> block ctx seed)))
+            ((table)
+             (table tok ctx (>> block ctx seed)))
+            (else
+             (error "internal error: unknown token type?")))))))
 
-  ;; Non-verbatime pre
-  (define (pre line ctx)
-    (cond ((eof-object? line) (>> ctx))
-          ((string-prefix? " " line)
-           (>> '()
-               (string-delete (tree->string (format-line fmtr line #t))
-                              #\newline)
-               "\n")
-           (pre (generator) ctx))
-          (else
-           (>> '(pre))
-           (loop line (cdr ctx)))))
+  ;; Verbatim
+  (define (verb ctx cont)
+    (let loop ((line (generator)) (r '()))
+      (if (or (eof-object? line)
+              (equal? "}}}" line))
+        (cont (next-token ctx) ctx `(pre ,@(reverse! r)))
+        (loop (generator)
+              (list* "\n" (tree->string (expand-tab line)) r)))))
 
-  ;; Verbatim pre
-  ;; NB: within this loop, ctx does not include the current <pre> block.
-  (define (verb line ctx)
-    (cond ((eof-object? line) (>> (cons 'pre ctx)))
-          ((string=? line "}}}")
-           (>> '(pre))
-           (loop (generator) ctx))
-          (else
-           (>> '()
-               (html-escape-string (tree->string (expand-tab line)))
-               "\n")
-           (verb (generator) ctx))))
+  ;; Preformatted
+  (define (pre tok ctx cont)
+    (let loop ((tok tok) (r '()))
+      (if (eq? (token-type tok) 'pre)
+        (loop (next-token ctx)
+              (format-line fmtr
+                                (tree->string (expand-tab (token-value tok)))
+                                r))
+        (cont tok ctx `(pre ,@(reverse! r))))))
+
+  ;; Heading
+  (define (heading m)
+    (let* ((elm (ref '(_ h2 h3 h4 h5 h6) (min (h-level m) 5))))
+      `(,elm (a (@ (name ,(gen-id))) ,(m 'after) "\n"))))
 
   ;; Table
-  (define (table body ctx)
-    (>> '() (html:tr :class "inbody"
-                     (map (lambda (seg)
-                            (html:td :class "inbody" (format-line fmtr seg)))
-                          (string-split body  "||"))))
-    (let1 next (generator)
-      (cond ((eof-object? next) (>> '(table)))
-            ((rxmatch #/^\|\|(.*)\|\|$/ next)
-             => (lambda (m) (table (m 1) ctx)))
-            (else
-             (>> '(table) "\n")
-             (loop next ctx)))))
+  (define (table tok ctx cont)
+    (let loop ((tok tok)
+               (r '()))
+      (if (eq? (token-type tok) 'table)
+        (loop (next-token ctx) (cons (table-row (token-value tok)) r))
+        (cont tok ctx
+              `(table (@ (class "inbody") (border 1) (cellspacing 0))
+                      ,@(reverse! r))))))
+
+  (define (table-row m)
+    `(tr (@ (class "inbody"))
+         ,@(map (lambda (seq)
+                  `(td (@ (class "inbody"))
+                       ,@(reverse! (format-line fmtr seq '()))))
+                (string-split (m 1) "||"))))
 
   ;; Blockquote
-  (define (begin-quote ctx)
-    (let1 ctx (ensure-block ctx)
-      (>> '() "<blockquote><p>")
-      (loop (generator) (list* 'p 'blockquote ctx))))
-
-  (define (end-quote ctx)
-    (receive (inner outer) (break (cut eq? <> 'blockquote) ctx)
-      (if (null? outer)
-        ;; stray closing blockquote.  display it literally.
-        (begin (>> '() ">>>")
-               (loop (generator) ctx))
-        ;; close inner blocks before closing blockquote.
-        (begin
-          (>> inner (ctag 'blockquote))
-          (loop (generator) (cdr outer))))))
+  (define (blockquote ctx cont)
+    (let* ((new-ctx (cons 'blockquote ctx))
+           (r `(blockquote ,@(block (next-token new-ctx) new-ctx '()))))
+      (cont (next-token ctx) ctx r)))
 
   ;; UL and OL
-  (define (list-item match level ltag ctx)
-    (let* ((line (rxmatch-after match))
-           (ctx  (adjust-list-level (ensure-block ctx) level ltag)))
-      (>> '() (format-line fmtr line))
-      (loop (generator) ctx)))
+  (define (list-item tok ctx cont)
+    (let* ((ltype  (token-type tok))
+           (newctx (cons ltype ctx))
+           (bottom (l-level newctx)))
+      
+      (define (wrap tok items ctx)
+        (if (not (memq (token-type tok) '(ul ol)))
+          (values tok `((,(car ctx) ,@(reverse! items))))
+          (let ((new-level (h-level (token-value tok)))
+                (cur-level (l-level ctx)))
+            (cond ((< new-level bottom)
+                   (values tok `((,(car ctx) ,@(reverse! items)))))
+                  ((and (eq? (token-type tok) (car ctx))
+                        (= new-level cur-level))
+                   (fold-content tok ctx items))
+                  ((> new-level cur-level)
+                   (receive (nextok r)
+                       (wrap tok '() (cons (token-type tok) ctx))
+                     (wrap nextok
+                           (cond
+                            ((null? items) r)
+                            ((eq? (caar items) 'li)
+                             `((,(caar items) ,@(append (cdar items) r))
+                               ,@(cdr items)))
+                            (else (append r items)))
+                           ctx)))
+                  (else
+                   (values tok
+                           (if (null? items)
+                             '()
+                             `((,(car ctx) ,@(reverse! items)))))))
+            )))
 
-  (define (adjust-list-level ctx list-level ltag)
-    (let1 current (count (cut memq <> '(ul ol)) ctx)
-      (if (< current list-level)
-        (let rec ((ctx ctx) (current current))
-          (if (< current list-level)
-            (begin (>> '() (otag ltag))
-                   (rec (cons ltag ctx) (+ current 1)))
-            (begin (>> '() "<li>")
-                   (cons 'li ctx))))
-        (let rec ((ctx ctx) (current current))
-          (receive (pre rest) (break (cut memq <> '(ul ol)) ctx)
-            (cond ((> current list-level)
-                   (>> pre (ctag (car rest)))
-                   (rec (cdr rest) (- current 1)))
-                  ((eq? ltag (car rest))
-                   (>> pre "<li>")
-                   (cons 'li rest))
-                  (else  ;; list type is switched
-                   (>> pre (ctag (car rest)))
-                   (adjust-list-level (cdr rest) list-level ltag))))))))
+      (define (fold-content tok ctx items)
+        (let loop ((tok (next-token ctx))
+                   (ctx ctx)
+                   (r (format-line fmtr ((token-value tok) 'after) '())))
+          (case (token-type tok)
+            ((eof null hr heading ul ol close-quote)
+             (wrap tok (cons `(li ,@(reverse! r)) items) ctx))
+            ((open-quote) (blockquote ctx (>> loop ctx r)))
+            ((open-verb) (verb ctx (>> loop ctx r)))
+            ((table) (table tok ctx (>> loop ctx r)))
+            ((dl) (def-item tok ctx (>> loop ctx r)))
+            (else (loop (next-token ctx) ctx
+                        (format-line fmtr (token-value tok) r))))))
+
+      ;; body of list-item
+      (receive (tok elts) (wrap tok '() newctx)
+        (cont tok ctx (car elts)))))
 
   ;; DL
-  (define (def-item match ctx)
-    (let ((dt (format-line fmtr (match 1)))
-          (dd (format-line fmtr (match 2))))
-      (receive (pre rest) (break (cut eq? <> 'dl) ctx)
-        (if (null? rest)
-          (let1 ctx (ensure-block pre)  ; begin new dl
-            (>> '() "<dl>" "<dt>" dt "</dt>" "<dd><p>" dd)
-            (loop (generator) (list* 'p 'dd 'dl ctx)))
-          (begin                        ; continue the current dl
-            (>> pre "<dt>" dt "</dt>" "<dd><p>" dd)
-            (loop (generator) (list* 'p 'dd rest)))))))
+  (define (def-item tok ctx cont)
+    (receive (nextok r) (def-item-rec tok ctx '())
+      (cont nextok ctx `(dl ,@(reverse! r)))))
+
+  (define (def-item-rec tok ctx seed)
+    (let ((dt (reverse! (format-line fmtr ((token-value tok) 1) '())))
+          (dd (format-line fmtr ((token-value tok) 2) '())))
+      (let loop ((tok (next-token ctx))
+                 (p dd)
+                 (r '()))
+        (define (fold-p)
+          (if (null? p) r (cons `(p ,@(reverse! p)) r)))
+        (define (finish)
+          `((dd ,@(reverse! (fold-p))) (dt ,@dt) ,@seed))
+        (case (token-type tok)
+          ((eof null hr heading)
+           (values tok (finish)))
+          ((dl)
+           (def-item-rec tok ctx (finish)))
+          ((p)
+           (loop (next-token ctx)
+                 (format-line fmtr (token-value tok) p) r))
+          ((pre)
+           (pre tok ctx (lambda (tok ctx elt)
+                          (loop tok '() (cons elt (fold-p))))))
+          ((open-quote)
+           (blockquote ctx (lambda (tok ctx elt)
+                             (loop tok '() (cons elt (fold-p))))))
+          ((open-verb)
+           (verb ctx (lambda (tok ctx elt)
+                       (loop tok '() (cons elt (fold-p))))))
+          ((table)
+           (table tok ctx (lambda (tok ctx elt)
+                            (loop tok '() (cons elt (fold-p))))))
+          ((ul ol)
+           (if (>= (h-level (token-value tok))
+                   (l-level ctx))
+             (list-item tok ctx (lambda (tok ctx elt)
+                                  (loop tok '() (cons elt (fold-p)))))
+             (values tok (finish))))
+          (else
+           (loop (next-token ctx) '()
+                 (format-line fmtr (token-value tok) p) r))
+          ))))
 
   ;; Main body
-  (loop (generator) '())
-  (dequeue-all! %acc))
+  (map wiliki:sxml->stree (block (next-token '()) '() '()))
+  )
 
 ;; Create a line scanner method
 (define (make-line-scanner port)

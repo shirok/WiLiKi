@@ -1,3 +1,8 @@
+2004-01-08  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/format.scm : yet another snapshot of refactoring
+	  formatter.  format-lines is rewritten using SXML.
+
 2003-12-31  Shiro Kawai  <shiro@acm.org>
 
 	* another snapshot of refactoring formatter.  wiliki.format is
