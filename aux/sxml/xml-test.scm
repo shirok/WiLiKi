@@ -5,7 +5,7 @@
 ;;  Copyright (c) 2003 Time Intermedia Corporation, All rights reserved.
 ;;  See COPYING for terms and conditions of using this software
 ;;
-;; $Id: xml-test.scm,v 1.2 2003-12-21 21:37:02 shirok Exp $
+;; $Id: xml-test.scm,v 1.3 2003-12-29 12:44:18 shirok Exp $
 
 ;; This module provides the means of test the result of HTML
 ;; generating code, such as CGI programs.   The output of
@@ -133,6 +133,7 @@
 (define-module sxml.xml-test
   (use srfi-1)
   (use srfi-13)
+  (use gauche.test)
   (use util.combinations)
   (use text.tree)
   (use sxml.ssax)
@@ -248,30 +249,38 @@
 ;; Entry
 
 (define (test-sxml-match? pattern input . opts)
-  (apply match-input pattern (list input) opts))
+  (if (equal? input *test-error*)
+    input
+    (apply match-input pattern (list input) opts)))
 
 (define (test-xml-match? pattern input . opts)
-  (apply match-input pattern
-         (cdr (call-with-input-string (tree->string input)
-                (cut ssax:xml->sxml <> '())))
-         opts))
+  (if (equal? input *test-error*)
+    input
+    (apply match-input pattern
+           (cdr (call-with-input-string (tree->string input)
+                  (cut ssax:xml->sxml <> '())))
+           opts)))
 
 (define (test-sxml-select-matcher path . maybe-extra-check)
   (let ((selector (sxpath path)))
     (lambda (pattern input)
-      (apply match-input pattern
-             ;; kludge to deal with *TOP*
-             (selector (if (and (pair? input) (eq? (car input) '*TOP*))
-                         input
-                         `(*TOP* ,input)))
-             maybe-extra-check))))
+      (if (equal? input *test-error*)
+        input
+        (apply match-input pattern
+               ;; kludge to deal with *TOP*
+               (selector (if (and (pair? input) (eq? (car input) '*TOP*))
+                           input
+                           `(*TOP* ,input)))
+               maybe-extra-check)))))
 
 (define (test-xml-select-matcher path . maybe-extra-check)
   (let ((selector (sxpath path)))
     (lambda (pattern input)
-      (let ((parsed (call-with-input-string (tree->string input)
-                      (cut ssax:xml->sxml <> '()))))
-        (apply match-input pattern (selector parsed)
-               maybe-extra-check)))))
+      (if (equal? input *test-error*)
+        input
+        (let ((parsed (call-with-input-string (tree->string input)
+                        (cut ssax:xml->sxml <> '()))))
+          (apply match-input pattern (selector parsed)
+                 maybe-extra-check))))))
 
 (provide "sxml/xml-test")
