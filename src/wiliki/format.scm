@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.28 2004-02-04 21:01:46 shirok Exp $
+;;; $Id: format.scm,v 1.29 2004-02-04 21:14:24 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -262,7 +262,7 @@
   ;; NB: we remove empty bold and italic, for backward compatibility
   (define (italic line seed)
     (regexp-fold
-     #/''([^']*)''/
+     #/''(.*?)''/
      nl
      (lambda (match seed)
        (if (string-null? (match 1))
@@ -271,7 +271,7 @@
      seed line))
   (define (bold line seed)
     (regexp-fold
-     #/'''([^']*)'''/
+     #/'''(.*?)'''/
      italic
      (lambda (match seed)
        (if (string-null? (match 1))

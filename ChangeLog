@@ -1,3 +1,8 @@
+2004-02-04  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/format.scm (fmt-line): fixed a problem of emphasizing
+	  phrase containing apostrophe.
+
 2004-01-31  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm : looking up CGI parameters from cgi-metavariables
