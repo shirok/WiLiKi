@@ -1,6 +1,6 @@
 ;; extract translatable messages
 
-;; $Id: extract.scm,v 1.1 2002-01-14 09:21:20 shirok Exp $
+;; $Id: extract.scm,v 1.2 2002-03-31 04:48:40 shirok Exp $
 
 (define (scan-src file)
   (define msgs '())
@@ -22,10 +22,10 @@
       '()))
 
 (define (main args)
-  (unless (= (length args) 2)
+  (unless (= (length args) 3)
     (error "usage: gosh extract.scm file.scm msg-file"))
-  (let* ((src-file (car args))
-         (dst-file (cadr args))
+  (let* ((src-file (cadr args))
+         (dst-file (caddr args))
          (dst-tmp  (string-append dst-file ".t"))
          (src-msgs (scan-src src-file))
          (dst-msgs (scan-msgfile dst-file)))
@@ -35,7 +35,7 @@
                             (set! (caddr p) (cadr dst-msg))
                             (set! (cddr dst-msg) #t)))))
               dst-msgs)
-    (call-with-output-file (string-append (cadr args) ".t")
+    (call-with-output-file (string-append dst-file ".t")
       (lambda (p)
         (for-each (lambda (src-msg)
                     (apply format p ";; ~a : line ~a\n" (cadr src-msg))
