@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.26 2004-01-13 03:56:08 shirok Exp $
+;;; $Id: format.scm,v 1.27 2004-01-21 15:45:44 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -44,6 +44,7 @@
           wiliki:persistent-page?
           wiliki:transient-page?
           wiliki:format-wikiname
+          wiliki:format-macro
           wiliki:format-time
           wiliki:format-content
           wiliki:formatter
@@ -72,7 +73,10 @@
 
 (define-class <wiliki-formatter> ()
   ((bracket       :init-keyword :bracket
-                  :init-value (lambda (name) #`"[[,|name|]]"))
+                  :init-value (lambda (name) (list #`"[[,|name|]]")))
+   (macro         :init-keyword :macro
+                  :init-value (lambda (expr context)
+                                `("##" ,(write-to-string expr))))
    (time          :init-keyword :time
                   :init-value (lambda (time) (x->string time)))
    (body          :init-keyword :body
@@ -89,6 +93,9 @@
 
 (define (fmt-wikiname name)
   ((ref (the-formatter) 'bracket) name))
+
+(define (fmt-macro expr context)
+  ((ref (the-formatter) 'macro) expr context))
 
 (define (fmt-time time)
   ((ref (the-formatter) 'time) time))
@@ -188,6 +195,16 @@
            (proc-nomatch line seed)))
     ))
 
+;; After "##(" is read, retrieve one expr from string.
+;; Returns [Sexp, Str]
+(define (read-macro-expr str)
+  (with-error-handler
+      (lambda (e) (values #f #f))
+    (lambda ()
+      (let* ((s (open-input-string/private str))
+             (x (read-list #\) s)))
+        (values x (get-remaining-input-string s))))))
+
 ;; Find wiki name in the line.
 ;; Correctly deal with nested "[[" and "]]"'s.
 (define (fmt-line ctx line seed)
@@ -261,22 +278,35 @@
          seed
          (cons `(strong ,@(reverse! (nl (match 1) '()))) seed)))
      seed line))
-
-  ;; Main body
-  (let loop ((line line) (seed seed))
+  (define (bracket line seed)
     (if (string-null? line)
-      (cons "\n" seed)
+      seed
       (receive (pre post) (string-scan line "[[" 'both)
         (if pre
           (receive (wikiname rest) (find-closer post 0 '())
             (if wikiname
-              (loop rest
-                    (append (reverse! (parameterize ((fmt-context ctx))
-                                        (fmt-wikiname wikiname)))
-                            (bold pre seed)))
-              (loop rest (bold pre seed))))
-          (loop "" (bold line seed))))))
-  )
+              (bracket rest
+                       (append (reverse! (parameterize ((fmt-context ctx))
+                                           (fmt-wikiname wikiname)))
+                               (bold pre seed)))
+              (bracket rest (bold pre seed))))
+          (bold line seed)))))
+  (define (smacro line seed)
+    (if (string-null? line)
+      seed
+      (receive (pre post) (string-scan line "##(" 'both)
+        (if pre
+          (receive (expr rest) (read-macro-expr post)
+            ;; NB: we should handle distinction of inline and block elements
+            ;; here.  It requires some trick, so for now I leave it.
+            (if expr
+              (smacro rest
+                      (append (reverse! (fmt-macro expr 'inline))
+                              (bracket pre seed)))
+              (smacro post (bracket (string-append pre "##(") seed))))
+          (bracket line seed)))))
+  ;; Main body
+  (cons "\n" (smacro line seed)))
 
 ;; Utility to generate a (mostly) unique id for the headings.
 ;; Passes a list of heading string stack.
@@ -637,6 +667,7 @@
 ;;;
 
 (define wiliki:format-wikiname  fmt-wikiname)
+(define wiliki:format-macro     fmt-macro)
 (define wiliki:format-time      fmt-time)
 (define wiliki:format-content   fmt-content)
 (define wiliki:formatter        the-formatter)

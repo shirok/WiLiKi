@@ -1,3 +1,9 @@
+2004-01-21  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/format.scm (fmt-line): added hook to parse ##() macro.
+	(wiliki:format-macro): ditto.
+	(<wiliki-formatter>): macro slot for ##()-macro formatter.
+
 2004-01-19  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm (wiliki:version): added procedure to get wiliki
