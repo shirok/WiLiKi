@@ -1,3 +1,10 @@
+2002-09-26  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm : adapted to Gauche 0.6.3.  checks Gauche version
+	  near the beginning.  adds fragment anchor names to headings.
+	  added 'page' parameter.
+	* src/wiliki/macro.scm : $$toc creates a link to the headings.
+
 2002-05-21  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/macro.scm : separated reader/writer macro handling
