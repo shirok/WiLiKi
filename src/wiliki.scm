@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.91 2003-08-31 23:13:27 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.92 2003-09-01 00:30:53 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -241,14 +241,14 @@
 
 ;; NB: we assume write-log is always called during the main database
 ;; is locked, so we don't do any locking here.
-(define (write-log wiliki pagename old new timestamp)
+(define (write-log wiliki pagename old new timestamp logmsg)
   (and-let* ((logfile (log-file-path wiliki)))
     (let ((content (wiliki-log-create
                     pagename new old
                     :timestamp timestamp
                     :remote-addr (or (sys-getenv "REMOTE_ADDR") "")
-                    :remote-user (or (sys-getenv "REMOTE_USER") ""))
-                   ))
+                    :remote-user (or (sys-getenv "REMOTE_USER") "")
+                    :message logmsg)))
       (call-with-output-file logfile
         (lambda (p) (display content p) (flush p))
         :if-exists :append)
@@ -463,6 +463,7 @@
             (cgi-get-parameter "mtime" param
                                :convert x->integer
                                :default 0)
+            (cgi-get-parameter "logmsg" param :convert cv-in)
             (cgi-get-parameter "donttouch" param :default #f))
            :write))
          ((equal? command "rss")

@@ -23,14 +23,14 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: edit.scm,v 1.1 2003-08-31 23:11:31 shirok Exp $
+;;;  $Id: edit.scm,v 1.2 2003-09-01 00:30:54 shirok Exp $
 ;;;
 
 (select-module wiliki)
 
 (use text.diff)
 
-(define (edit-form preview? pagename content mtime donttouch)
+(define (edit-form preview? pagename content mtime logmsg donttouch)
   (define (buttons)
     (if preview?
         `(,(html:input :type "submit" :name "preview" :value ($$ "Preview"))
@@ -54,6 +54,12 @@
                   :rows (textarea-rows-of (wiliki))
                   :cols (textarea-cols-of (wiliki))
                   (html-escape-string content))
+   (html:br)
+   (html:p ($$ "ChangeLog (brief summary of your edit for later reference):"))
+   (html:textarea :name "logmsg"
+                  :rows 2
+                  :cols (textarea-cols-of (wiliki))
+                  (html-escape-string logmsg))
    (html:br)
    (buttons)
    (html:br)
@@ -107,10 +113,10 @@
   (let ((page (wdb-get (db) pagename #t)))
     (format-page pagename
                  (edit-form #t pagename
-                            (content-of page) (mtime-of page) #f)
+                            (content-of page) (mtime-of page) "" #f)
                  :show-edit? #f :show-lang? #f :show-history? #f)))
 
-(define (cmd-preview pagename content mtime donttouch)
+(define (cmd-preview pagename content mtime logmsg donttouch)
   (let ((page (wdb-get (db) pagename #t)))
     (format-page
      (format #f ($$ "Preview of ~a") pagename)
@@ -118,22 +124,22 @@
                                               :key pagename
                                               :content content)))
        ,(html:hr)
-       ,(edit-form #f pagename content mtime donttouch))
+       ,(edit-form #f pagename content mtime logmsg donttouch))
      :show-edit? #f :show-lang? #f :show-history? #f)))
 
-(define (cmd-commit-edit pagename content mtime donttouch)
+(define (cmd-commit-edit pagename content mtime logmsg donttouch)
   (let ((p   (wdb-get (db) pagename #t))
         (now (sys-time)))
 
     (define (erase-page)
-      (write-log (wiliki) pagename (content-of p) "" now)
+      (write-log (wiliki) pagename (content-of p) "" now logmsg)
       (set! (content-of p) "")
       (wdb-delete! (db) pagename)
       (redirect-page (top-page-of (wiliki))))
 
     (define (update-page content)
       (let1 new-content (expand-writer-macros content)
-        (write-log (wiliki) pagename (content-of p) new-content now)
+        (write-log (wiliki) pagename (content-of p) new-content now logmsg)
         (set! (mtime-of p) now)
         (set! (content-of p) new-content)
         (wdb-put! (db) pagename p :donttouch donttouch)
@@ -151,7 +157,7 @@
                 (if success?
                   (update-page (string-join merged "\n" 'suffix))
                   (conflict-page p (conflict->diff merged)
-                                 content donttouch)))))
+                                 content logmsg donttouch)))))
           (if (equal? (content-of p) content)
             (redirect-page pagename) ;; no need to update
             (let1 diff '()
@@ -159,7 +165,7 @@
                            :writer (lambda (line type)
                                      (push! diff
                                             (if type (cons type line) line))))
-              (conflict-page p (reverse! diff) content donttouch)))))
+              (conflict-page p (reverse! diff) content logmsg donttouch)))))
 
     (define (conflict->diff merged)
       (let1 difflist '()
@@ -178,7 +184,7 @@
         (update-page content))
       (handle-conflict))))
 
-(define (conflict-page page diff content donttouch)
+(define (conflict-page page diff content logmsg donttouch)
   (format-page
    (string-append (title-of (wiliki))": "($$ "Update Conflict"))
    `(,($$ "<p>It seems that somebody has updated this page
@@ -193,7 +199,7 @@
      ,(format-diff-pre diff)
      ,(html:a :name "edit" (html:hr))
      ,($$ "<p>The following shows what you are about to submit.  Please re-edit the content and submit again.</p>")
-     ,(edit-form #t (key-of page) content (mtime-of page) donttouch)
+     ,(edit-form #t (key-of page) content (mtime-of page) logmsg donttouch)
      )
    :show-lang? #f :show-edit? #f :show-history? #f))
 
