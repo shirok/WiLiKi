@@ -23,15 +23,17 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.61 2003-02-11 22:12:18 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.62 2003-02-12 03:23:44 shirok Exp $
 ;;;
 
 (define-module wiliki
   (use srfi-1)
   (use srfi-2)                          ;and-let*
+  (use srfi-11)
   (use srfi-13)
   (use text.html-lite)
   (use text.tree)
+  (use text.tr)
   (use util.list)
   (use www.cgi)
   (use rfc.uri)
@@ -371,87 +373,115 @@
      (lambda (m) #`"<em>,(m 1)</em>")))
   (uri (italic (bold (html-escape-string line)))))
 
-(define (format-content page)
-  (define (loop line nestings id)
-    (cond ((eof-object? line) nestings)
+;; Read lines from generator and format them.
+(define (format-lines generator)
+  ;; Common states:
+  ;;  tags - stack of tags to be closed
+  ;;  id   - counter for heading anchors
+  ;;  r    - reverse list of results
+  (define (loop line tags id r)
+    (cond ((eof-object? line) (finish tags r))
           ((string-null? line)
-           `(,nestings "</p>\n<p>" ,(loop (read-line) '() id)))
+           (loop (generator) '("</p>") id (list* "\n<p>" tags r)))
           ((string=? "----" line)
-           `(,nestings "</p><hr><p>" ,(loop (read-line) '() id)))
-          ((and (string-prefix? " " line) (null? nestings))
-           `(,nestings "<pre>" ,(pre line id)))
+           (loop (generator) '() id (list* "<hr>" tags r)))
+          ((and (string-prefix? " " line)
+                (or (null? tags) (equal? tags '("</p>"))))
+           (pre line id (list* "<pre>" tags r)))
           ((string=? "{{{" line)
-           `(,nestings "<pre>" ,(pre* (read-line) id)))
+           (pre* (generator) id (list* "<pre>" tags r)))
           ((string-prefix? ";;" line)
-           (loop (read-line) nestings id))
-          ((rxmatch #/^(\*\*?\*?) / line)
+           (loop (generator) tags id r))
+          ((rxmatch #/^(\*\**) / line)
            => (lambda (m)
-                (let* ((lev (- (rxmatch-end m 1) (rxmatch-start m 1)))
-                       (hfn (ref `(,html:h2 ,html:h3 ,html:h4) (- lev 1)))
+                (let* ((hfn (ref `(,html:h2 ,html:h3 ,html:h4 ,html:h5)
+                                 (- (h-level m) 1)
+                                 html:h6))
                        (anchor (cut html:a :name <> <>)))
-                  `(,nestings
-                    ,(hfn (anchor id (format-line (m 'after))))
-                    ,(loop (read-line) '() (+ id 1))))))
+                  (loop (generator) '() (+ id 1)
+                        (list* (hfn (anchor id (format-line (m 'after))))
+                               tags r)))))
           ((rxmatch #/^(--*) / line)
            => (lambda (m)
-                (list-item m (- (rxmatch-end m 1) (rxmatch-start m 1))
-                           nestings "<ul>" "</ul>" id)))
-          ((rxmatch #/^1(\.\.?\.?) / line)
+                (list-item m (h-level m) tags "<ul>" "</ul>" id r)))
+          ((rxmatch #/^(##*) / line)
            => (lambda (m)
-                (list-item m (- (rxmatch-end m 1) (rxmatch-start m 1))
-                           nestings "<ol>" "</ol>" id)))
+                (list-item m (h-level m) tags "<ol>" "</ol>" id r)))
           ((rxmatch #/^:(.*):([^:]*)$/ line)
            => (lambda (m)
-                `(,@(if (equal? nestings '("</dl>"))
-                        '()
-                        `(,nestings "<dl>"))
-                  "<dt>" ,(format-line (m 1))
-                  "<dd>" ,(format-line (m 2))
-                  ,(loop (read-line) '("</dl>") id))))
-          ((rxmatch #/^\|(.*)\|$/ line)
+                (loop (generator) '("</dl>") id
+                      (cons `(,@(if (equal? tags '("</dl>"))
+                                    '()
+                                    `(,tags "<dl>"))
+                              "<dt>" ,(format-line (m 1))
+                              "<dd>" ,(format-line (m 2)))
+                            r))))
+          ((rxmatch #/^\|\|(.*)\|\|$/ line)
            => (lambda (m)
-                `(,nestings "<table class=\"inbody\" border=1 cellspacing=0>"
-                            ,(table (m 1) id))))
+                (table (m 1) id
+                       (list* "<table class=\"inbody\" border=1 cellspacing=0>"
+                              tags r))))
+          ((null? tags)
+           (loop (generator) '("</p>") id
+                 (list* (format-line line) "<p>" r)))
           (else
-           (cons (format-line line) (loop (read-line) nestings id)))))
+           (loop (generator) tags id (cons (format-line line) r)))
+          ))
 
-  (define (pre line id)
-    (cond ((eof-object? line) '("</pre>"))
+  (define (finish tags r)
+    (cons (reverse! r) tags))
+
+  (define (h-level matcher) ;; level of headings
+    (- (rxmatch-end matcher 1) (rxmatch-start matcher 1)))
+
+  (define (pre line id r)
+    (cond ((eof-object? line) (finish '("</pre>") r))
           ((string-prefix? " " line)
-           (cons (format-line line) (pre (read-line) id)))
-          (else (cons "</pre>\n" (loop line '() id)))))
+           (pre (generator) id
+                (list* "\n"
+                       (string-tr (tree->string (format-line line)) "\n" " ")
+                       r)))
+          (else (loop line '() id (cons "</pre>" r)))))
 
-  (define (pre* line id)
-    (cond ((eof-object? line) '("</pre>"))
+  (define (pre* line id r)
+    (cond ((eof-object? line) (finish '("</pre>") r))
           ((string=? line "}}}")
-           (cons "</pre>" (loop (read-line) '() id)))
-          (else (cons (format-line line) (pre* (read-line) id)))))
+           (loop (generator) '() id (cons "</pre>" r)))
+          (else (pre* (generator) id (list* "\n" line r)))))
 
-  (define (table body id)
-    `(,(html:tr :class "inbody"
-                (map (lambda (seg) (html:td :class "inbody" (format-line seg)))
-                     (string-split body  #\|)))
-      ,(let tloop ((next (read-line)))
-         (cond ((eof-object? next) '("</table>"))
-               ((string-prefix? ";;" next) (tloop (read-line)))
-               ((rxmatch #/^\|(.*)\|$/ next)
-                => (lambda (m) (table (m 1) id)))
-               (else `("</table>\n" ,@(loop next '() id)))))))
+  (define (table body id r)
+    (let1 r
+        (cons (html:tr :class "inbody"
+                       (map (lambda (seg)
+                              (html:td :class "inbody" (format-line seg)))
+                            (string-split body  "||")))
+              r)
+      (let tloop ((next (generator)))
+        (cond ((eof-object? body) (finish '("</table>") r))
+              ((string-prefix? ";;" body) (tloop (generator)))
+              ((rxmatch #/^\|\|(.*)\|\|$/ next)
+               => (lambda (m) (table (m 1) id r)))
+              (else (loop next '() id (cons "</table>\n" r)))))))
 
-  (define (list-item match level nestings opentag closetag id)
-    (let ((line  (rxmatch-after match))
-          (cur (length nestings)))
+  (define (list-item match level tags opentag closetag id r)
+    (let*-values (((line)  (rxmatch-after match))
+                  ((pre tags) (if (equal? tags '("</p>"))
+                                  (values tags '())
+                                  (values '() tags)))
+                  ((cur) (length tags)))
       (receive (opener closer)
           (cond ((< cur level)
                  (values (make-list (- level cur) opentag)
-                         (append (make-list (- level cur) closetag)
-                                 nestings)))
+                         `(,@(make-list (- level cur) closetag) ,@tags)))
                 ((> cur level)
-                 (split-at nestings (- cur level)))
-                (else (values '() nestings)))
-        (list* opener "<li>" (format-line line)
-               (loop (read-line) closer id)))))
+                 (split-at tags (- cur level)))
+                (else (values '() tags)))
+        (loop (generator) closer id
+              (list* (format-line line) "<li>" opener pre r)))))
 
+  (loop (generator) '() 0 '()))
+  
+(define (format-content page)
   (if (member page (page-format-history)
               (lambda (p1 p2) (string=? (key-of p1) (key-of p2))))
       ;; loop in $$include chain detected
@@ -459,8 +489,7 @@
       (parameterize
        ((page-format-history (cons page (page-format-history))))
        (with-input-from-string (content-of page)
-         (lambda ()
-           (cons "<p>" (loop (read-line) '() 0))))))
+         (lambda () (format-lines read-line)))))
   )
 
 (define (format-footer page)
