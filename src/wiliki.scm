@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.10 2001-11-28 08:06:18 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.11 2001-11-28 08:29:52 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -170,9 +170,9 @@
 
 (define-class <page> ()
   ((ctime :initform (sys-time) :init-keyword :ctime :accessor ctime-of)
-   (cuser :initform #f         :init-keyword :cuser :accessor cuser-of)
-   (mtime :initform (sys-time) :init-keyword :mtime :accessor mtime-of)
-   (muser :initform #f         :init-keyword :muser :accessor muser-of)
+   (cuser :initform #f :init-keyword :cuser :accessor cuser-of)
+   (mtime :initform #f :init-keyword :mtime :accessor mtime-of)
+   (muser :initform #f :init-keyword :muser :accessor muser-of)
    (content :initform "" :init-keyword :content :accessor content-of)
    ))
 
@@ -180,14 +180,11 @@
   (dbm-exists? db key))
 
 (define-method wdb-record->page ((db <dbm>) record)
-  ;; backward compatibility
-  (if (and (not (string-null? record)) (char=? (string-ref record 0) #\( ))
-      (call-with-input-string record
-        (lambda (p)
-          (let* ((params  (read p))
-                 (content (port->string p)))
-            (apply make <page> :content content params))))
-      (make <page> :content record)))
+  (call-with-input-string record
+    (lambda (p)
+      (let* ((params  (read p))
+             (content (port->string p)))
+        (apply make <page> :content content params)))))
 
 ;; WDB-GET db key &optional create-new
 (define-method wdb-get ((db <dbm>) key . option)
@@ -219,7 +216,12 @@
   (read-from-string (dbm-get db *recent-changes* "()")))
 
 (define-method wdb-map ((db <dbm>) proc)
-  (dbm-map db proc))
+  (reverse! (dbm-fold db
+                      (lambda (k v r)
+                        (if (string-prefix? " " k)
+                            r
+                            (cons (proc k v) r)))
+                      '())))
 
 (define-method wdb-search ((db <dbm>) key)
   (dbm-fold db
@@ -408,9 +410,13 @@
          (html:body
           (html:h1 "Error")
           (html:p (html-escape-string (slot-ref e 'message)))
-          (html:p (html-escape-string (write-to-string (vm-get-stack-trace))))
-          )
-         ))
+          ;; for debug
+          (html:p (tree->string
+                   (map (lambda (frame)
+                          (list (html-escape-string (write-to-string frame))
+                                "<br>\n"))
+                        (vm-get-stack-trace))))
+          )))
   )
 
 (define (cmd-view self pagename)
@@ -418,7 +424,7 @@
          => (lambda (page)
               (format-page self pagename page)))
         ((equal? pagename (top-page-of self))
-         (let ((toppage (make <page>)))
+         (let ((toppage (make <page> :mtime (sys-time))))
            (wdb-put! (db-of self) (top-page-of self) toppage)
            (format-page self (top-page-of self) toppage)))
         (else (error "No such page" pagename))))
@@ -447,7 +453,7 @@
     (errorf "Can't edit the page ~s: the database is read-only" pagename))
   (let ((page (wdb-get (db-of self) pagename #t))
         (now  (sys-time)))
-    (if (eqv? (mtime-of page) mtime)
+    (if (or (not (mtime-of page)) (eqv? (mtime-of page) mtime))
         (begin
           (set! (mtime-of page) now)
           (set! (content-of page) (expand-writer-macros content))
@@ -478,9 +484,7 @@
    self (msg-all-pages self)
    (html:ul
     (map (lambda (k)
-           (if (string-prefix? " " k)
-               '()
-               (html:li (html:a :href (url self "~a" k) (html-escape-string k)))))
+           (html:li (html:a :href (url self "~a" k) (html-escape-string k))))
          (sort (wdb-map (db-of self) (lambda (k v) k)) string<?)))
    :page-id "c=a"
    :show-edit? #f
@@ -503,10 +507,7 @@
   (format-page
    self (msg-search-results self)
    (html:ul
-    (map (lambda (k)
-           (if (string-prefix? " " k)
-               '()
-               (html:li (html:a :href (url self "~a" k) k))))
+    (map (lambda (k) (html:li (html:a :href (url self "~a" k) k)))
          (wdb-search (db-of self) (format #f "[[~a]]" key))))
    :page-id (format #f "c=s&key=~a" (html-escape-string key))
    :show-edit? #f))
