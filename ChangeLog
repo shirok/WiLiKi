@@ -1,3 +1,13 @@
+2001-12-05  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm: fixed a bug that escapes URL twice.
+	  fix the problem that the page named "c" couldn't be viewed.
+	  added <h4>.  allow <dt> to have colons.
+
+2001-11-28  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm : added preview feature.
+	
 2001-11-27  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm : added back-link search feature and update conflict
