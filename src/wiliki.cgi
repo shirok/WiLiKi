@@ -1,4 +1,4 @@
-#!/home/shiro/bin/gosh
+#!/usr/bin/gosh
 
 (use wiliki)
 
@@ -50,8 +50,12 @@
    (make <wiliki>
      :db-path "/home/shiro/data/wikidata.dbm"
      :top-page "WiLiKi"
+     :title "MyWiliki"
+     :description "Shiro's Wiliki Site"
      :style-sheet "wiliki-sample.css"
+     :language 'jp
      :charsets '((jp . euc-jp) (en . euc-jp))
+     :image-urls '((#/^http:\/\/sourceforge.net\/sflogo/ allow))
      )))
 
 ;; Local variables:
