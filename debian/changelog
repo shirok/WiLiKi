@@ -1,4 +1,10 @@
-wiliki (0.4+031009-1) unstable; urgency=low
+wiliki (0.4+cvs-2) unstable; urgency=low
+
+  * debian/rules: generates package version from date, like 0.4+cvs-2.031012.
+
+ -- YAEGASHI Takeshi <yaegashi@debian.org>  Sun, 12 Oct 2003 03:23:36 +0900
+
+wiliki (0.4+cvs-1) unstable; urgency=low
 
   * Debian scripts integrated into WiLiKi CVS.
   * debian/wiliki.cgi: Debian version of the CGI script.
