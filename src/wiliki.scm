@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.13 2001-12-06 09:10:08 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.14 2001-12-06 10:01:14 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -55,7 +55,8 @@
        はそれぞれネストレベル1, 2, 3の順序つきリスト (&lt;ol&gt;)。
        ピリオドの後に空白が必要。数字は整形時にリナンバーされる。
        <p>行頭の`<tt>----</tt>' は &lt;hr&gt;
-       <p>行頭の `<tt>:項目:説明</tt>' は &lt;dl&gt;
+       <p>行頭の `<tt>:項目:説明</tt>' は &lt;dl&gt;。
+          項目は最後に現われるコロンまで取られる。説明中にコロンを入れたければ次の行に。
        <p><tt>[[名前]]</tt> と書くと `名前' がWikiNameになる。
           名前が `$' で始まっていると特殊な意味(例: `[[$date]]' は書き込み時に
           その時間を表す文字列に変換される)。
@@ -63,8 +64,8 @@
           強調 (&lt;em&gt;)
        <p>3つのシングルクオートで囲む (<tt>'''ほげ'''</tt>) と
           もっと強調 (&lt;strong&gt;)
-       <p>行頭の `<tt>*</tt>', `<tt>**</tt>' は
-          それぞれ見出し、小見出し。アスタリスクの後に空白が必要。
+       <p>行頭の `<tt>*</tt>', `<tt>**</tt>', `<tt>***</tt>' は
+          それぞれ見出し、小見出し。もっと小見出し。アスタリスクの後に空白が必要。
        <p>行頭に空白があると &lt;pre&gt;。
        <p>行頭に上記の特殊な文字をそのまま入れたい場合は、ダミーの強調項目
           (6つの連続するシングルクオート)を行頭に入れると良い。")
@@ -82,6 +83,8 @@
          Put a space after dot(s).
       <p>`<tt>----</tt>' at the beginning of a line is &lt;hr&gt;.
       <p>`<tt>:item:description</tt>' at the beginning of a line is &lt;dl&gt;.
+         The item includes all colons but the last one.  If you want to include
+         a colon in the description, put it in the next line.
       <p><tt>[[Name]]</tt> to make `Name' a WikiName.  Note that
          a simple mixed-case word doesn't become a WikiName.
          `Name' beginning with `$' has special meanings (e.g. 
@@ -90,9 +93,9 @@
          to emphasize.
       <p>Words surrounded by three single quotes (<tt>'''foo'''</tt>)
          to emphasize more.
-      <p>`<tt>*</tt>' and `<tt>**</tt>' at the beginning of a line
-         is a level 1 and 2 header, respectively.  Put a space
-         after an asterisk.
+      <p>`<tt>*</tt>', `<tt>**</tt>' and `<tt>***</tt>'' at the beginning
+         of a lineis a level 1, 2 and 3 header, respectively.  Put a space
+         after the asterisk(s).
       <p>Whitespace(s) at the beginning of line for preformatted text.
       <p>If you want to use characters of special meaning at the
          beginning of line, put six consecutive single quotes.
@@ -320,14 +323,14 @@
                `(,@nestings "</p><hr><p>" ,@(loop (read-line) '())))
               ((and (string-prefix? " " line) (null? nestings))
                `(,@nestings "<pre>" ,@(pre line)))
-              ((string-prefix? "* " line)
-               `(,@nestings
-                 ,(html:h2 (format-line self (string-drop line 2)))
-                 ,@(loop (read-line) '())))
-              ((string-prefix? "** " line)
-               `(,@nestings
-                 ,(html:h3 (format-line self (string-drop line 3)))
-                 ,@(loop (read-line) '())))
+              ((rxmatch #/^(\*\*?\*?) / line)
+               => (lambda (m)
+                    (let* ((lev (- (rxmatch-end m 1) (rxmatch-start m 1)))
+                           (hfn (list-ref (list html:h2 html:h3 html:h4)
+                                          (- lev 1))))
+                      `(,@nestings
+                        ,(hfn (format-line self (rxmatch-after m)))
+                        ,@(loop (read-line) '())))))
               ((rxmatch #/^(--?-?) / line)
                => (lambda (m)
                     (list-item m (- (rxmatch-end m 1) (rxmatch-start m 1))
@@ -336,13 +339,13 @@
                => (lambda (m)
                     (list-item m (- (rxmatch-end m 1) (rxmatch-start m 1))
                                nestings "<ol>" "</ol>")))
-              ((rxmatch #/^:([^:]+):/ line)
+              ((rxmatch #/^:(.*):([^:]*)$/ line)
                => (lambda (m)
                     `(,@(if (equal? nestings '("</dl>"))
                             '()
                             `(,@nestings "<dl>"))
                       "<dt>" ,(format-line self (rxmatch-substring m 1))
-                      "<dd>" ,(format-line self (rxmatch-after m))
+                      "<dd>" ,(format-line self (rxmatch-substring m 2))
                       ,@(loop (read-line) '("</dl>")))))
               (else
                (cons (format-line self line) (loop (read-line) nestings)))))
@@ -545,7 +548,9 @@
          ,(with-db self
                    (lambda ()
                      (cond
-                      ((not command) (cmd-view self pagename))
+                      ;; command may #t if we're looking at the page named "c".
+                      ((or (not command) (eq? command #t))
+                       (cmd-view self pagename))
                       ((equal? command "e") (cmd-edit self pagename))
                       ((equal? command "a") (cmd-all self))
                       ((equal? command "r") (cmd-recent-changes self))
