@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.12 2003-08-31 23:48:26 shirok Exp $
+;;; $Id: format.scm,v 1.13 2003-09-01 06:06:20 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -530,12 +530,12 @@
            (html:a :href (cgi-name-of wlki) ($$ "[Top Page]")))
           (show-edit?
            (html:a :href (url "p=~a&c=e" title) ($$ "[Edit]")))
+          (show-history?
+           (html:a :href (url "p=~a&c=h" title) ($$ "[Edit History]")))
           (show-all?
            (html:a :href (url "c=a") ($$ "[All Pages]")))
           (show-recent-changes?
            (html:a :href (url "c=r") ($$ "[Recent Changes]")))
-          (show-history?
-           (html:a :href (url "p=~a&c=h" title) ($$ "[Edit History]")))
           (show-search-box?
            `("[" ,($$ "Search:")
              ,(html:input :type "text" :name "key" :size 10)
