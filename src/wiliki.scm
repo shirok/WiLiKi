@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.42 2002-09-26 09:45:46 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.43 2002-09-26 10:16:05 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -43,6 +43,7 @@
 (define wiliki (make-parameter #f))     ;current instance
 (define lang   (make-parameter #f))     ;current language
 (define db     (make-parameter #f))     ;current database
+(define page   (make-parameter #f))     ;current page
 
 ;; Class <wiliki> ------------------------------------------
 
@@ -432,7 +433,10 @@
   )
 
 (define (cmd-view pagename)
-  (cond ((wdb-get (db) pagename) => (cut format-page pagename <>))
+  (cond ((wdb-get (db) pagename) =>
+         (lambda (p)
+           (parameterize ((page p))
+             (format-page pagename p))))
         ((equal? pagename (top-page-of (wiliki)))
          (let ((toppage (make <page> :key pagename :mtime (sys-time))))
            (wdb-put! (db) (top-page-of (wiliki)) toppage)
@@ -522,27 +526,28 @@
 (define (cmd-commit-edit pagename content mtime donttouch)
   (unless (editable? (wiliki))
     (errorf "Can't edit the page ~s: the database is read-only" pagename))
-  (let ((page (wdb-get (db) pagename #t))
-        (now  (sys-time)))
-    (if (or (not (mtime-of page)) (eqv? (mtime-of page) mtime))
+  (let ((p   (wdb-get (db) pagename #t))
+        (now (sys-time)))
+    (if (or (not (mtime-of p)) (eqv? (mtime-of p) mtime))
         (if (string-every #[\s] content)
             (begin
-              (set! (content-of page) "")
+              (set! (content-of p) "")
               (wdb-delete! (db) pagename)
-              (format-page pagename page))
+              (format-page pagename p))
             (begin
-              (set! (mtime-of page) now)
-              (set! (content-of page) (expand-writer-macros content))
-              (wdb-put! (db) pagename page :donttouch donttouch)
-              (format-page pagename page)))
+              (set! (mtime-of p) now)
+              (set! (content-of p) (expand-writer-macros content))
+              (wdb-put! (db) pagename p :donttouch donttouch)
+              (parameterize ((page p))
+                (format-page pagename p))))
         (format-page
          ($$ "Wiliki: Update Conflict")
          `(,($$ "<p>It seems that somebody has updated this page while you're editing.  The most recent content is shown below.</p>")
            ,(html:hr)
-           ,(colored-box (html:pre (html-escape-string (content-of page))))
+           ,(colored-box (html:pre (html-escape-string (content-of p))))
            ,(html:hr)
            ,($$ "<p>The following shows what you are about to submit.  Please re-edit the content and submit again.</p>")
-           ,(edit-form #t pagename content (mtime-of page) donttouch)
+           ,(edit-form #t pagename content (mtime-of p) donttouch)
            )
          :show-edit? #f))))
 
