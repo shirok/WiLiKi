@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.23 2002-02-28 11:00:06 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.24 2002-03-01 19:58:36 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -350,6 +350,7 @@
   (let ((show-edit? (and (editable? self) (get-keyword :show-edit? args #t)))
         (show-all?  (get-keyword :show-all? args #t))
         (show-recent-changes? (get-keyword :show-recent-changes? args #t))
+        (show-search-box? (get-keyword :show-search-box? args #t))
         (page-id (get-keyword :page-id args title))
         (content (if (is-a? page <page>) (format-content self page) page)))
     `(,(html-doctype :type :transitional)
@@ -358,22 +359,32 @@
         (html:body
          :bgcolor "#eeeedd"
          (html:h1 (if (is-a? page <page>)
-                      (html:a :href (url self "c=s&key=~a" title) title)
+                      (html:a :href (url self "c=s&key=[[~a]]" title) title)
                       title))
-         (html:div :align "right"
-                   (language-link self page-id)
-                   (if (string=? title (top-page-of self))
-                       ""
-                       (html:a :href (cgi-name-of self) ($$ "[Top Page]")))
-                   (if show-edit?
-                       (html:a :href (url self "p=~a&c=e" title) ($$ "[Edit]"))
-                       "")
-                   (if show-all?
-                       (html:a :href (url self "c=a") ($$ "[All Pages]"))
-                       "")
-                   (if show-recent-changes?
-                       (html:a :href (url self "c=r") ($$ "[Recent Changes]"))
-                       ""))
+         (html:div
+          :align "right"
+          (html:form
+           :method "POST" :action (cgi-name-of self)
+           (html:input :type "hidden" :name "c" :value "s")
+           (language-link self page-id)
+           (if (string=? title (top-page-of self))
+               ""
+               (html:a :href (cgi-name-of self) ($$ "[Top Page]")))
+           (if show-edit?
+               (html:a :href (url self "p=~a&c=e" title) ($$ "[Edit]"))
+               "")
+           (if show-all?
+               (html:a :href (url self "c=a") ($$ "[All Pages]"))
+               "")
+           (if show-recent-changes?
+               (html:a :href (url self "c=r") ($$ "[Recent Changes]"))
+               "")
+           (if show-search-box?
+               `("[" ,($$ "Search:")
+                 ,(html:input :type "text" :name "key" :size 10)
+                 "]")
+               "")
+           ))
          (html:hr)
          content)))))
 
@@ -491,7 +502,7 @@
   (let ((page (wdb-get (db-of self) pagename #t))
         (now  (sys-time)))
     (if (or (not (mtime-of page)) (eqv? (mtime-of page) mtime))
-        (if (string-null? content)
+        (if (string-every #[\s] content)
             (begin
               (set! (content-of page) "")
               (wdb-delete! (db-of self) pagename)
@@ -540,7 +551,7 @@
    self ($$ "Wiliki: Search results")
    (html:ul
     (map (lambda (k) (html:li (html:a :href (url self "~a" k) k)))
-         (wdb-search (db-of self) (format #f "[[~a]]" key))))
+         (wdb-search (db-of self) key)))
    :page-id (format #f "c=s&key=~a" (html-escape-string key))
    :show-edit? #f))
 
