@@ -1,3 +1,10 @@
+2004-01-12  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/format.scm, src/wiliki/macro.scm, src/wiliki/util.scm :
+	  revised anchoring of headings (uses 'id' instead of 'a', and also
+	  uses hash value rather than ordinal numbers).  $$toc macro is
+	  also revised.
+
 2004-01-11  Shiro Kawai  <shiro@acm.org>
 
 	* various files: more fixes for new format handling.

@@ -1,8 +1,9 @@
 ;;
 ;; test for wiliki
 ;;
-;; $Id: test-wiliki.scm,v 1.7 2004-01-01 08:11:16 shirok Exp $
+;; $Id: test-wiliki.scm,v 1.8 2004-01-12 12:11:47 shirok Exp $
 
+(use srfi-13)
 (use gauche.test)
 (use gauche.parameter)
 (use gauche.version)
@@ -411,5 +412,37 @@
                     :parameters '((c . s) (key . "dreamhost")))
                    1)
        (test-sxml-select-matcher '(html body)))
+
+;;--------------------------------------------------------
+(test-section "Headings and TOC macro")
+
+(run-cgi-script->string
+ *cgi-path*
+ :environment '((REQUEST_METHOD . "GET"))
+ :parameters `((c . c) (p . "Headings") (commit . "Commit")
+               (mtime . "")
+               (content . "[[$$toc]]\n** a\n* b\n*** c\n** d\n**** e\n*** f\n")))
+
+(let ((page (values-ref (run-cgi-script->sxml
+                         *cgi-path*
+                         :environment '((REQUEST_METHOD . "GET")
+                                        (PATH_INFO . "/Headings")))
+                        1)))
+  (test* "Headings and TOC macro"
+         (let* ((LIs ((sxpath '(// li)) page))
+                (hrefs  (append-map (sxpath '(// href *text*)) LIs))
+                (bodies (append-map (sxpath '(// a *text*)) LIs))
+                (ids    (map (lambda (uri)
+                               (rxmatch-substring (#/#(.*)/ uri) 1))
+                             hrefs)))
+           (sort (map list ids bodies)
+                 (lambda (a b) (string<? (cadr a) (cadr b)))))
+         (let* ((HNs ((sxpath '(// (or@ h2 h3 h4 h5))) page))
+                (ids    (append-map (sxpath '(// id *text*)) HNs))
+                (bodies (append-map (sxpath '(*text*)) HNs)))
+           (map (lambda (id body)
+                  (list id (string-trim-right body)))
+                ids bodies)))
+  )
 
 (test-end)

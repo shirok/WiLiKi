@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.23 2004-01-12 06:24:24 shirok Exp $
+;;; $Id: format.scm,v 1.24 2004-01-12 12:11:47 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -57,6 +57,7 @@
           wiliki:format-head-elements
           wiliki:format-page
           wiliki:format-line-plainly
+          wiliki:calculate-heading-id
           wiliki:sxml->stree
           wiliki:format-diff-pre
           wiliki:format-diff-line
@@ -272,11 +273,14 @@
           (loop "" (bold line seed))))))
   )
 
+;; Utility to generate a (mostly) unique id for the headings.
+;; Passes a list of heading string stack.
+(define (wiliki:calculate-heading-id headings)
+  (string-append "H-" (number->string (hash headings) 36)))
+
 ;; Read lines from generator and format them.  This is the main
 ;; parser/transformer of WiLiKi format.
 (define (fmt-lines generator)
-
-  (define gen-id (let ((n 0)) (lambda () (begin0 n (inc! n)))))
 
   (define (h-level m)
     (- (rxmatch-end m 1) (rxmatch-start m 1)))
@@ -328,8 +332,7 @@
             ((pre)
              (pre tok ctx (>> block ctx seed)))
             ((heading)
-             (block (next-token ctx) ctx
-                    (cons (heading (token-value tok)) seed)))
+             (heading (token-value tok) ctx (>> block ctx seed)))
             ((ul ol)
              (list-item tok ctx (>> block ctx seed)))
             ((dl)
@@ -357,9 +360,32 @@
         (cont tok ctx `(pre ,@(reverse! r))))))
 
   ;; Heading
-  (define (heading m)
-    (let* ((elm (ref '(_ h2 h3 h4 h5 h6) (min (h-level m) 5))))
-      `(,elm (a (@ (name ,(gen-id))) ,@(reverse! (fmt-line (m 'after) '()))))))
+  (define (heading m ctx cont)
+    ;; extract headings from context
+    (define (headings-context ctx)
+      (reverse!
+       (cdr
+        (fold (lambda (elt seed)
+                (if (not (and (pair? elt)
+                              (memq (car elt) '(h2 h3 h4 h5 h6))))
+                  seed
+                  (let ((level (find-index (cute eq? (car elt) <>)
+                                           '(h2 h3 h4 h5 h6)))
+                        (cur-level (car seed)))
+                    (if (< level cur-level)
+                      (list* level (cdr elt) (cdr seed))
+                      seed))))
+              '(6)
+              ctx))))
+    ;; body of heading
+    (let* ((h-lev (min (h-level m) 5))
+           (elm   (ref '(_ h2 h3 h4 h5 h6) h-lev))
+           (hstr  (m 'after))
+           (new-ctx (acons elm hstr ctx))
+           (id    (wiliki:calculate-heading-id (headings-context new-ctx))))
+      (cont (next-token new-ctx)
+            new-ctx
+            `(,elm (@ (id ,id)) ,@(reverse! (fmt-line hstr '()))))))
 
   ;; Table
   (define (table tok ctx cont)

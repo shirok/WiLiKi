@@ -23,10 +23,11 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.23 2004-01-12 06:24:24 shirok Exp $
+;;; $Id: macro.scm,v 1.24 2004-01-12 12:11:47 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
+  (use srfi-2)
   (use srfi-13)
   (use text.html-lite)
   (use text.tree)
@@ -204,57 +205,60 @@
       (badimg))))
 
 (define-reader-macro (toc . maybe-page)
-  (let1 pagename (get-optional maybe-page
-                               (and (wiliki:current-page)
-                                    (ref (wiliki:current-page) 'key)))
-    (define (anchor id line)
-      (html:a :href #`",(url \"~a\" pagename)#,id"
-              (html-escape-string
-               (tree->string (wiliki:format-line-plainly line)))))
-    (define (make-toc context)
-      (let loop ((line (read-line))
-                 (depth 0)
-                 (r '())
-                 (id 0))
-        (cond
-         ((eof-object? line)
-          (reverse (append (make-list depth "</ul>") r)))
-         ((string=? line "{{{")
-          ;; need to skip <pre> section
-          (let skip ((line (read-line)))
-            (cond ((eof-object? line) (loop line depth r id))
-                  ((string=? line "}}}") (loop (read-line) depth r id))
-                  (else (skip (read-line))))))
-         ((rxmatch #/^\*+ / line) =>
-          (lambda (m)
-            (let1 newdepth (- (string-length (m)) 1)
-              (cond ((= newdepth depth)
-                     (loop (read-line)
-                           newdepth
-                           (cons* (anchor id (rxmatch-after m)) "<li> " r)
-                           (+ id 1)))
-                    ((> newdepth depth)
-                     (loop (read-line)
-                           newdepth
-                           (cons* (anchor id (rxmatch-after m)) "<li> "
-                                  (make-list (- newdepth depth) "<ul>")
-                                  r)
-                           (+ id 1)))
-                    (else
-                     (loop (read-line)
-                           newdepth
-                           (cons* (anchor id (rxmatch-after m)) "<li>"
-                                  (make-list (- depth newdepth) "</ul>")
-                                  r)
-                           (+ id 1)))
-                    ))))
-         (else (loop (read-line) depth r id)))))
-    (cond ((and pagename (wdb-get (db) pagename))
-           => (lambda (page)
-                (with-input-from-string (ref page 'content)
-                  (cut make-toc '()))))
-          (else (list "[[$$toc]]")))
-    ))
+  (let1 page (or (and-let* ((name (get-optional maybe-page #f)))
+                   (wdb-get (db) name #f))
+                 (wiliki:current-page))
+    (if (not page)
+      (if (pair? maybe-page)
+        (list #`"[[$$toc ,(car maybe-page)]]")
+        (list "[[$$toc]]"))
+      (let1 pagename (and page (ref page 'key))
+
+        ;; NB: hs is a _reverse_ ordered list of all headings (level . text).
+        ;; Since it's reversed, we can scan forward to find the heading
+        ;; nesting.
+        (define (make-ul hs cur items cont)
+          (cond ((null? hs)
+                 (cont '() `(ul ,@items)))
+                ((= (caar hs) cur)
+                 (make-ul (cdr hs) cur
+                          (cons (make-anchor (nestings hs)) items)
+                          cont))
+                ((< (caar hs) cur)
+                 (cont hs `(ul ,@items)))
+                (else
+                 (make-ul hs (caar hs)'()
+                          (lambda (hs ul)
+                            (make-ul hs cur (cons ul items) cont))))))
+
+        (define (nestings hs)
+          (reverse!
+           (cdr
+            (fold (lambda (elt seed)
+                    (let ((level (car elt))
+                          (cur-level (car seed)))
+                      (if (< level cur-level)
+                        (list* level (cdr elt) (cdr seed))
+                        seed)))
+                  '(6)
+                  hs))))
+
+        (define (make-anchor headings)
+          (let ((id (wiliki:calculate-heading-id headings)))
+            `(li (a (@ (href ,#`",(wiliki:self-url \"~a\" pagename)#,id"))
+                    ,@(wiliki:format-line-plainly (car headings))))))
+
+        (let1 headings
+            (wiliki:page-lines-fold
+             page
+             (lambda (l r)
+               (cond ((#/^(\*{1,}) / l)
+                      => (lambda (m)
+                           (acons (string-length (m 1)) (m 'after) r)))
+                     (else r)))
+             '())
+          (make-ul headings 1 '() (lambda (_ ul) (list ul))))
+        ))))
 
 (define-reader-macro (testerr . x)
   (error (x->string x)))

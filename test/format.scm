@@ -597,20 +597,31 @@
 ;;------------------------------------------------
 (test-section "block elements (headings)")
 
-(tp "headings" '(result (h2 (a (@ (name "0")) "aa\n"))
-                        (h3 (a (@ (name "1")) "bb\n"))
-                        (h4 (a (@ (name "2")) "cc\n"))
-                        (h5 (a (@ (name "3")) "dd\n"))
-                        (h6 (a (@ (name "4")) "ee\n")))
-    (page "* aa" "** bb" "*** cc" "**** dd" "***** ee"))
-(tp "headings&list, pre"
-    '(result (p "aaa\n")
-             (h2 (a (@ (name "0")) "aa\n"))
-             (ul (li "bb\n"))
-             (h3 (a (@ (name "1")) "cc\n"))
-             (pre " dd\n")
-             (h4 (a (@ (name "2")) "ee\n")))
-    (page "aaa" "* aa" "- bb" "** cc" " dd" "*** ee"))
+(define (hid . lis)
+  (wiliki:calculate-heading-id lis))
 
+(tp "headings"
+    `(result (h2 (@ (id ,(hid "aa"))) "aa\n")
+             (h3 (@ (id ,(hid "bb" "aa"))) "bb\n")
+             (h4 (@ (id ,(hid "cc" "bb" "aa"))) "cc\n")
+             (h5 (@ (id ,(hid "dd" "cc" "bb" "aa"))) "dd\n")
+             (h6 (@ (id ,(hid "ee" "dd" "cc" "bb" "aa"))) "ee\n"))
+    (page "* aa" "** bb" "*** cc" "**** dd" "***** ee"))
+(tp "headings (id)"
+    `(result (h2 (@ (id ,(hid "aa"))) "aa\n")
+             (h5 (@ (id ,(hid "bb" "aa"))) "bb\n")
+             (h3 (@ (id ,(hid "cc" "aa"))) "cc\n")
+             (h5 (@ (id ,(hid "bb" "cc" "aa"))) "bb\n")
+             (h2 (@ (id ,(hid "bb"))) "bb\n")
+             (h3 (@ (id ,(hid "cc" "bb"))) "cc\n"))
+    (page "* aa" "**** bb" "** cc" "**** bb" "* bb" "** cc"))
+(tp "headings&list, pre"
+    `(result (p "aaa\n")
+             (h2 (@ (id ,(hid "aa"))) "aa\n")
+             (ul (li "bb\n"))
+             (h3 (@ (id ,(hid "cc" "aa"))) "cc\n")
+             (pre " dd\n")
+             (h4 (@ (id ,(hid "ee" "cc" "aa"))) "ee\n"))
+    (page "aaa" "* aa" "- bb" "** cc" " dd" "*** ee"))
 
 (test-end)
