@@ -1,3 +1,10 @@
+2003-12-29  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm (get-page-name): changed to use PATH_INFO instead of
+	REQUEST_URI
+
+	* test/test-wiliki.scm : more tests.
+
 2003-12-21  Shiro Kawai  <shiro@acm.org>
 
 	* test/test-wiliki.scm : more tests.

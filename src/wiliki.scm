@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.97 2003-12-18 07:18:18 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.98 2003-12-29 12:43:48 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -443,19 +443,16 @@
 
 (define (get-page-name wiki param)
 
-  ;; Extract the extra components of REQUEST_URI after the CGI name.
-  ;; If the path components
-  (define (get-path)
-    (and-let* ((uri (sys-getenv "REQUEST_URI"))
-               (script (script-name-of wiki))
-               (path (string-scan uri #`",|script|/" 'after))
-               (conv (cv-in (uri-decode-string
-                             (or (string-scan path "?" 'before) path)))))
+  ;; Extract the extra components of PATH_INFO
+  (define (get-path-info)
+    (and-let* ((path (sys-getenv "PATH_INFO"))
+               ((string-prefix? "/" path))
+               (conv (cv-in (uri-decode-string (string-drop path 1)))))
       (if (equal? conv "")
         (top-page-of wiki)
         conv)))
 
-  (cond ((get-path))
+  (cond ((get-path-info))
         ((cgi-get-parameter "p" param :default #f :convert cv-in))
         ((and (pair? param) (pair? (car param)) (eq? (cadar param) #t))
          (cv-in (caar param)))

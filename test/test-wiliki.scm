@@ -1,7 +1,7 @@
 ;;
 ;; test for wiliki
 ;;
-;; $Id: test-wiliki.scm,v 1.3 2003-12-21 21:37:02 shirok Exp $
+;; $Id: test-wiliki.scm,v 1.4 2003-12-29 12:43:48 shirok Exp $
 
 (use gauche.test)
 (use gauche.parameter)
@@ -90,6 +90,88 @@
        (test-sxml-select-matcher '(html head base)))
 
  ;;--------------------------------------------------------
+(test-section "viewing (1)")
+
+(test* "via QUERY_STRING"
+       '(head (!contain (title "TEST")))
+       (values-ref (run-cgi-script->sxml
+                    *cgi-path*
+                    :environment '((REQUEST_METHOD . "GET")
+                                   (QUERY_STRING . "TEST")))
+                   1)
+       (test-sxml-select-matcher '(html head)))
+
+(test* "via QUERY_STRING (p)"
+       '(head (!contain (title "TEST")))
+       (values-ref (run-cgi-script->sxml
+                    *cgi-path*
+                    :environment '((REQUEST_METHOD . "GET")
+                                   (QUERY_STRING . "p=TEST")))
+                   1)
+       (test-sxml-select-matcher '(html head)))
+
+(test* "via PATH_INFO"
+       '(head (!contain (title "TEST")))
+       (values-ref (run-cgi-script->sxml
+                    *cgi-path*
+                    :environment '((REQUEST_METHOD . "GET")
+                                   (PATH_INFO . "/TEST")))
+                   1)
+       (test-sxml-select-matcher '(html head)))
+
+(test* "non-existent page (QUERY_STRING)"
+       '(html
+         (head (!contain (title "Nonexistent page: ZZZ")))
+         (body (!contain
+                (p "Create a new page: ZZZ"
+                   (a (@ (href "wiliki.cgi?p=ZZZ&c=e")) "?")))))
+       (values-ref (run-cgi-script->sxml
+                    *cgi-path*
+                    :environment '((REQUEST_METHOD . "GET")
+                                   (QUERY_STRING . "ZZZ")))
+                   1)
+       (test-sxml-select-matcher '(html)))
+
+(test* "non-existent page (QUERY_STRING, p)"
+       '(html
+         (head (!contain (title "Nonexistent page: ZZZ")))
+         (body (!contain
+                (p "Create a new page: ZZZ"
+                   (a (@ (href "wiliki.cgi?p=ZZZ&c=e")) "?")))))
+       (values-ref (run-cgi-script->sxml
+                    *cgi-path*
+                    :environment '((REQUEST_METHOD . "GET")
+                                   (QUERY_STRING . "p=ZZZ")))
+                   1)
+       (test-sxml-select-matcher '(html)))
+
+(test* "non-existent page (QUERY_STRING, p)"
+       '(html
+         (head (!contain (title "Nonexistent page: ZZZ")))
+         (body (!contain
+                (p "Create a new page: ZZZ"
+                   (a (@ (href "wiliki.cgi?p=ZZZ&c=e")) "?")))))
+       (values-ref (run-cgi-script->sxml
+                    *cgi-path*
+                    :environment '((REQUEST_METHOD . "GET")
+                                   (QUERY_STRING . "p=ZZZ")))
+                   1)
+       (test-sxml-select-matcher '(html)))
+
+(test* "non-existent page (PATH_INFO)"
+       '(html
+         (head (!contain (title "Nonexistent page: ZZZ")))
+         (body (!contain
+                (p "Create a new page: ZZZ"
+                   (a (@ (href "wiliki.cgi?p=ZZZ&c=e")) "?")))))
+       (values-ref (run-cgi-script->sxml
+                    *cgi-path*
+                    :environment '((REQUEST_METHOD . "GET")
+                                   (PATH_INFO . "/ZZZ")))
+                   1)
+       (test-sxml-select-matcher '(html)))
+
+;;--------------------------------------------------------
 (test-section "editing")
 
 (let ((mtime-save #f))
@@ -132,6 +214,58 @@
                       *cgi-path*
                       :environment '((REQUEST_METHOD . "GET"))
                       :parameters '((p . "TEST")))
+                     1)
+         (test-sxml-select-matcher
+          '(html body p)))
+  )
+
+;;--------------------------------------------------------
+(test-section "creating a new page")
+
+(test* "see if committing orphan page is an error"
+       '(title "WiLiKi: Error")
+       (values-ref (run-cgi-script->sxml
+                    *cgi-path*
+                    :environemnt '((REQUEST_METHOD . "GET"))
+                    :parameters '((c . c) (p . "FOO") (commit . "Commit")
+                                  (mtime . 0)
+                                  (content . "Nonexistent page")))
+                   1)
+       (test-sxml-select-matcher '(html head title)))
+
+(let ((mtime-save #f))
+
+  (test* "edit screen"
+         '(title "LINK")
+         (values-ref (run-cgi-script->sxml
+                      *cgi-path*
+                      :environment '((REQUEST_METHOD . "GET"))
+                      :parameters '((c . e) (p . "LINK")))
+                     1)
+         (test-sxml-select-matcher
+          '(html head title))
+          (lambda (alist)
+            (set! mtime-save (x->integer (assq-ref alist '?mtime)))
+            alist))
+
+  (test* "commiting"
+         '(("status" "302 Moved")
+           ("location" "wiliki.cgi?LINK"))
+         (values-ref (run-cgi-script->string
+                      *cgi-path*
+                      :environment '((REQUEST_METHOD . "GET"))
+                      :parameters `((c . c) (p . "LINK") (commit . "Commit")
+                                    (mtime . ,mtime-save)
+                                    (content . "New page.\r\n[[TEST]]\r\n")))
+                     0))
+
+  (test* "check commit"
+         '(!contain (p "New page.\n"
+                       (a (@ (href "wiliki.cgi?TEST")) "TEST")))
+         (values-ref (run-cgi-script->sxml
+                      *cgi-path*
+                      :environment '((REQUEST_METHOD . "GET"))
+                      :parameters '((p . "LINK")))
                      1)
          (test-sxml-select-matcher
           '(html body p)))
