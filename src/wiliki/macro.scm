@@ -2,7 +2,7 @@
 ;;; wiliki/macro.scm - macro handling (to be autoloaded)
 ;;;
 
-;; $Id: macro.scm,v 1.2 2002-09-26 10:17:18 shirok Exp $
+;; $Id: macro.scm,v 1.3 2002-09-30 09:03:10 shirok Exp $
 
 (select-module wiliki)
 
@@ -100,8 +100,8 @@
 (define-reader-macro (toc . maybe-page)
   (define (anchor id line)
     (if (null? maybe-page)
-        (html:a :href #`"#,id" line)
-        (html:a :href #`",(url \"p=~a\" (car maybe-page))#,id" line)))
+        (html:a :href #`"#,id" (html-escape-string line))
+        (html:a :href #`",(url \"p=~a\" (car maybe-page))#,id" (html-escape-string line))))
   (define (make-toc page)
     (with-input-from-string (content-of page)
       (lambda ()
@@ -137,7 +137,7 @@
                       ))))
            (else (loop (read-line) depth r id)))))))
   (if (null? maybe-page)
-      (cond ((wdb-get (db) (key-of (page))) => make-toc)
+      (cond ((wdb-get (db) (key-of (current-formatting-page))) => make-toc)
             (else #f"`[[$$toc]]"))
       (cond ((wdb-get (db) (car maybe-page)) => make-toc)
             (else #`"[[$$toc ,(html-escape-string page)]]")))

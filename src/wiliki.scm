@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.43 2002-09-26 10:16:05 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.44 2002-09-30 09:03:08 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -43,7 +43,10 @@
 (define wiliki (make-parameter #f))     ;current instance
 (define lang   (make-parameter #f))     ;current language
 (define db     (make-parameter #f))     ;current database
-(define page   (make-parameter #f))     ;current page
+
+(define (current-formatting-page)
+  (let1 hist (page-format-history)
+    (if (null? hist) #f (car hist))))
 
 ;; Class <wiliki> ------------------------------------------
 
@@ -433,10 +436,7 @@
   )
 
 (define (cmd-view pagename)
-  (cond ((wdb-get (db) pagename) =>
-         (lambda (p)
-           (parameterize ((page p))
-             (format-page pagename p))))
+  (cond ((wdb-get (db) pagename) => (cut format-page pagename <>))
         ((equal? pagename (top-page-of (wiliki)))
          (let ((toppage (make <page> :key pagename :mtime (sys-time))))
            (wdb-put! (db) (top-page-of (wiliki)) toppage)
@@ -538,8 +538,7 @@
               (set! (mtime-of p) now)
               (set! (content-of p) (expand-writer-macros content))
               (wdb-put! (db) pagename p :donttouch donttouch)
-              (parameterize ((page p))
-                (format-page pagename p))))
+              (format-page pagename p)))
         (format-page
          ($$ "Wiliki: Update Conflict")
          `(,($$ "<p>It seems that somebody has updated this page while you're editing.  The most recent content is shown below.</p>")
