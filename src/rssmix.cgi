@@ -1,4 +1,4 @@
-#!/usr/bin/gosh
+#!/home/shiro/bin/gosh
 ;;;
 ;;; wiliki/rssmix - Fetch and show RSSs
 ;;;
@@ -24,7 +24,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: rssmix.cgi,v 1.2 2003-02-17 13:29:55 shirok Exp $
+;;;  $Id: rssmix.cgi,v 1.3 2003-02-18 00:30:23 shirok Exp $
 ;;;
 
 ;; THIS IS AN EXPERIMENTAL SCRIPT.  Eventually this will be a part of
@@ -65,7 +65,7 @@
   ((sites :init-keyword :sites :init-value '())
    ;; - list of monitoring sites.  Each entry should be
    ;;     (IDENT HOME-URI RSS-URI)
-   (num-items :init-keyword :num-items :init-value 50)
+   (num-items :init-keyword :num-items :init-value 70)
    ;; - # of entries to show
    (title :init-keyword :title :init-value "Recent Changes")
    (db-name :init-keyword :db-name :init-value "/home/shiro/data/rssmix.dbm")
@@ -284,9 +284,9 @@
               ;("@pm"
               ; "http://gnk.s15.xrea.com/"
               ; "http://gnk.s15.xrea.com/index.rdf")
-              ;("Netry"
-              ; "http://netry.no-ip.com/"
-              ; "http://netry.no-ip.com/index.rdf")
+              ("Ishinao's Pukiwiki"
+               "http://ishinao.net/pukiwiki/"
+               "http://ishinao.net/pukiwiki/?cmd=rss")
               )
      :title "RSSMix: Recent Entries")))
 
