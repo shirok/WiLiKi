@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.18 2002-01-14 10:19:30 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.19 2002-01-14 11:30:02 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -172,6 +172,9 @@
             ((rxmatch rx line) (#f prefix) prefix)
             (else (loop (read-line p)))))))))
 
+(define (invalid-wiki-name? self name)
+  (string-index name #[\s<>%$]))
+
 (define (inter-wiki-name? self name)
   (receive (head after) (string-scan name ":" 'both)
     (or (and head
@@ -181,20 +184,59 @@
 
 (define (format-wiki-name self name)
   (receive (prefix inner) (inter-wiki-name? self name)
-    (cond (prefix
+    (cond ((invalid-wiki-name? self name)
+           (format #f "[[~a]]" (html-escape-string name)))
+          (prefix
            (format #f "<a href=\"http://~a~a\">~a</a>" prefix inner name))
           ((wdb-exists? (db-of self) name)
            (tree->string (html:a :href (url self "~a" name) name)))
           (else
            (tree->string `(,name ,(html:a :href (url self "p=~a&c=e" name) "?")))))))
 
+;; Find wiki name in the line.
+;; Correctly deal with nested "[[" and "]]"'s.
 (define (format-line self line)
-  (define (wiki-name line)
-    (regexp-replace-all
-     #/\[\[(([^\]\s]|\][^\]\s])+)\]\]/
-     line
-     (lambda (match)
-       (format-wiki-name self (rxmatch-substring match 1)))))
+  ;; parse to next "[[" or "]]"
+  (define (token s)
+    (cond ((rxmatch #/\[\[|\]\]/ s)
+           => (lambda (m)
+                (values (rxmatch-before m)
+                        (rxmatch-substring m)
+                        (rxmatch-after m))))
+          (else (values s #f #f))))
+  ;; return <str in paren> and <the rest of string>
+  (define (find-closer s level in)
+    (receive (pre tok post) (token s)
+      (cond ((not tok)
+             (values #f (tree->string (cons "[[" (reverse (cons pre in))))))
+            ((string=? tok "[[")
+             (find-closer post (+ level 1) (list* "[[" pre in)))
+            ((= level 0)
+             (values (tree->string (reverse (cons pre in))) post))
+            (else
+             (find-closer post (- level 1) (list* "]]" pre in))))))
+
+  (list
+   (let loop ((s line))
+     (receive (pre post) (string-scan s "[[" 'both)
+       (if pre
+           (cons (format-parts self pre)
+                 (receive (wikiname rest) (find-closer post 0 '())
+                   (if wikiname
+                       (cons (format-wiki-name self wikiname)
+                             (loop rest))
+                       (list rest))))
+           (format-parts self s))))
+   "\n")
+  )
+
+(define (format-parts self line)
+  ;(define (wiki-name line)
+  ;  (regexp-replace-all
+  ;   #/\[\[(([^\]\s]|\][^\]\s])+)\]\]/
+  ;   line
+  ;   (lambda (match)
+  ;     (format-wiki-name self (rxmatch-substring match 1)))))
   (define (uri line)
     (regexp-replace-all
      #/(\[)?(http:(\/\/[^\/?#\s]*)?[^?#\s]*(\?[^#\s]*)?(#\S*)?)(\s([^\]]+)\])?/
@@ -222,7 +264,7 @@
      line
      (lambda (match)
        (format #f "<em>~a</em>" (rxmatch-substring match 1)))))
-  (list (wiki-name (uri (italic (bold (html-escape-string line))))) "\n"))
+  (uri (italic (bold (html-escape-string line)))))
 
 (define (format-content self page)
   (with-input-from-string (content-of page)
