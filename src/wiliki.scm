@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.67 2003-02-13 11:28:53 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.68 2003-02-15 05:10:32 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -755,6 +755,7 @@
     (map (lambda (p)
            (html:tr
             (html:td (format-time (cdr p)))
+            (html:td "(" (how-long-since (cdr p)) " ago)")
             (html:td (wikiname-anchor (car p)))))
          (wdb-recent-changes (db))))
    :page-id "c=r"
