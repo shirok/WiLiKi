@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.95 2003-11-19 14:59:01 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.96 2003-12-17 20:11:55 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -170,7 +170,7 @@
 
 ;; fallback
 (define-method title-of (obj) "WiLiKi")
-(define-method debug-level-of (obj) 0)
+(define-method debug-level (obj) 0)
 
 ;; Class <page> ---------------------------------------------
 ;;   Represents a page.
@@ -307,8 +307,14 @@
                       :show-edit? #f))
         ((equal? pagename (top-page-of (wiliki)))
          (let ((toppage (make <page> :key pagename :mtime (sys-time))))
-           (wdb-put! (db) (top-page-of (wiliki)) toppage)
-           (format-page (top-page-of (wiliki)) toppage)))
+           ;; Top page is non-existent, or its name may be changed.
+           ;; create it automatically.  We need to ensure db is writable.
+           (if (editable? (wiliki))
+             (with-db (lambda ()
+                        (wdb-put! (db) (top-page-of (wiliki)) toppage)
+                        (format-page (top-page-of (wiliki)) toppage))
+               :write)
+             (errorf "Top-page (~a) doesn't exist, and the database is read-only" toppage))))
         ((or (string-index pagename #[\s\[\]])
              (string-prefix? "$" pagename))
          (error "Invalid page name" pagename))
