@@ -1,3 +1,8 @@
+2003-03-31  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm, src/wiliki/msgs.jp.euc: fixed the text formatting
+	  instruction message.
+	
 2003-03-05  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm (format-wiki-name, cmd-view),

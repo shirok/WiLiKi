@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.73 2003-03-06 04:46:42 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.74 2003-04-01 08:15:42 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -689,7 +689,7 @@
          Put a space after dash(es).</p>
       <p>\"<tt># </tt>\", \"<tt>## </tt>\", \"<tt>### </tt>\" ... at the
          beginning of a line for an item of ordered list (&lt;ol&gt;).
-         Put a space after dot(s).</p>
+         Put a space after <tt>#</tt>'s.</p>
       <p>A line with only \"<tt>----</tt>\" is &lt;hr&gt;.</p>
       <p>\"<tt>:item:description</tt>\" at the beginning of a line is &lt;dl&gt;.
          The item includes all colons but the last one.  If you want to include

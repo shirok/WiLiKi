@@ -24,7 +24,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: rssmix.cgi,v 1.10 2003-02-20 22:05:05 shirok Exp $
+;;;  $Id: rssmix.cgi,v 1.11 2003-04-01 08:15:40 shirok Exp $
 ;;;
 
 ;; THIS IS AN EXPERIMENTAL SCRIPT.  Eventually this will be a part of
@@ -76,6 +76,8 @@
    ;; - timeout value to fetch RSS
    (max-title-width :init-keyword :max-title-width :init-value 65)
    ;; - entry longer than this will be truncated
+   (max-threads :init-keyword :max-threads :init-value 4)
+   ;; - max # of threads to be used to fetch rss.
    (db      :init-value #f)
    ;; - opened dbm instance
    (db-lock :init-form (make-mutex))
@@ -414,6 +416,15 @@
               ("wiki on ishinao.net"
                "http://ishinao.net/pukiwiki/"
                "http://ishinao.net/pukiwiki/?cmd=rss")
+              ("Felio's"
+               "http://zukku.kcl.or.jp/~felio/wiliki/wiliki.cgi"
+               "http://zukku.kcl.or.jp/~felio/wiliki/wiliki.cgi?c=rss")
+              ("Keshi"
+               "http://www.keshi.org/wiliki/wiliki.cgi"
+               "http://www.keshi.org/wiliki/wiliki.cgi?c=rss")
+              ("AnotherLife"
+               "http://ip-solution.ngb.co.jp/cgi-bin/anotherlife.cgi"
+               "http://ip-solution.ngb.co.jp/cgi-bin/anotherlife.cgi?c=rss")
               )
      :title "RSSMix: Recent Entries")))
 

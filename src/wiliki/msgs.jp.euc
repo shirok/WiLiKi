@@ -1,84 +1,84 @@
-;; wiliki.scm : line 534
+;; wiliki.scm : line 546
 ("Last modified : "
  "最終更新 : "
 )
 
-;; wiliki.scm : line 564
+;; wiliki.scm : line 576
 ("[Top Page]"
  "[トップ]"
 )
 
-;; wiliki.scm : line 566
+;; wiliki.scm : line 578
 ("[Edit]"
  "[編集]"
 )
 
-;; wiliki.scm : line 568
+;; wiliki.scm : line 580
 ("[All Pages]"
  "[一覧]"
 )
 
-;; wiliki.scm : line 570
+;; wiliki.scm : line 582
 ("[Recent Changes]"
  "[最近の更新]"
 )
 
-;; wiliki.scm : line 572
+;; wiliki.scm : line 584
 ("Search:"
  "検索:"
 )
 
-;; wiliki.scm : line 611
+;; wiliki.scm : line 623
 ("Update Conflict"
  "更新の衝突"
 )
 
-;; wiliki.scm : line 612
+;; wiliki.scm : line 624
 ("<p>It seems that somebody has updated this page while you're editing.  The most recent content is shown below.</p>"
  "<p>あなたが編集している間に、他の人がこのページを更新したようです。最新の内容を以下に表示します。</p>"
 )
 
-;; wiliki.scm : line 616
+;; wiliki.scm : line 628
 ("<p>The following shows what you are about to submit.  Please re-edit the content and submit again.</p>"
  "<p>以下に示すのがあなたが更新しようとした内容です。最新の内容をもとに再編集して再び更新して下さい。</p>"
 )
 
-;; wiliki.scm : line 632
+;; wiliki.scm : line 649
 ("Nonexistent page: "
  "ページが存在しません: "
 )
 
-;; wiliki.scm : line 634
+;; wiliki.scm : line 651
 ("Create a new page: "
  "新規ページ作製: "
 )
 
-;; wiliki.scm : line 642
+;; wiliki.scm : line 659
 ("Preview"
  "プレビュー"
 )
 
-;; wiliki.scm : line 643
+;; wiliki.scm : line 660
 ("Commit without preview"
  "コミット(プレビュー無し)"
 )
 
-;; wiliki.scm : line 644
+;; wiliki.scm : line 661
 ("Preview again"
  "もう一度プレビュー"
 )
 
-;; wiliki.scm : line 645
+;; wiliki.scm : line 662
 ("Commit"
  "コミット"
 )
 
-;; wiliki.scm : line 649
+;; wiliki.scm : line 666
 ("Don't update 'Recent Changes'"
  "「最近の更新」に登録しない"
 )
 
-;; wiliki.scm : line 664
+;; wiliki.scm : line 681
 ("<h2>Text Formatting Rules</h2>
       <p>No HTML.</p>
       <p>A line begins with \";;\" doesn't appear in the output (comment).</p>
@@ -90,7 +90,7 @@
          Put a space after dash(es).</p>
       <p>\"<tt># </tt>\", \"<tt>## </tt>\", \"<tt>### </tt>\" ... at the
          beginning of a line for an item of ordered list (&lt;ol&gt;).
-         Put a space after dot(s).</p>
+         Put a space after <tt>#</tt>'s.</p>
       <p>A line with only \"<tt>----</tt>\" is &lt;hr&gt;.</p>
       <p>\"<tt>:item:description</tt>\" at the beginning of a line is &lt;dl&gt;.
          The item includes all colons but the last one.  If you want to include
@@ -129,7 +129,7 @@
    <p>行頭の\"<tt>- </tt>\", \"<tt>-- </tt>\", \"<tt>--- </tt>\" …
       は順序無しリスト (&lt;ul&gt;)。ダッシュの後に空白が必要。</p>
    <p>行頭の\"<tt># </tt>\", \"<tt>## </tt>\", \"<tt>### </tt>\" …
-      は順序つきリスト (&lt;ol&gt;)。ピリオドの後に空白が必要。</p>
+      は順序つきリスト (&lt;ol&gt;)。<tt>#</tt>の後に空白が必要。</p>
    <p>\"<tt>----</tt>\" だけの行は &lt;hr&gt;</p>
    <p>行頭の \"<tt>:項目:説明</tt>\" は &lt;dl&gt;。
       項目は最後に現われるコロンまで取られる。説明中にコロンを入れたければ次の行に。</p>
@@ -157,23 +157,22 @@
        (6つの連続するシングルクオート)を行頭に入れると良い。</p>"
 )
 
-;; wiliki.scm : line 721
+;; wiliki.scm : line 738
 ("Preview of ~a"
  "~a のプレビュー"
 )
 
-;; wiliki.scm : line 753
+;; wiliki.scm : line 770
 ("All Pages"
  "一覧"
 )
 
-;; wiliki.scm : line 763
+;; wiliki.scm : line 780
 ("Recent Changes"
  "最近の更新"
 )
 
-;; wiliki.scm : line 777
+;; wiliki.scm : line 794
 ("Search results"
  "検索結果"
 )
-
