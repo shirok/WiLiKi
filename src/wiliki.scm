@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.46 2002-12-02 06:58:37 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.47 2002-12-09 10:19:17 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -445,7 +445,7 @@
 
 (define (redirect-page key)
   (cons "Status: 302 Moved\n"
-        (cgi-header :location (url key))))
+        (cgi-header :location (url "~a" key))))
 
 (define (conflict-page page pagename content donttouch)
   (format-page

@@ -1,3 +1,8 @@
+2002-12-09  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm (redirect-page) : fixed a problem of redirecting
+	  a page whose name containing special characters such as '='.
+
 2002-12-01  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm : various fixes:
