@@ -2,11 +2,36 @@
 
 (use wiliki)
 
+;; Customization:
+;;
+;;  (1) Change the #!-line on top to point gosh path at your site.
+;;  (2) Tailor keyword arguments after 'make <wiliki>'.
+;;
+;;    :db-path - A path to the dbm database.  if it's relative, it's
+;;               relative to the directory the CGI script exists.
+;;               I recommend to put the database outside the directory
+;;               tree accessible via http.
+;;               The database is automatically created when accessed
+;;               first time; make sure the data directory is writable
+;;               by the CGI script only for the first time.
+;;
+;;    :top-page - The name of the top page.  If the named page doesn't
+;;               exist, it is created for the first time it accessed.
+;;
+;;    :editable? - If #f, editing is prohibited.
+;;
+;;    :language - default language, either 'jp or 'en
+;;
+;;    :style-sheet - If a path to the css is given, it is used as a
+;;               style sheet.  #f to use the default style.
+
 (define (main args)
-  (wiliki-main (make <wiliki>
-                 :db-path "data/wikidata.dbm"
-                 :top-page "WiLiKi"
-                 :cgi-name (sys-basename *program-name*))))
+  (wiliki-main
+   (make <wiliki>
+     :db-path "/home/shiro/data/wikidata.dbm"
+     :top-page "WiLiKi"
+     :cgi-name (sys-basename *program-name*)
+     )))
 
 ;; Local variables:
 ;; mode: scheme
