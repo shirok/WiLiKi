@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.7 2003-08-24 06:47:21 shirok Exp $
+;;; $Id: format.scm,v 1.8 2003-08-24 07:00:45 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -379,9 +379,10 @@
       (if (< current list-level)
         (let rec ((ctx ctx) (current current))
           (if (< current list-level)
-            (begin (>> '() (otag ltag) "<li>")
-                   (rec (list* 'li ltag ctx) (+ current 1)))
-            ctx))
+            (begin (>> '() (otag ltag))
+                   (rec (cons ltag ctx) (+ current 1)))
+            (begin (>> '() "<li>")
+                   (cons 'li ctx))))
         (let rec ((ctx ctx) (current current))
           (receive (pre rest) (break (cut memq <> '(ul ol)) ctx)
             (cond ((> current list-level)

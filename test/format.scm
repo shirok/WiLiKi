@@ -256,14 +256,14 @@
           "'''ghi'''jkl"))
 (tp "ul (jump down)"
     '(result (p "abc\n")
-             (ul (li (ul (li "def\n")
-                         (li "ghi\njkl\n")))))
+             (ul (ul (li "def\n")
+                     (li "ghi\njkl\n"))))
     (page "abc"
           "-- def"
           "-- ghi"
           "jkl"))
 (tp "ul (jump up)"
-    '(result (ul (li (ul (li (ul (li "def\n")))))
+    '(result (ul (ul (ul (li "def\n")))
                  (li "ghi\njkl\n")))
     (page "--- def"
           "- ghi"
@@ -287,7 +287,7 @@
           "-- yz"))
 (tp "ul (complicated)"
     '(result (ul (li "abc\n"
-                     (ul (li (ul (li (ul (li "def\n")))))
+                     (ul (ul (ul (li "def\n")))
                          (li "ghi\n")))
                  (li "jkl\n"))
              (p)
@@ -309,14 +309,14 @@
           "jkl"))
 (tp "ol (jump down)"
     '(result (p "abc\n")
-             (ol (li (ol (li (ol (li (ol (li "def\n")
-                                         (li "ghi\njkl\n")))))))))
+             (ol (ol (ol (ol (li "def\n")
+                             (li "ghi\njkl\n"))))))
     (page "abc"
           "#### def"
           "#### ghi"
           "jkl"))
 (tp "ol (jump up)"
-    '(result (ol (li (ol (li (ol (li (ol (li "def\n")))))))
+    '(result (ol (ol (ol (ol (li "def\n"))))
                  (li "ghi\njkl\n")))
     (page "#### def"
           "# ghi"
@@ -357,8 +357,8 @@
                      (ol (li "a\naa\n"))
                      (ul (li "b\nbb\n"))))
              (p)
-             (ol (li (ol (li (ol (li "c\ncc\n"))))
-                     (ul (li "d\ndd\n")))))
+             (ol (ol (ol (li "c\ncc\n")))
+                 (ul (li "d\ndd\n"))))
     (page " aaa"
           "- A"
           "## a"
@@ -419,11 +419,11 @@
     (page ":http://foo:aaa"
           "bb''bbb''"))
 (tp "dl & other list"
-    '(result (ul (li (ul (li "aaa\n"
-                             (dl (dt "bbb\n")
-                                 (dd (p "ccc\n")
-                                     (ul (li "ddd\n"
-                                             (ol (li "eee\n"))))))))))
+    '(result (ul (ul (li "aaa\n"
+                         (dl (dt "bbb\n")
+                             (dd (p "ccc\n")
+                                 (ul (li "ddd\n"
+                                         (ol (li "eee\n")))))))))
              (ol (li "fff\n"
                      (dl (dt "ggg\n")
                          (dd (p))))))
