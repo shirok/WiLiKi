@@ -11,15 +11,23 @@ while [ $# -gt 0 ]; do
 done
 
 if [ "$gen" = "yes" ]; then
-  rm -f acinclude.m4
-  cp `gauche-config --ac`/aclocal.m4 acinclude.m4
-  aclocal
-  automake -a -c
-  autoconf
+  autoconf -I `gauche-config --ac`
   ./configure
 fi
 
 if [ "$tgz" = "yes" ]; then
-  make dist
+  make distclean
+  ./configure
+  if [ ! -f VERSION ]; then echo "no VERSION -- something wrong?"; exit 1; fi
+  VERSION=`cat VERSION`
+  rm -rf ../WiLiKi-$VERSION
+  rm -f DIST_ECLUDE_X
+  cat DIST_EXCLUDE > DIST_EXCLUDE_X
+  find . -name CVS -print -prune >> DIST_EXCLUDE_X
+
+  mkdir ../WiLiKi-$VERSION
+  tar cvfX - DIST_EXCLUDE_X . | (cd ../WiLiKi-$VERSION; tar xf -)
+  (cd ..; tar cvf - WiLiKi-$VERSION | gzip -9 > WiLiKi-$VERSION.tgz)
+  rm -rf ../WiLiKi-$VERSION
 fi
 
