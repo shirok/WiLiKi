@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.90 2003-08-31 23:11:16 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.91 2003-08-31 23:13:27 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -165,7 +165,7 @@
       (case (lang)
         ((jp) (values 'en "->English"))
         (else (values 'jp "->Japanese")))
-    (html:a :href #`",(cgi-name-of (wiliki))?,|pagename|?l=,|target|"
+    (html:a :href #`",(cgi-name-of (wiliki))?,|pagename|&l=,|target|"
             "[" (html-escape-string label) "]")))
 
 ;; fallback
