@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: rss.scm,v 1.3 2003-02-11 22:22:43 shirok Exp $
+;;;  $Id: rss.scm,v 1.4 2003-03-05 07:32:41 shirok Exp $
 ;;;
 
 ;; In future, this might be rewritten to use proper XML framework.
@@ -54,9 +54,11 @@
          (map (lambda (entry) (rdf-li (url-full "~a" (cv-out (car entry)))))
               entries)))
       ,(map (lambda (entry)
-              (rdf-item (rdf-title (car entry))
-                        (rdf-link (url-full "~a" (cv-out (car entry))))
-                        (dc-date  (cdr entry))))
+              (let1 url (url-full "~a" (cv-out (car entry)))
+                (rdf-item url
+                          (rdf-title (car entry))
+                          (rdf-link url)
+                          (dc-date  (cdr entry)))))
             entries)
       "</rdf:RDF>\n")))
 
@@ -71,7 +73,10 @@
 
 (define (rdf-simple tag . content)
   `("<" ,tag ">" ,@content "</" ,tag ">\n"))
-(define (rdf-item . content) (apply rdf-simple "item" content))
+(define (rdf-item about . content)
+  `("<item rdf:about=\"" ,(html-escape-string about) "\">"
+    ,@content
+    "</item>\n"))
 
 (define (rdf-items-seq . items)
   `("<items><rdf:Seq>" ,@items "</rdf:Seq></items>\n"))
