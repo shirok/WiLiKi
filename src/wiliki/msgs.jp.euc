@@ -1,61 +1,61 @@
-;; wiliki/history.scm : line 90
+;; wiliki/history.scm : line 105
 ("Edit History"
  "編集履歴"
 )
 
-;; wiliki/history.scm : line 95
+;; wiliki/history.scm : line 110
 ("Edit history of ~a"
  "~aの編集履歴"
 )
 
-;; wiliki/history.scm : line 105
-("Edit History:Diff"
- "編集履歴:差分"
-)
-
-;; wiliki/history.scm : line 112
-("Changes of ~a since ~a"
- "~1@*~a以来の~0@*~aの変更箇所"
-)
-
-;; wiliki/history.scm : line 116
+;; wiliki/history.scm : line 122
 ("added lines"
  "追加された行"
 )
 
-;; wiliki/history.scm : line 117
+;; wiliki/history.scm : line 123
 ("deleted lines"
  "削除された行"
 )
 
-;; wiliki/history.scm : line 120
-("Return to the edit history"
- "編集履歴ページに戻る"
+;; wiliki/history.scm : line 128
+("Changes of ~a since ~a"
+ "~1@*~a以来の~0@*~aの変更箇所"
 )
 
-;; wiliki/history.scm : line 128
+;; wiliki/history.scm : line 148
+("Changes of ~a between ~a and ~a"
+ "~1@*~aと~2@*~a間の~0@*~aの変更箇所"
+)
+
+;; wiliki/history.scm : line 158
+("Edit History:Diff"
+ "編集履歴:差分"
+)
+
+;; wiliki/history.scm : line 173
 ("Edit History:View"
  "編集履歴:過去のバージョン"
 )
 
-;; wiliki/history.scm : line 135
+;; wiliki/history.scm : line 180
 ("Content of ~a at ~a"
  "~1@*~a時点での~0@*~aの内容"
 )
 
-;; wiliki/history.scm : line 142
+;; wiliki/history.scm : line 187
 ("View diff from current version"
  "現在のバージョンとの差分を見る"
 )
 
-;; wiliki/history.scm : line 145
-("Return to the edit history"
- "編集履歴ページに戻る"
-)
-
-;; wiliki/history.scm : line 152
+;; wiliki/history.scm : line 195
 ("No edit history available for page ~a"
  "~aのページには編集履歴情報がありません"
+)
+
+;; wiliki/history.scm : line 202
+("Return to the edit history"
+ "編集履歴ページに戻る"
 )
 
 ;; wiliki/format.scm : line 60

@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: history.scm,v 1.7 2003-09-01 03:46:00 shirok Exp $
+;;;  $Id: history.scm,v 1.8 2003-09-01 03:49:22 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -118,6 +118,10 @@
 ;; "Edit History:Diff" page. -----------------------------------
 (define (cmd-diff pagename old-time new-time)
 
+  (define (explanation)
+    (html:ul (html:li (format-diff-line `(+ . ,($$ "added lines"))))
+             (html:li (format-diff-line `(- . ,($$ "deleted lines"))))))
+  
   (define (diff-to-current entries current)
     (let* ((diffpage (wiliki-log-diff* entries current)))
       (list
@@ -125,8 +129,7 @@
                         (tree->string
                          (format-wikiname-anchor pagename))
                         (format-time old-time)))
-       (html:ul (html:li (format-diff-line `(+ . ,($$ "added lines"))))
-                (html:li (format-diff-line `(- . ,($$ "deleted lines")))))
+       (explanation)
        (return-to-edit-history pagename)
        (format-diff-pre diffpage))))
 
@@ -147,8 +150,7 @@
                          (format-wikiname-anchor pagename))
                         (format-time old-time)
                         (format-time new-time)))
-       (html:ul (html:li (format-diff-line `(+ . ,($$ "added lines"))))
-                (html:li (format-diff-line `(- . ,($$ "deleted lines")))))
+       (explanation)
        (return-to-edit-history pagename)
        (format-diff-pre (reverse! rdiff)))))
 
