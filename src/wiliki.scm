@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.34 2002-05-06 05:23:21 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.35 2002-05-22 04:33:38 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -99,7 +99,7 @@
         (else #f)))
 
 ;; WDB-PUT! db key page
-(define-method wdb-put! ((db <dbm>) key (page <page>))
+(define-method wdb-put! ((db <dbm>) key (page <page>) . option)
   (let ((s (with-output-to-string
              (lambda ()
                (write (list :ctime (ctime-of page)
@@ -107,14 +107,16 @@
                             :mtime (mtime-of page)
                             :muser (muser-of page)))
                (display (content-of page)))))
-        (r (alist-delete key
-                         (read-from-string (dbm-get db *recent-changes* "()"))))
-        )
+        (donttouch (get-keyword :donttouch option #f)))
     (dbm-put! db key s)
-    (dbm-put! db *recent-changes*
-              (write-to-string
-               (acons key (mtime-of page)
-                      (if (>= (length r) 50) (take r 49) r))))))
+    (unless donttouch
+      (let1 r (alist-delete key
+                            (read-from-string (dbm-get db *recent-changes* "()")))
+        (dbm-put! db *recent-changes*
+                  (write-to-string
+                   (acons key (mtime-of page)
+                          (if (>= (length r) 50) (take r 49) r))))))
+    ))
 
 ;; WDB-DELETE! db key
 (define-method wdb-delete! ((db <dbm>) key)
@@ -470,24 +472,21 @@
            (format-page (top-page-of (wiliki)) toppage)))
         (else (error "No such page" pagename))))
 
-(define (edit-form preview? pagename content mtime)
+(define (edit-form preview? pagename content mtime donttouch)
   (define (buttons)
     (if preview?
-        (list (html:input :type "submit" :name "preview"
-                          :value "Preview")
-              (html:input :type "submit" :name "commit"
-                          :value "Commit without preview")
-              (html:input :type "reset"  :name "reset"  :value "Reset"))
-        (list (html:input :type "submit" :name "commit"
-                          :value "Commit")
-              (html:input :type "submit" :name "preview"
-                          :value "Preview again")
-              (html:input :type "reset"  :name "reset"  :value "Reset"))
-        ))
-
+        `(,(html:input :type "submit" :name "preview" :value "Preview")
+          ,(html:input :type "submit" :name "commit" :value "Commit without preview"))
+        `(,(html:input :type "submit" :name "commit" :value "Commit")
+          ,(html:input :type "submit" :name "preview" :value "Preview again"))))
+  (define (donttouch-checkbox)
+    `(,(apply html:input :type "checkbox" :name "donttouch" :value "on"
+              (if donttouch '(:checked #t) '()))
+      "Don't update 'Recent Changes'"))
+  
   (html:form
    :method "POST" :action (cgi-name-of (wiliki))
-   (buttons)
+   (buttons) (donttouch-checkbox)
    (html:br)
    (html:input :type "hidden" :name "c" :value "c")
    (html:input :type "hidden" :name "p" :value pagename)
@@ -537,9 +536,9 @@
   (let ((page (wdb-get (db) pagename #t)))
     (format-page pagename
                  (edit-form #t pagename
-                            (content-of page) (mtime-of page)))))
+                            (content-of page) (mtime-of page) #f))))
 
-(define (cmd-preview pagename content mtime)
+(define (cmd-preview pagename content mtime donttouch)
   (let ((page (wdb-get (db) pagename #t)))
     (if (or (not (mtime-of page)) (eqv? (mtime-of page) mtime))
         (format-page
@@ -548,10 +547,10 @@
                                            :key pagename
                                            :content content)))
            ,(html:hr)
-           ,(edit-form #f pagename content mtime))
+           ,(edit-form #f pagename content mtime donttouch))
          ))))
 
-(define (cmd-commit-edit pagename content mtime)
+(define (cmd-commit-edit pagename content mtime donttouch)
   (unless (editable? (wiliki))
     (errorf "Can't edit the page ~s: the database is read-only" pagename))
   (let ((page (wdb-get (db) pagename #t))
@@ -565,7 +564,7 @@
             (begin
               (set! (mtime-of page) now)
               (set! (content-of page) (expand-writer-macros content))
-              (wdb-put! (db) pagename page)
+              (wdb-put! (db) pagename page :donttouch donttouch)
               (format-page pagename page)))
         (format-page
          ($$ "Wiliki: Update Conflict")
@@ -574,7 +573,7 @@
            ,(colored-box (html:pre (html-escape-string (content-of page))))
            ,(html:hr)
            ,($$ "<p>The following shows what you are about to submit.  Please re-edit the content and submit again.</p>")
-           ,(edit-form #t pagename content (mtime-of page))
+           ,(edit-form #t pagename content (mtime-of page) donttouch)
            )))))
 
 (define (cmd-all)
@@ -623,6 +622,9 @@
 
 ;; Entry ------------------------------------------
 
+(use gauche.logger)
+(log-open "/tmp/foo.log")
+
 (define-method wiliki-main ((self <wiliki>))
   (cgi-main
    (lambda (param)
@@ -635,6 +637,7 @@
                                                :convert ccv))))
            (command  (cgi-get-parameter "c" param))
            (language (cgi-get-parameter "l" param :convert string->symbol)))
+       (log-format "~s" param)
        (parameterize
         ((wiliki self)
          (lang   (or language (language-of self))))
@@ -659,7 +662,8 @@
               (cgi-get-parameter "content" param :convert ccv)
               (cgi-get-parameter "mtime" param
                                  :convert x->integer
-                                 :default 0)))
+                                 :default 0)
+              (cgi-get-parameter "donttouch" param :default #f)))
             (else (error "Unknown command" command))))))
         ))
    :merge-cookies #t
