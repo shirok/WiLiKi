@@ -1,3 +1,16 @@
+2001-01-14  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm : fixed WikiName parse routine to deal with nested
+	  "[[" and "]]"'s for InterWikiName, and correctly escape WikiName
+	  reference in URL.
+	
+2001-01-13  Shiro Kawai  <shiro@acm.org>
+
+	* various files : autoconfiscated
+	* src/wiliki.scm, src/wiliki/mcatalog.scm, src/wiliki/msgs.jp :
+	  separated language-dependent messages to the separate message
+	  catalog.
+	
 2001-12-12  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm : added named url ([URL name]) formatting rule.
