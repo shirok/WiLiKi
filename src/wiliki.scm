@@ -1,11 +1,12 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.15 2001-12-13 08:24:08 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.16 2001-12-13 09:46:23 shirok Exp $
 ;;;
 
 (define-module wiliki
   (use srfi-1)
+  (use srfi-2)                          ;and-let*
   (use srfi-13)
   (use gauche.regexp)
   (use text.html-lite)
@@ -283,17 +284,40 @@
   (html:table :width "100%" :cellpadding 5
               (html:tr (html:td :bgcolor "#eeddaa" content))))
 
+(define (inter-wiki-name-prefix self head)
+  (and-let* ((page (wdb-get (db-of self) "InterWikiName"))
+             (rx   (string->regexp (format #f "^:~a:(\\S+)" head))))
+    (call-with-input-string (content-of page)
+      (lambda (p)
+        (let loop ((line (read-line p)))
+          (rxmatch-cond
+            (test (eof-object? line) #f)
+            ((rxmatch rx line) (#f prefix) prefix)
+            (else (loop (read-line p)))))))))
+
+(define (inter-wiki-name? self name)
+  (receive (head after) (string-scan name ":" 'both)
+    (or (and head
+             (and-let* ((inter-prefix (inter-wiki-name-prefix self head)))
+               (values inter-prefix after)))
+        (values #f #f))))
+
+(define (format-wiki-name self name)
+  (receive (prefix inner) (inter-wiki-name? self name)
+    (cond (prefix
+           (format #f "<a href=\"http://~a~a\">~a</a>" prefix inner name))
+          ((wdb-exists? (db-of self) name)
+           (tree->string (html:a :href (url self "~a" name) name)))
+          (else
+           (tree->string `(,name ,(html:a :href (url self "p=~a&c=e" name) "?")))))))
+
 (define (format-line self line)
   (define (wiki-name line)
     (regexp-replace-all
      #/\[\[(([^\]\s]|\][^\]\s])+)\]\]/
      line
      (lambda (match)
-       (let ((name (rxmatch-substring match 1)))
-         (tree->string
-          (if (wdb-exists? (db-of self) name)
-              (html:a :href (url self "~a" name) name)
-              `(,name ,(html:a :href (url self "p=~a&c=e" name) "?"))))))))
+       (format-wiki-name self (rxmatch-substring match 1)))))
   (define (uri line)
     (regexp-replace-all
      #/(\[)?(http:(\/\/[^\/?#\s]*)?[^?#\s]*(\?[^#\s]*)?(#\S*)?)(\s([^\]]+)\])?/
@@ -321,7 +345,7 @@
      line
      (lambda (match)
        (format #f "<em>~a</em>" (rxmatch-substring match 1)))))
-  (list (uri (italic (bold (wiki-name (html-escape-string line))))) "\n"))
+  (list (wiki-name (uri (italic (bold (html-escape-string line))))) "\n"))
 
 (define (format-content self page)
   (with-input-from-string (content-of page)
@@ -456,6 +480,10 @@
 (define (edit-form self preview? pagename content mtime)
   (html:form
    :method "POST" :action (cgi-name-of self)
+   (html:input :type "submit" :name "submit"
+               :value (if preview? "Preview" "Commit"))
+   (html:input :type "reset"  :name "reset"  :value "Reset")
+   (html:br)
    (html:input :type "hidden" :name "c" :value (if preview? "p" "c"))
    (html:input :type "hidden" :name "p" :value pagename)
    (html:input :type "hidden" :name "mtime" :value mtime)
