@@ -1,3 +1,8 @@
+2002-02-27  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm : enabled deletion of page.  allow '<' and '>' in
+	  WikiName.
+
 2001-01-14  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm : fixed WikiName parse routine to deal with nested
