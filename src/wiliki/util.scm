@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: util.scm,v 1.2 2004-01-13 03:56:08 shirok Exp $
+;;;  $Id: util.scm,v 1.3 2004-01-13 06:21:10 shirok Exp $
 ;;;
 
 ;; This file contains a collection of procedures useful to write
@@ -34,10 +34,12 @@
 
 ;; Calls proc over each line of page. 
 (define (wiliki:page-lines-fold page proc seed . keys)
-  (let-keywords* keys ((follow-includes? #f))
+  (let-keywords* keys ((follow-includes? #f)
+                       (skip-verbatim? #f))
 
     (define (content-fold line seed)
       (cond ((eof-object? line) seed)
+            ((string=? line "{{{") (verb-fold line seed))
             ((and follow-includes?
                   (#/^\[\[$$include\s*(\S*)\]\]/ line))
              => (lambda (m)
@@ -58,6 +60,15 @@
         (with-input-from-string (ref page 'content)
           (cut with-port-locking (current-input-port)
                (cut content-fold (read-line) seed)))))
+
+    (define (verb-fold line seed)
+      (cond ((eof-object? line) seed)
+            ((string=? line "}}}")
+             (content-fold (read-line)
+                           (if skip-verbatim? seed (proc line seed))))
+            (else
+             (verb-fold (read-line)
+                        (if skip-verbatim? seed (proc line seed))))))
 
     (handle-page page seed)))
 

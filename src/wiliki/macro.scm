@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.25 2004-01-13 03:56:08 shirok Exp $
+;;; $Id: macro.scm,v 1.26 2004-01-13 06:21:09 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
@@ -257,7 +257,8 @@
                            (acons (string-length (m 1)) (m 'after) r)))
                      (else r)))
              '()
-             :follow-includes? #t)
+             :follow-includes? #t
+             :skip-verbatim? #t)
           (make-ul headings 1 '() (lambda (_ ul) (list ul))))
         ))))
 
