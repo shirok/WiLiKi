@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.65 2003-02-12 10:55:52 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.66 2003-02-13 06:23:06 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -378,21 +378,21 @@
   (define (loop line tags id r)
     (cond ((eof-object? line) (finish tags r))
           ((string-null? line)
-           (loop (generator #f) '("</p>") id (list* "\n<p>" tags r)))
+           (loop (generator) '("</p>") id (list* "\n<p>" tags r)))
           ((string=? "----" line)
-           (loop (generator #f) '() id (list* "<hr>" tags r)))
+           (loop (generator) '() id (list* "<hr>" tags r)))
           ((and (string-prefix? " " line)
                 (or (null? tags) (equal? tags '("</p>"))))
            (pre line id (list* "<pre>" tags r)))
           ((string=? "{{{" line)
-           (pre* (generator #t) id (list* "<pre>" tags r)))
+           (pre* (generator) id (list* "<pre>" tags r)))
           ((rxmatch #/^(\*\**) / line)
            => (lambda (m)
                 (let* ((hfn (ref `(,html:h2 ,html:h3 ,html:h4 ,html:h5)
                                  (- (h-level m) 1)
                                  html:h6))
                        (anchor (cut html:a :name <> <>)))
-                  (loop (generator #f) '() (+ id 1)
+                  (loop (generator) '() (+ id 1)
                         (list* (hfn (anchor id (format-line (m 'after))))
                                tags r)))))
           ((rxmatch #/^(--*) / line)
@@ -403,7 +403,7 @@
                 (list-item m (h-level m) tags "<ol>" "</ol>" id r)))
           ((rxmatch #/^:(.*):([^:]*)$/ line)
            => (lambda (m)
-                (loop (generator #f) '("</dl>") id
+                (loop (generator) '("</dl>") id
                       (cons `(,@(if (equal? tags '("</dl>"))
                                     '()
                                     `(,tags "<dl>"))
@@ -416,10 +416,10 @@
                        (list* "<table class=\"inbody\" border=1 cellspacing=0>"
                               tags r))))
           ((null? tags)
-           (loop (generator #f) '("</p>") id
+           (loop (generator) '("</p>") id
                  (list* (format-line line) "<p>" r)))
           (else
-           (loop (generator #f) tags id (cons (format-line line) r)))
+           (loop (generator) tags id (cons (format-line line) r)))
           ))
 
   (define (finish tags r)
@@ -431,7 +431,7 @@
   (define (pre line id r)
     (cond ((eof-object? line) (finish '("</pre>") r))
           ((string-prefix? " " line)
-           (pre (generator #f) id
+           (pre (generator) id
                 (list* "\n"
                        (string-tr (tree->string (format-line line)) "\n" " ")
                        r)))
@@ -440,8 +440,8 @@
   (define (pre* line id r)
     (cond ((eof-object? line) (finish '("</pre>") r))
           ((string=? line "}}}")
-           (loop (generator #f) '() id (cons "</pre>" r)))
-          (else (pre* (generator #t) id
+           (loop (generator) '() id (cons "</pre>" r)))
+          (else (pre* (generator) id
                       (list* "\n" (html-escape-string line) r)))))
 
   (define (table body id r)
@@ -451,7 +451,7 @@
                               (html:td :class "inbody" (format-line seg)))
                             (string-split body  "||")))
               r)
-      (let1 next (generator #f)
+      (let1 next (generator)
         (cond ((eof-object? body) (finish '("</table>") r))
               ((rxmatch #/^\|\|(.*)\|\|$/ next)
                => (lambda (m) (table (m 1) id r)))
@@ -470,27 +470,39 @@
                 ((> cur level)
                  (split-at tags (- cur level)))
                 (else (values '() tags)))
-        (loop (generator #f) closer id
+        (loop (generator) closer id
               (list* (format-line line) "<li>" opener pre r)))))
 
-  (loop (generator #f) '() 0 '()))
+  (loop (generator) '() 0 '()))
 
+;; Create a generator method.
+;; NB: it's kind of ugly that the generator should switch the verbatim mode
+;; looking at "{{{", but it makes the parser (format-lines) much simpler.
 (define (make-line-fetcher port)
-  (let1 buf (read-line port)
-    (lambda (verbatim?)
-      (cond ((eof-object? buf) buf)
-            (verbatim? (begin0 buf (set! buf (read-line port))))
-            (else
-             (let loop ((next (read-line port))
-                        (r    (list buf)))
+  (let ((buf (read-line port))
+        (verbatim #f)
+        (finish (lambda (r)
+                  (if (null? (cdr r)) (car r) (string-concatenate-reverse r))))
+        )
+    (lambda ()
+      (if (eof-object? buf)
+          buf
+          (let loop ((next (read-line port))
+                     (r    (list buf)))
                (set! buf next)
-               (cond ((eof-object? next) (string-concatenate-reverse r))
+               (cond ((eof-object? next) (finish r))
+                     (verbatim
+                      (when (string=? "}}}" next) (set! verbatim #f))
+                      (finish r))
+                     ((string=? "{{{" next)
+                      (set! verbatim #t)
+                      (finish r))
                      ((string-prefix? "~" next)
                       (loop (read-line port) (cons (string-drop next 1) r)))
                      ((string-prefix? ";;" next)
                       (loop (read-line port) r))
-                     (else (string-concatenate-reverse r))))
-             )))
+                     (else (finish r)))
+               )))
     ))
   
 (define (format-content page)

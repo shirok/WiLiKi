@@ -1,3 +1,9 @@
+2003-02-12  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm (make-line-fetcher): fixed a problem with comments
+	  and line continations in a verbatim block; the line fetcher itself
+	  needs to recognize "{{{" and "}}}" to switch the mode.
+
 2003-02-11  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm (format-content): added comment syntax, revised
