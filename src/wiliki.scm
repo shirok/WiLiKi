@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.63 2003-02-12 06:53:38 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.64 2003-02-12 10:30:48 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -378,23 +378,21 @@
   (define (loop line tags id r)
     (cond ((eof-object? line) (finish tags r))
           ((string-null? line)
-           (loop (generator) '("</p>") id (list* "\n<p>" tags r)))
+           (loop (generator #f) '("</p>") id (list* "\n<p>" tags r)))
           ((string=? "----" line)
-           (loop (generator) '() id (list* "<hr>" tags r)))
+           (loop (generator #f) '() id (list* "<hr>" tags r)))
           ((and (string-prefix? " " line)
                 (or (null? tags) (equal? tags '("</p>"))))
            (pre line id (list* "<pre>" tags r)))
           ((string=? "{{{" line)
-           (pre* (generator) id (list* "<pre>" tags r)))
-          ((string-prefix? ";;" line)
-           (loop (generator) tags id r))
+           (pre* (generator #t) id (list* "<pre>" tags r)))
           ((rxmatch #/^(\*\**) / line)
            => (lambda (m)
                 (let* ((hfn (ref `(,html:h2 ,html:h3 ,html:h4 ,html:h5)
                                  (- (h-level m) 1)
                                  html:h6))
                        (anchor (cut html:a :name <> <>)))
-                  (loop (generator) '() (+ id 1)
+                  (loop (generator #f) '() (+ id 1)
                         (list* (hfn (anchor id (format-line (m 'after))))
                                tags r)))))
           ((rxmatch #/^(--*) / line)
@@ -405,7 +403,7 @@
                 (list-item m (h-level m) tags "<ol>" "</ol>" id r)))
           ((rxmatch #/^:(.*):([^:]*)$/ line)
            => (lambda (m)
-                (loop (generator) '("</dl>") id
+                (loop (generator #f) '("</dl>") id
                       (cons `(,@(if (equal? tags '("</dl>"))
                                     '()
                                     `(,tags "<dl>"))
@@ -418,10 +416,10 @@
                        (list* "<table class=\"inbody\" border=1 cellspacing=0>"
                               tags r))))
           ((null? tags)
-           (loop (generator) '("</p>") id
+           (loop (generator #f) '("</p>") id
                  (list* (format-line line) "<p>" r)))
           (else
-           (loop (generator) tags id (cons (format-line line) r)))
+           (loop (generator #f) tags id (cons (format-line line) r)))
           ))
 
   (define (finish tags r)
@@ -433,7 +431,7 @@
   (define (pre line id r)
     (cond ((eof-object? line) (finish '("</pre>") r))
           ((string-prefix? " " line)
-           (pre (generator) id
+           (pre (generator #f) id
                 (list* "\n"
                        (string-tr (tree->string (format-line line)) "\n" " ")
                        r)))
@@ -442,8 +440,9 @@
   (define (pre* line id r)
     (cond ((eof-object? line) (finish '("</pre>") r))
           ((string=? line "}}}")
-           (loop (generator) '() id (cons "</pre>" r)))
-          (else (pre* (generator) id (list* "\n" line r)))))
+           (loop (generator #f) '() id (cons "</pre>" r)))
+          (else (pre* (generator #t) id
+                      (list* "\n" (html-escape-string line) r)))))
 
   (define (table body id r)
     (let1 r
@@ -452,9 +451,8 @@
                               (html:td :class "inbody" (format-line seg)))
                             (string-split body  "||")))
               r)
-      (let tloop ((next (generator)))
+      (let1 next (generator #f)
         (cond ((eof-object? body) (finish '("</table>") r))
-              ((string-prefix? ";;" body) (tloop (generator)))
               ((rxmatch #/^\|\|(.*)\|\|$/ next)
                => (lambda (m) (table (m 1) id r)))
               (else (loop next '() id (cons "</table>\n" r)))))))
@@ -472,23 +470,28 @@
                 ((> cur level)
                  (split-at tags (- cur level)))
                 (else (values '() tags)))
-        (loop (generator) closer id
+        (loop (generator #f) closer id
               (list* (format-line line) "<li>" opener pre r)))))
 
-  (loop (generator) '() 0 '()))
+  (loop (generator #f) '() 0 '()))
 
 (define (make-line-fetcher port)
   (let1 buf (read-line port)
-    (lambda ()
-      (if (eof-object? buf)
-          buf
-          (let loop ((next (read-line port))
-                     (r    (list buf)))
-            (set! buf next)
-            (cond ((eof-object? next) (string-concatenate-reverse r))
-                  ((string-prefix? "~" next)
-                   (loop (read-line port) (cons (string-drop next 1) r)))
-                  (else (string-concatenate-reverse r))))))))
+    (lambda (verbatim?)
+      (cond ((eof-object? buf) buf)
+            (verbatim? (begin0 buf (set! buf (read-line port))))
+            (else
+             (let loop ((next (read-line port))
+                        (r    (list buf)))
+               (set! buf next)
+               (cond ((eof-object? next) (string-concatenate-reverse r))
+                     ((string-prefix? "~" next)
+                      (loop (read-line port) (cons (string-drop next 1) r)))
+                     ((string-prefix? ";;" next)
+                      (loop (read-line port) r))
+                     (else (string-concatenate-reverse r))))
+             )))
+    ))
   
 (define (format-content page)
   (if (member page (page-format-history)
