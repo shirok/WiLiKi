@@ -26,14 +26,13 @@
   (make (with-module wiliki <page>)
     :content (string-join lines "\n" 'suffix)))
 
-;;------------------------------------------------
-(test-section "inline elements")
-
 (define-macro (tp label expected-sxml page)
   `(tf ,label ,expected-sxml
        (list "<result>" (format-content ,page) "</result>")))
 
-;; start from basics
+;;------------------------------------------------
+(test-section "inline elements")
+
 (tp "paragraph" '(result (p "hoge\n"))
     (page "hoge"))
 (tp "paragraph" '(result (p "hoge\n") (p "huge\n"))
@@ -73,5 +72,32 @@
                       (a (@ (href "http://foo/?bar")) "http://foo/?bar")
                       " )\n"))
     (page "(http://foo/?bar )"))
+(tp "url" '(result (p "aaa " (a (@ (href "https://foo")) "https://foo")))
+	(page "aaa https://foo "))
+(tp "url" '(result (p (a (@ (href "mailto:aa@bb.cc")) "mail here")))
+	(page "[mailto:aa@bb.cc mail here]"))
+
+(tp "anchor" '(result (p (a (@ (href "http://foo")) "bar")))
+	(page "[http://foo bar]"))
+(tp "anchor" '(result (p (a (@ (href "http://foo?bar")) "bar")))
+	(page "[http://foo?bar bar]"))
+(tp "anchor" '(result (p (a (@ (href "http://foo#bar")) "bar")))
+	(page "[http://foo#bar bar]"))
+
+(tp "nested" '(result (p (strong "bb "
+								 (a (@ (href "http://foo")) "baz")
+								 "zz")))
+	(page "'''bb [http://foo baz]zz'''"))
+
+;;------------------------------------------------
+(test-section "metasyntax")
+
+(tp "comment" '(result (p ";;hoge\n"))
+	(page ";;comment1" "hoge" "comment2"))
+
+;;------------------------------------------------
+(test-section "block elements")
+
+
 
 (test-end)
