@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.25 2004-01-12 12:50:16 shirok Exp $
+;;; $Id: format.scm,v 1.26 2004-01-13 03:56:08 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -95,6 +95,9 @@
 
 (define the-formatter
   (make-parameter (make <wiliki-formatter>)))
+
+(define fmt-context
+  (make-parameter '()))
 
 ;; Utilities
 
@@ -187,7 +190,7 @@
 
 ;; Find wiki name in the line.
 ;; Correctly deal with nested "[[" and "]]"'s.
-(define (fmt-line line seed)
+(define (fmt-line ctx line seed)
   ;; parse to next "[[" or "]]"
   (define (token s)
     (cond ((#/\[\[|\]\]/ s)
@@ -268,7 +271,8 @@
           (receive (wikiname rest) (find-closer post 0 '())
             (if wikiname
               (loop rest
-                    (append (reverse! (fmt-wikiname wikiname))
+                    (append (reverse! (parameterize ((fmt-context ctx))
+                                        (fmt-wikiname wikiname)))
                             (bold pre seed)))
               (loop rest (bold pre seed))))
           (loop "" (bold line seed))))))
@@ -318,7 +322,7 @@
     (let loop ((tok tok) (seed seed) (p '()))
       (if (eq? (token-type tok) 'p)
         (loop (next-token ctx) seed
-              (fmt-line (token-value tok) p))
+              (fmt-line ctx (token-value tok) p))
         (let1 seed (if (null? p) seed (cons `(p ,@(reverse! p)) seed))
           (case (token-type tok)
             ((eof)  (reverse! seed))
@@ -357,7 +361,7 @@
     (let loop ((tok tok) (r '()))
       (if (eq? (token-type tok) 'pre)
         (loop (next-token ctx)
-              (fmt-line (tree->string (expand-tab (token-value tok))) r))
+              (fmt-line ctx (tree->string (expand-tab (token-value tok))) r))
         (cont tok ctx `(pre ,@(reverse! r))))))
 
   ;; Heading
@@ -386,23 +390,23 @@
            (id    (wiliki:calculate-heading-id (headings-context new-ctx))))
       (cont (next-token new-ctx)
             new-ctx
-            `(,elm (@ (id ,id)) ,@(reverse! (fmt-line hstr '()))))))
+            `(,elm (@ (id ,id)) ,@(reverse! (fmt-line ctx hstr '()))))))
 
   ;; Table
   (define (table tok ctx cont)
     (let loop ((tok tok)
                (r '()))
       (if (eq? (token-type tok) 'table)
-        (loop (next-token ctx) (cons (table-row (token-value tok)) r))
+        (loop (next-token ctx) (cons (table-row ctx (token-value tok)) r))
         (cont tok ctx
               `(table (@ (class "inbody") (border 1) (cellspacing 0))
                       ,@(reverse! r))))))
 
-  (define (table-row m)
+  (define (table-row ctx m)
     `(tr (@ (class "inbody"))
          ,@(map (lambda (seq)
                   `(td (@ (class "inbody"))
-                       ,@(reverse! (fmt-line seq '()))))
+                       ,@(reverse! (fmt-line ctx seq '()))))
                 (string-split (m 1) "||"))))
 
   ;; Blockquote
@@ -448,7 +452,7 @@
       (define (fold-content tok ctx items)
         (let loop ((tok (next-token ctx))
                    (ctx ctx)
-                   (r (fmt-line ((token-value tok) 'after) '())))
+                   (r (fmt-line ctx ((token-value tok) 'after) '())))
           (case (token-type tok)
             ((eof null hr heading ul ol close-quote)
              (wrap tok (cons `(li ,@(reverse! r)) items) ctx))
@@ -457,7 +461,7 @@
             ((table) (table tok ctx (>> loop ctx r)))
             ((dl) (def-item tok ctx (>> loop ctx r)))
             (else (loop (next-token ctx) ctx
-                        (fmt-line (token-value tok) r))))))
+                        (fmt-line ctx (token-value tok) r))))))
 
       ;; body of list-item
       (receive (tok elts) (wrap tok '() newctx)
@@ -469,8 +473,8 @@
       (cont nextok ctx `(dl ,@(reverse! r)))))
 
   (define (def-item-rec tok ctx seed)
-    (let ((dt (reverse! (fmt-line ((token-value tok) 1) '())))
-          (dd (fmt-line ((token-value tok) 2) '())))
+    (let ((dt (reverse! (fmt-line ctx ((token-value tok) 1) '())))
+          (dd (fmt-line ctx ((token-value tok) 2) '())))
       (let loop ((tok (next-token ctx))
                  (p dd)
                  (r '()))
@@ -485,7 +489,7 @@
            (def-item-rec tok ctx (finish)))
           ((p)
            (loop (next-token ctx)
-                 (fmt-line (token-value tok) p) r))
+                 (fmt-line ctx (token-value tok) p) r))
           ((pre)
            (pre tok ctx (lambda (tok ctx elt)
                           (loop tok '() (cons elt (fold-p))))))
@@ -506,11 +510,12 @@
              (values tok (finish))))
           (else
            (loop (next-token ctx) '()
-                 (fmt-line (token-value tok) p) r))
+                 (fmt-line ctx (token-value tok) p) r))
           ))))
 
   ;; Main body
-  (block (next-token '()) '() '())
+  (let ((ctx (fmt-context)))
+    (block (next-token ctx) ctx '()))
   )
 
 ;; Create a line scanner method
@@ -558,7 +563,7 @@
                            ((and (pair? tree) (not (eq? (car tree) '@)))
                             (fold tree-fold seed (cdr tree)))
                            (else seed)))
-                   `(x ,@(reverse! (fmt-line line '()))) '()))))
+                   `(x ,@(reverse! (fmt-line '() line '()))) '()))))
     ))
   
 ;; Page ======================================================

@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: util.scm,v 1.1 2004-01-12 12:11:47 shirok Exp $
+;;;  $Id: util.scm,v 1.2 2004-01-13 03:56:08 shirok Exp $
 ;;;
 
 ;; This file contains a collection of procedures useful to write
@@ -49,7 +49,7 @@
 
     (define (handle-include pagename after seed)
       (content-fold (if (string-null? after) (read-line) after)
-                    (handle-page (wdb-get (db) pagename #f))))
+                    (handle-page (wdb-get (db) pagename #f) seed)))
 
     (define (handle-page page seed)
       (if (or (not (is-a? page <wiliki-page>))

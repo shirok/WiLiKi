@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.24 2004-01-12 12:11:47 shirok Exp $
+;;; $Id: macro.scm,v 1.25 2004-01-13 03:56:08 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
@@ -256,7 +256,8 @@
                       => (lambda (m)
                            (acons (string-length (m 1)) (m 'after) r)))
                      (else r)))
-             '())
+             '()
+             :follow-includes? #t)
           (make-ul headings 1 '() (lambda (_ ul) (list ul))))
         ))))
 
@@ -270,12 +271,11 @@
 ;; These are just samples.
 
 (define-virtual-page (#/^RecentChanges$/ (_))
-  (html:table
-   (map (lambda (p)
-          (html:tr
-           (html:td (format-time (cdr p)))
-           (html:td "(" (how-long-since (cdr p)) " ago)")
-           (html:td (format-wikiname-anchor (car p)))))
-        (wdb-recent-changes (db)))))
+  `((table
+     ,@(map (lambda (p)
+              `(tr (td ,(wiliki:format-time (cdr p)))
+                   (td "(" ,(how-long-since (cdr p)) " ago)")
+                   (td ,(wiliki:wikiname-anchor (car p)))))
+            (wdb-recent-changes (db))))))
 
 (provide "wiliki/macro")
