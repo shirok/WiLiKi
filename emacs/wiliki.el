@@ -1,7 +1,7 @@
 ;;
 ;; Emacs client for WiLiKi
 ;;
-;;  $Id: wiliki.el,v 1.1 2002-03-03 21:18:07 shirok Exp $
+;;  $Id: wiliki.el,v 1.2 2002-03-04 07:50:03 shirok Exp $
 
 ;; Key bindings
 ;;  \C-c\C-o wiliki-fetch
@@ -20,7 +20,8 @@
 
 (defun wiliki-fetch (base-url page)
   "Fetch WiLiKi page PAGE from url BASE-URL."
-  (interactive "sBase URL (default %s):\nsPage :" *wiliki-base-url*)
+  (interactive (list (read-string "Base URL:" *wiliki-base-url*)
+                     (read-string "WikiName: ")))
   (setq *wiliki-base-url* base-url)
   (let* ((buf  (get-buffer-create *wiliki-buffer*))
          (urla (url-generic-parse-url base-url))
@@ -28,7 +29,7 @@
          (port (url-port urla))
          (file (url-recreate-with-attributes urla))
          (conn (url-open-stream "wiliki" *wiliki-buffer* host (string-to-int port)))
-         (req  (format "GET %s?%s&c=t HTTP/1.0\r\nhost: %s\r\n\r\n"
+         (req  (format "GET %s?%s&c=lv HTTP/1.0\r\nhost: %s\r\n\r\n"
                        (url-recreate-with-attributes urla)
                        (url-hexify-string page)
                        host))
@@ -38,13 +39,22 @@
     (save-excursion
       (set-buffer *wiliki-buffer*)
       (erase-buffer)
+      ;; Todo : honor char-set of reply message
       (set-buffer-process-coding-system 'euc-jp 'euc-jp)
-      (process-send-string conn req)
-      (goto-char (point-min))
-      (while (not (looking-at "^$")) (message 2) (forward-line))
-      (when (looking-at "^title: (.*)$")
-        (setq title (match-data))))
-    title))
+      (set-process-sentinel conn
+                            '(lambda (process state)
+                               ;; Todo: check state
+                               (wiliki-parse-reply *wiliki-buffer*)))
+      (process-send-string conn req))
+    nil
+    ))
+
+(defun wiliki-parse-reply (buffer)
+  (set-buffer buffer)
+  (goto-char (point-min))
+  (re-search-forward "^title:")
+  (pop-to-buffer buffer))
+
 
     
 
