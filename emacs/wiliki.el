@@ -1,7 +1,7 @@
 ;;
 ;; Emacs client for WiLiKi
 ;;
-;;  $Id: wiliki.el,v 1.2 2002-03-04 07:50:03 shirok Exp $
+;;  $Id: wiliki.el,v 1.3 2002-03-04 21:02:49 shirok Exp $
 
 ;; Key bindings
 ;;  \C-c\C-o wiliki-fetch
@@ -11,6 +11,7 @@
 ;;  \C-c\C-c wiliki-commit
 
 (require 'url)
+(require 'url-http)
 
 (defvar *wiliki-base-url* "")
 (defvar *wiliki-title* "")
@@ -20,8 +21,8 @@
 
 (defun wiliki-fetch (base-url page)
   "Fetch WiLiKi page PAGE from url BASE-URL."
-  (interactive (list (read-string "Base URL:" *wiliki-base-url*)
-                     (read-string "WikiName: ")))
+  (interactive (list (read-string "Base URL: " *wiliki-base-url*)
+                     (read-input "WikiName: ")))
   (setq *wiliki-base-url* base-url)
   (let* ((buf  (get-buffer-create *wiliki-buffer*))
          (urla (url-generic-parse-url base-url))
@@ -39,7 +40,7 @@
     (save-excursion
       (set-buffer *wiliki-buffer*)
       (erase-buffer)
-      ;; Todo : honor char-set of reply message
+      ;; Todo : honor char-set in the reply message
       (set-buffer-process-coding-system 'euc-jp 'euc-jp)
       (set-process-sentinel conn
                             '(lambda (process state)
@@ -52,8 +53,18 @@
 (defun wiliki-parse-reply (buffer)
   (set-buffer buffer)
   (goto-char (point-min))
-  (re-search-forward "^title:")
-  (pop-to-buffer buffer))
+  (do ((headers '()     (if (string-match "^(\\w+)\\s-*:\\s-*(.*)$" line)
+                            (cons (list (match-string 1)
+                                        (match-string 2))
+                                  headers)
+                          headers))
+       (pt      (point) (point))
+       (line    "-"     (buffer-substring pt (point))))
+      ((or (> (forward-line) 0)
+           (string-match "^$" line))
+       (insert (format "%s" headers)))
+    nil))
+
 
 
     
