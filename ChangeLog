@@ -1,3 +1,11 @@
+2004-03-19  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/format.scm : made formatting customization routines
+	  methods of <wiliki-formatter>.  The closure members in
+	  <wiliki-formatter> are retained for the compatibility of 0.5_pre2,
+	  but deprecated.  The preferable way is to subclass
+	  <wiliki-formatter> and override methods.
+
 2004-03-07  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm (get-page-name): display toppage when null string

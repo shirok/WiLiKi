@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.109 2004-03-08 05:42:24 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.110 2004-03-19 23:41:21 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -171,7 +171,8 @@
    ;; it is regarded in the same directory as db-path.
    (log-file    :accessor log-file       :init-keyword :log-file
                 :init-value #f)
-   ;; customize edit text area size
+   ;; OBSOLETED: customize edit text area size
+   ;; Use stylesheet to customize them!
    (textarea-rows :accessor textarea-rows-of :init-keyword :textarea-rows
                   :init-value 40)
    (textarea-cols :accessor textarea-cols-of :init-keyword :textarea-cols

@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.31 2004-02-11 08:38:49 shirok Exp $
+;;; $Id: format.scm,v 1.32 2004-03-19 23:41:21 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -71,8 +71,16 @@
 ;; WiLiKi so that it can be used for other applications that needs
 ;; wiki-like formatting capability.
 
+;; A formatter base class.
+;; The user can define her own formatter by subclassing this and
+;; overloading some methods.
+
 (define-class <wiliki-formatter> ()
-  ((bracket       :init-keyword :bracket
+  (;; The following slots are only for compatibility to the code
+   ;; written with WiLiKi-0.5_pre2.
+   ;; They won't be supported officially in future versions; use
+   ;; subclassing & methods instead.
+   (bracket       :init-keyword :bracket
                   :init-value (lambda (name) (list #`"[[,|name|]]")))
    (macro         :init-keyword :macro
                   :init-value (lambda (expr context)
@@ -91,20 +99,22 @@
                   :init-value (lambda (page opts) '()))
    ))
 
-(define (fmt-wikiname name)
-  ((ref (the-formatter) 'bracket) name))
-
-(define (fmt-macro expr context)
-  ((ref (the-formatter) 'macro) expr context))
-
-(define (fmt-time time)
-  ((ref (the-formatter) 'time) time))
-
+;; Global context and the default formatter
 (define the-formatter
   (make-parameter (make <wiliki-formatter>)))
 
 (define fmt-context
   (make-parameter '()))
+
+;; These are for convenience of internal use.
+(define (fmt-wikiname name)
+  (wiliki:format-wikiname (the-formatter) name))
+
+(define (fmt-macro expr context)
+  (wiliki:format-macro (the-formatter) expr context))
+
+(define (fmt-time time)
+  (wiliki:format-time (the-formatter) time))
 
 ;; Utilities
 
@@ -666,39 +676,87 @@
 ;;; Exported functions
 ;;;
 
-(define wiliki:format-wikiname  fmt-wikiname)
-(define wiliki:format-macro     fmt-macro)
-(define wiliki:format-time      fmt-time)
-(define wiliki:format-content   fmt-content)
 (define wiliki:formatter        the-formatter)
 (define wiliki:page-stack       page-stack)
 (define wiliki:current-page     current-page)
+
+(define wiliki:format-content   fmt-content)
+
+;; Default formatting methods.
+;; Methods are supposed to return SXML nodeset.
+;; NB: It is _temporary_ that these methods calling the slot value
+;; of the formatter, just to keep the backward compatibility to 0.5_pre2.
+;; Do not count on this implementation.  The next release will remove
+;; all the closure slots of <wiliki-formatter> and the default behavior
+;; will directly be embedded in these methods.
+
+(define-method wiliki:format-wikiname ((fmt <wiliki-formatter>) name)
+  ((ref fmt 'bracket) name))
+(define-method wiliki:format-wikiname ((name <string>))
+  (wiliki:format-wikiname (the-formatter) name))
+
+(define-method wiliki:format-macro ((fmt <wiliki-formatter>) expr context)
+  ((ref fmt 'macro) expr context))
+(define-method wiliki:format-macro (expr context)
+  (wiliki:format-macro (the-formatter) expr context))
+
+(define-method wiliki:format-time ((fmt <wiliki-formatter>) time)
+  ((ref fmt 'time) time))
+(define-method wiliki:format-time (time)
+  (wiliki:format-time (the-formatter) time))
+
+(define-method wiliki:format-page-content ((fmt  <wiliki-formatter>)
+                                           page  ;; may be a string
+                                           . options)
+  ((ref fmt 'content) page options))
+(define-method wiliki:format-page-content (page . opts)
+  (apply wiliki:format-page-content (the-formatter) page opts))
+
+(define-method wiliki:format-page-body ((fmt  <wiliki-formatter>)
+                                        (page <wiliki-page>)
+                                        . opts)
+  `(,@(apply wiliki:format-page-header  page opts)
+    ,@(apply wiliki:format-page-content page opts)
+    ,@(apply wiliki:format-page-footer  page opts)))
+(define-method wiliki:format-page-body ((page <wiliki-page>) . opts)
+  (apply wiliki:format-page-body (the-formatter) page opts))
+
+(define-method wiliki:format-page-header ((fmt  <wiliki-formatter>)
+                                          (page <wiliki-page>)
+                                          . options)
+  ((ref fmt 'header) page options))
+(define-method wiliki:format-page-header ((page <wiliki-page>) . opts)
+  (apply wiliki:format-page-header (the-formatter) page opts))
+  
+(define-method wiliki:format-page-footer ((fmt  <wiliki-formatter>)
+                                          (page <wiliki-page>)
+                                          . options)
+  ((ref fmt 'footer) page options))
+(define-method wiliki:format-page-footer ((page <wiliki-page>) . opts)
+  (apply wiliki:format-page-footer (the-formatter) page opts))
+
+(define-method wiliki:format-head-elements ((fmt  <wiliki-formatter>)
+                                            (page <wiliki-page>)
+                                            . options)
+  ((ref fmt 'head-elements) page options))
+(define-method wiliki:format-head-elements ((page <wiliki-page>) . opts)
+  (apply wiliki:format-head-elements (the-formatter) page opts))
+
+(define-method wiliki:format-page ((fmt  <wiliki-formatter>)
+                                   (page <wiliki-page>)
+                                   . opts)
+  `(html
+    (head ,@(apply wiliki:format-head-elements fmt page opts))
+    (body ,@(apply wiliki:format-page-body fmt page opts))))
+(define-method wiliki:format-page ((page <wiliki-page>) . opts)
+  (apply wiliki:format-page (the-formatter) page opts))
 
 (define (wiliki:persistent-page? page)
   (not (wiliki:transient-page? page)))
 (define (wiliki:transient-page? page)
   (not (ref page 'key)))
 
-(define (wiliki:format-page-header page opts)
-  ((ref (the-formatter) 'header) page opts))
-
-(define (wiliki:format-page-footer page opts)
-  ((ref (the-formatter) 'footer) page opts))
-
-(define (wiliki:format-page-content page opts)
-  ((ref (the-formatter) 'content) page opts))
-
-(define (wiliki:format-page-body page opts)
-  ((ref (the-formatter) 'body) page opts))
-
-(define (wiliki:format-head-elements page opts)
-  ((ref (the-formatter) 'head-elements) page opts))
-
-(define (wiliki:format-page page . opts)
-  `(html
-    (head ,@(wiliki:format-head-elements page opts))
-    (body ,@(wiliki:format-page-body page opts))))
-
+;; NB: these should also be a generics.
 (define (wiliki:format-diff-pre difflines)
   `(pre (@ (class "diff")
            (style "background-color:#ffffff; color:#000000; margin:0"))
