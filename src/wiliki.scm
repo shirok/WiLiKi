@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.14 2001-12-06 10:01:14 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.15 2001-12-13 08:24:08 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -60,6 +60,9 @@
        <p><tt>[[名前]]</tt> と書くと `名前' がWikiNameになる。
           名前が `$' で始まっていると特殊な意味(例: `[[$date]]' は書き込み時に
           その時間を表す文字列に変換される)。
+       <p>`<tt>http:</tt>'で始まるURLはリンクになる。
+          `<tt>[URL name]</tt>' と書くと<tt>name</tt>に対して<tt>URL</tt>への
+          リンクが貼られる。
        <p>2つのシングルクオートで囲む (<tt>''ほげ''</tt>) と
           強調 (&lt;em&gt;)
        <p>3つのシングルクオートで囲む (<tt>'''ほげ'''</tt>) と
@@ -89,6 +92,9 @@
          a simple mixed-case word doesn't become a WikiName.
          `Name' beginning with `$' has special meanings (e.g. 
          `[[$date]]' is replaced for the time at the editing.)
+      <p>A URL-like string beginning with `<tt>http:</tt>' becomes
+         a link.  `<tt>[URL name]</tt>' becomes a <tt>name</tt> that linked
+         to <tt>URL</tt>.
       <p>Words surrounded by two single quotes (<tt>''foo''</tt>)
          to emphasize.
       <p>Words surrounded by three single quotes (<tt>'''foo'''</tt>)
@@ -290,14 +296,19 @@
               `(,name ,(html:a :href (url self "p=~a&c=e" name) "?"))))))))
   (define (uri line)
     (regexp-replace-all
-     #/http:(\/\/[^\/?#\s]*)?[^?#\s]*(\?[^#\s]*)?(#\S*)?/
+     #/(\[)?(http:(\/\/[^\/?#\s]*)?[^?#\s]*(\?[^#\s]*)?(#\S*)?)(\s([^\]]+)\])?/
      line
      (lambda (match)
-       (let ((url (rxmatch-substring match)))
+       (let ((url    (rxmatch-substring match 2))
+             (openp  (rxmatch-substring match 1))
+             (name   (rxmatch-substring match 7)))
          ;; NB: url is already HTML-escaped.  we can't use
          ;; (html:a :href url url) here, for it will escape the first URL
          ;; again.
-         (format #f "<a href=\"~a\">~a</a>" url url)))))
+         (if (and openp name)
+             (format #f "<a href=\"~a\">~a</a>" url name)
+             (format #f "~a<a href=\"~a\">~a</a>"
+                     (if openp "[" "") url url))))))
   (define (bold line)
     (regexp-replace-all
      #/'''([^']*)'''/
