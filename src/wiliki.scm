@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.56 2003-02-09 03:06:18 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.57 2003-02-09 03:19:43 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -210,9 +210,10 @@
   (sort
    (dbm-fold db
              (lambda (k v r)
-               (if (pred k v) (cons k r) r))
+               (if (pred k v) (acons k (read-from-string v) r) r))
              '())
-   string<?))
+   (lambda (a b)
+     (> (get-keyword :mtime (cdr a) 0) (get-keyword :mtime (cdr b) 0)))))
 
 (define-method wdb-search-content ((db <dbm>) key)
   (wdb-search db
@@ -255,7 +256,9 @@
 ;; Formatting html --------------------------------
 
 (define (format-time time)
-  (sys-strftime "%Y/%m/%d %T %Z" (sys-localtime time)))
+  (if time
+      (sys-strftime "%Y/%m/%d %T %Z" (sys-localtime time))
+      "-"))
 
 (define (colored-box content)
   (html:table :width "100%" :cellpadding 5
@@ -672,7 +675,12 @@
   (format-page
    ($$ "Wiliki: Search results")
    (html:ul
-    (map (lambda (k) (html:li (wikiname-anchor k)))
+    (map (lambda (p)
+           (html:li
+            (wikiname-anchor (car p))
+            (or (and-let* ((mtime (get-keyword :mtime (cdr p) #f)))
+                  #`"(,(how-long-since mtime))")
+                "")))
          (wdb-search-content (db) key)))
    :page-id (format #f "c=s&key=~a" (html-escape-string key))
    :show-edit? #f))
