@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: history.scm,v 1.5 2003-08-31 23:28:10 shirok Exp $
+;;;  $Id: history.scm,v 1.6 2003-09-01 00:33:40 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -64,9 +64,12 @@
                    "]")))
      (html:tr (td :colspan 3
                   (let1 l (ref entry 'log-message)
-                    (if (or (not l) (equal? l ""))
-                      "*** no log message ***"
-                      l)))
+                    (cond ((or (not l) (equal? l ""))
+                           "*** no log message ***")
+                          ((> (string-length l) 80)
+                           (html-escape-string (string-take l 80)))
+                          (else
+                           (html-escape-string l)))))
               )))
 
   (define (history-table entries)
