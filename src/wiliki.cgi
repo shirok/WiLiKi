@@ -56,7 +56,7 @@
      :top-page "WiLiKi"
      :title "MyWiliki"
      :description "Shiro's Wiliki Site"
-     :style-sheet "wiliki-sample.css"
+     :style-sheet "wiliki.css"
      :language 'jp
      :charsets '((jp . euc-jp) (en . euc-jp))
      :image-urls '((#/^http:\/\/sourceforge.net\/sflogo/ allow))

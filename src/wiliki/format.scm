@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.20 2004-01-10 11:07:33 shirok Exp $
+;;; $Id: format.scm,v 1.21 2004-01-11 11:13:57 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -50,6 +50,7 @@
           wiliki:page-stack
           wiliki:current-page
           wiliki:format-page-header
+          wiliki:format-page-content
           wiliki:format-page-footer
           wiliki:format-page-body
           wiliki:format-head-elements
@@ -77,6 +78,8 @@
                   :init-value (lambda (page opts) '()))
    (footer        :init-keyword :footer
                   :init-value (lambda (page opts) '()))
+   (content       :init-keyword :content
+                  :init-value (lambda (page opts) (fmt-content page)))
    (head-elements :init-keyword :head-elements
                   :init-value (lambda (page opts) '()))
    ))
@@ -232,18 +235,24 @@
      uri
      (lambda (match seed) (cons '(br) seed))
      seed line))
+  ;; NB: we remove empty bold and italic, for backward compatibility
   (define (italic line seed)
     (regexp-fold
      #/''([^']*)''/
      nl
-     (lambda (match seed) (cons `(em ,@(reverse! (nl (match 1) '()))) seed))
+     (lambda (match seed)
+       (if (string-null? (match 1))
+         seed
+         (cons `(em ,@(reverse! (nl (match 1) '()))) seed)))
      seed line))
   (define (bold line seed)
     (regexp-fold
      #/'''([^']*)'''/
      italic
      (lambda (match seed)
-       (cons `(strong ,@(reverse! (nl (match 1) '()))) seed))
+       (if (string-null? (match 1))
+         seed
+         (cons `(strong ,@(reverse! (nl (match 1) '()))) seed)))
      seed line))
 
   ;; Main body
@@ -255,8 +264,8 @@
           (receive (wikiname rest) (find-closer post 0 '())
             (if wikiname
               (loop rest
-                    (cons `(stree ,(fmt-wiki-name wikiname))
-                          (bold pre seed)))
+                    (append (reverse! (fmt-wiki-name wikiname))
+                            (bold pre seed)))
               (loop rest (bold pre seed))))
           (loop "" (bold line seed))))))
   )
@@ -348,7 +357,7 @@
   ;; Heading
   (define (heading m)
     (let* ((elm (ref '(_ h2 h3 h4 h5 h6) (min (h-level m) 5))))
-      `(,elm (a (@ (name ,(gen-id))) ,(m 'after) "\n"))))
+      `(,elm (a (@ (name ,(gen-id))) ,@(reverse! (fmt-line (m 'after) '()))))))
 
   ;; Table
   (define (table tok ctx cont)
@@ -568,9 +577,9 @@
 
 ;; default page body formatter
 (define (fmt-body page opts)
-  `(,@(wiliki:format-page-header page opts)
-    ,@(fmt-content page)
-    ,@(wiliki:format-page-footer page opts)))
+  `(,@(wiliki:format-page-header  page opts)
+    ,@(wiliki:format-page-content page opts)
+    ,@(wiliki:format-page-footer  page opts)))
 
 ;;;
 ;;; Exported functions
@@ -593,6 +602,9 @@
 
 (define (wiliki:format-page-footer page opts)
   ((ref (the-formatter) 'footer) page opts))
+
+(define (wiliki:format-page-content page opts)
+  ((ref (the-formatter) 'content) page opts))
 
 (define (wiliki:format-page-body page opts)
   ((ref (the-formatter) 'body) page opts))

@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: edit.scm,v 1.9 2004-01-10 11:07:33 shirok Exp $
+;;;  $Id: edit.scm,v 1.10 2004-01-11 11:13:57 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -219,9 +219,8 @@
 (define (preview-box content)
   `(table
     (@ (width "100%") (cellpadding 5))
-    (tr (td (@ (class "preview")
-               (style "background-color:#eeddaa; color:#000000"))
-            (stree ,content)))))
+    (tr (td (@ (class "preview"))
+            ,@content))))
 
 (provide "wiliki/edit")
 

@@ -1,3 +1,13 @@
+2004-01-11  Shiro Kawai  <shiro@acm.org>
+
+	* various files: more fixes for new format handling.
+	* src/wiliki.scm : export various formatting functions for
+	  user customization.
+	* src/wiliki2.cgi, src/wiliki2.css : added a sample cgi to show
+	  how to customize page display.
+	* src/wiliki.css : renamed from wiliki-sample.css for consistency.
+	* configure.in : 0.5_pre1
+
 2004-01-08  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/format.scm : yet another snapshot of refactoring

@@ -1,0 +1,74 @@
+/* sample style sheet for wiliki */
+
+body {
+  font-family: verdana, arial, helvetica, sans-serif;
+  color: black;
+  background-color: #eeffff;
+}
+
+:link    { text-decoration: none }
+:visited { text-decoration: none }
+
+h1 { 
+  text-align: right;
+  font-size: 190%;
+  color: #004400;
+  margin-top: 20pt;
+  margin-bottom: 20pt;
+  border-bottom: solid thick #44cc44;
+}
+
+h2 {
+  text-align: left;
+  font-size: 150%;
+  color: #008800;
+  margin-top: 30pt;
+  border-bottom: solid thin #44cc44;
+}
+
+h3, h4, h5, h6 {
+   text-align: left;
+   color: #008800;
+   background: transparent;
+}
+h3 { font-size: 130% }
+h4 { font-size: 110% }
+h5 { font-size: 100% }
+h6 { font-size: 100%; font-style: italic }
+
+pre {
+    margin-left: 2em;
+    margin-right: 2em;
+    font-family: monospace;
+    background-color: #ddeedd;
+    border: solid thin #9999aa;
+}
+
+pre.macroerror { 
+    background-color: #ee5555;
+}
+
+blockquote {
+    border: solid thick #aabbdd;
+}
+
+dt { font-weight: bold }
+
+td.inbody { background-color: #eeeeee }   /* used in formatted body */
+td.preview { background-color: #ddeeee }  /* used in preview page */
+
+div.footer { color: #bbbbbb }
+
+td.menu-strip ul {
+  margin: 0pt;
+  padding-left: 5pt;
+}
+
+div.menu-title {
+  text-align : center;
+  font-weight: bold;
+  background: #aaddbb;
+}
+
+span.wiliki-alert { background-color: #ff8080; } /* used to warn internal error */
+

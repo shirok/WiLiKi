@@ -49,4 +49,5 @@ dt { font-weight: bold }
 td.inbody { background: #dddddd }   /* used in formatted body */
 td.preview { background: #eeddaa }  /* used in preview page */
 
+span.wiliki-alert { background-color: #ff8080; } /* used to warn internal error */
 

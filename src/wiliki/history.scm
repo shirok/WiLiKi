@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: history.scm,v 1.12 2004-01-10 11:07:33 shirok Exp $
+;;;  $Id: history.scm,v 1.13 2004-01-11 11:13:57 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -57,7 +57,7 @@
         "current"))
 
   (define (history-table-row first entry rev prev-timestamp)
-    `((tr ,(td '((rowspan 2)) rev)
+    `((tr ,(td '((rowspan 2)) (x->string rev))
           ,(td '() (format-time (ref entry 'timestamp)))
           ,(td '() (format "+~a -~a line(s)"
                            (length (ref entry 'added-lines))
@@ -173,7 +173,7 @@
 (define (cmd-viewold pagename old-time)
   (html-page
    (make <wiliki-page>
-     :key ($$ "Edit History:View")
+     :title ($$ "Edit History:View")
      :content
      (or (and-let* ((logfile (log-file-path (wiliki)))
                     (page    (wdb-get (db) pagename))

@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.19 2004-01-10 11:07:33 shirok Exp $
+;;; $Id: macro.scm,v 1.20 2004-01-11 11:13:57 shirok Exp $
 
 (select-module wiliki)
 (use srfi-19)
@@ -33,6 +33,18 @@
 (define *reader-macro-alist* '())
 (define *writer-macro-alist* '())
 (define *virtual-page-alist* '())
+
+;; 'Macro' is a procedure that takes arguments, and should return [SXML].
+;; For backward compatibility, it is allowed to return Stree as well.
+
+(define (wrap-macro-output output)
+  (if (and (proper-list? output)
+           (every (lambda (node)
+                    (or (string? node)
+                        (and (pair? node) (symbol? (car node)))))
+                  output))
+    output ;; it's likely an SXML list
+    `((stree ,@output)))) ;;otherwise, wrap it by stree node
 
 ;;----------------------------------------------
 ;; API called from main WiLiKi system
@@ -53,35 +65,31 @@
 (define (handle-virtual-page name)
   (make <wiliki-page>
     :title name
-    :content
-    `((stree ,(handle-expansion name
-                                (lambda () (get-virtual-page name))
-                                (lambda (p) ((cdr p) name)))))))
+    :content (handle-expansion name
+                               (lambda () (get-virtual-page name))
+                               (lambda (p) ((cdr p) name)))))
 
 (define (handle-expansion name finder applier)
   (with-error-handler
       (lambda (e)
         (if (positive? (debug-level (wiliki)))
-          (html:pre
-           :class "macroerror"
-           (list
-            (html-escape-string
-             #`"Macro error in ,|name|: ,(ref e 'message)\n")
-            (html-escape-string
-             (call-with-output-string
-               (cut with-error-to-port <>
-                    (cut report-error e))))))
-          (unrecognized name)))
+          `((pre (@ (class "macroerror"))
+                 ,#`"Macro error in [[,|name|]]:\n"
+                 ,(call-with-output-string
+                    (cut with-error-to-port <>
+                         (cut report-error e))))
+            ,(unrecognized name))))
     (lambda ()
-      (cond ((finder) => applier)
-            (else (unrecognized name))))))
+      (wrap-macro-output
+       (cond ((finder) => applier)
+             (else (unrecognized name)))))))
 
 ;;----------------------------------------------
 ;; Utility to define macros
 ;;
 
 (define (unrecognized name)
-  #`"[[,(html-escape-string name)]]")
+  #`"[[,name]]")
 
 (define-syntax define-reader-macro 
   (syntax-rules ()
@@ -138,7 +146,7 @@
 ;; Writer macro definitions
 ;;
 
-(define-writer-macro (date) (format-time (sys-time)))
+(define-writer-macro (date) (wiliki:format-time (sys-time)))
 
 ;; sample
 (define-writer-macro (srfi n)
@@ -149,12 +157,12 @@
 ;;
 
 (define-reader-macro (index prefix)
-  (html:ul
-   (map (lambda (key) (html:li (format-wikiname-anchor (car key))))
-        (wdb-search (db)
-                    (lambda (k v) (string-prefix? prefix k))
-                    (lambda (a b)
-                      (string<? (car a) (car b)))))))
+  `((ul
+     ,@(map (lambda (key) `(li ,(wiki-name-anchor (car key))))
+            (wdb-search (db)
+                        (lambda (k v) (string-prefix? prefix k))
+                        (lambda (a b)
+                          (string<? (car a) (car b))))))))
 
 (define-reader-macro (cindex prefix . maybe-delim)
   (fold-right (lambda (key r)
@@ -169,76 +177,74 @@
                           (lambda (a b)
                             (string<? (car a) (car b))))))
 
-;(define-reader-macro (anchor name . maybe-tag)
-;  (html:a :name name 
-
 (define-reader-macro (include page)
   (cond ((wdb-get (db) page) => wiliki:format-content)
-        (else #`"[[$$include ,(html-escape-string page)]]")))
+        (else (list #`"[[$$include page]]"))))
 
 (define-reader-macro (img url . maybe-alt)
   (define (alt) (if (null? maybe-alt) "[image]" (string-join maybe-alt " ")))
-  (define (badimg) (html:a :href url (alt)))
+  (define (badimg) `((a (@ (href ,url)) ,(alt))))
   (let loop ((urls (image-urls-of (wiliki))))
     (if (pair? urls)
-        (receive (pred action)
-            (if (pair? (car urls))
-                (values (caar urls) (cadar urls))
-                (values (car urls) 'allow))
-          (if (pred url)
-              (if (eq? action 'allow)
-                  (html:img :src url :alt (alt))
-                  (badimg))
-              (loop (cdr urls))))
-        (badimg))))
+      (receive (pred action)
+          (if (pair? (car urls))
+            (values (caar urls) (cadar urls))
+            (values (car urls) 'allow))
+        (if (pred url)
+          (if (eq? action 'allow)
+            `((img (@ (src ,url) (alt ,(alt)))))
+            (badimg))
+          (loop (cdr urls))))
+      (badimg))))
 
 (define-reader-macro (toc . maybe-page)
   (let1 pagename (get-optional maybe-page (ref (wiliki:current-page) 'key))
     (define (anchor id line)
       (html:a :href #`",(url \"~a\" pagename)#,id"
               (html-escape-string line)))
-    (define (make-toc page)
-      (with-input-from-string (ref page 'content)
-        (lambda ()
-          (let loop ((line (read-line))
-                     (depth 0)
-                     (r '())
-                     (id 0))
-            (cond
-             ((eof-object? line)
-              (reverse (append (make-list depth "</ul>") r)))
-             ((string=? line "{{{")
-              ;; need to skip <pre> section
-              (let skip ((line (read-line)))
-                (cond ((eof-object? line) (loop line depth r id))
-                      ((string=? line "}}}") (loop (read-line) depth r id))
-                      (else (skip (read-line))))))
-             ((rxmatch #/^\*+ / line) =>
-              (lambda (m)
-                (let1 newdepth (- (string-length (m)) 1)
-                  (cond ((= newdepth depth)
-                         (loop (read-line)
-                               newdepth
-                               (cons* (anchor id (rxmatch-after m)) "<li> " r)
-                               (+ id 1)))
-                        ((> newdepth depth)
-                         (loop (read-line)
-                               newdepth
-                               (cons* (anchor id (rxmatch-after m)) "<li> "
-                                      (make-list (- newdepth depth) "<ul>")
-                                      r)
-                               (+ id 1)))
-                        (else
-                         (loop (read-line)
-                               newdepth
-                               (cons* (anchor id (rxmatch-after m)) "<li>"
-                                      (make-list (- depth newdepth) "</ul>")
-                                      r)
-                               (+ id 1)))
-                        ))))
-             (else (loop (read-line) depth r id)))))))
-    (cond ((wdb-get (db) pagename) => make-toc)
-          (else #f"`[[$$toc]]"))
+    (define (make-toc context)
+      (let loop ((line (read-line))
+                 (depth 0)
+                 (r '())
+                 (id 0))
+        (cond
+         ((eof-object? line)
+          (reverse (append (make-list depth "</ul>") r)))
+         ((string=? line "{{{")
+          ;; need to skip <pre> section
+          (let skip ((line (read-line)))
+            (cond ((eof-object? line) (loop line depth r id))
+                  ((string=? line "}}}") (loop (read-line) depth r id))
+                  (else (skip (read-line))))))
+         ((rxmatch #/^\*+ / line) =>
+          (lambda (m)
+            (let1 newdepth (- (string-length (m)) 1)
+              (cond ((= newdepth depth)
+                     (loop (read-line)
+                           newdepth
+                           (cons* (anchor id (rxmatch-after m)) "<li> " r)
+                           (+ id 1)))
+                    ((> newdepth depth)
+                     (loop (read-line)
+                           newdepth
+                           (cons* (anchor id (rxmatch-after m)) "<li> "
+                                  (make-list (- newdepth depth) "<ul>")
+                                  r)
+                           (+ id 1)))
+                    (else
+                     (loop (read-line)
+                           newdepth
+                           (cons* (anchor id (rxmatch-after m)) "<li>"
+                                  (make-list (- depth newdepth) "</ul>")
+                                  r)
+                           (+ id 1)))
+                    ))))
+         (else (loop (read-line) depth r id)))))
+    (cond ((wdb-get (db) pagename)
+           => (lambda (page)
+                (with-input-from-string (ref page 'content)
+                  (cut make-toc '()))))
+          (else (list "[[$$toc]]")))
     ))
 
 (define-reader-macro (testerr . x)

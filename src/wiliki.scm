@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.102 2004-01-10 11:07:32 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.103 2004-01-11 11:13:57 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -44,7 +44,15 @@
   (use gauche.sequence)
   (use wiliki.mcatalog)
   (use wiliki.format)
-  (export <wiliki> wiliki-main))
+  (export <wiliki> wiliki-main wiliki
+          wiliki:top-link wiliki:edit-link wiliki:history-link
+          wiliki:all-link wiliki:recent-link wiliki:search-box
+          wiliki:menu-links wiliki:page-title
+          wiliki:get-formatted-page-content
+          wiliki:recent-changes-alist
+          wiliki:db wiliki:lang
+          )
+  )
 (select-module wiliki)
 
 ;; Load extra code only when needed.
@@ -87,6 +95,9 @@
 (define wiliki (make-parameter #f))     ;current instance
 (define lang   (make-parameter #f))     ;current language
 (define db     (make-parameter #f))     ;current database
+
+(define wiliki:lang lang) ;; alias to export
+(define wiliki:db db)     ;; alias to export
 
 ;; Class <wiliki> ------------------------------------------
 ;;   A main data structure that holds run-time information.
@@ -212,7 +223,7 @@
 
 ;; Default menu link composers
 (define (wiliki:top-link page)
-  (and (not (string=? (ref page 'title) (top-page-of (wiliki))))
+  (and (not (equal? (ref page 'title) (top-page-of (wiliki))))
        `(a (@ (href ,(cgi-name-of (wiliki)))) ,($$ "[Top Page]"))))
 
 (define (wiliki:edit-link page)
@@ -238,27 +249,26 @@
   `(span "[" ,($$ "Search:") (input (@ (type text) (name key) (size 10))) "]"))
 
 (define (wiliki:menu-links page)
-  `(div (@ (align right))
-        (form (@ (method POST) (action ,(cgi-name-of (wiliki))))
-              (input (@ (type hidden) (name c) (value s)))
-              ,@(cond-list
-                 ((language-link page))
-                 ((wiliki:top-link page))
-                 ((wiliki:edit-link page))
-                 ((wiliki:history-link page))
-                 ((wiliki:all-link page))
-                 ((wiliki:recent-link page))
-                 ((wiliki:search-box page))))))
+  `((form (@ (method POST) (action ,(cgi-name-of (wiliki))))
+          (input (@ (type hidden) (name c) (value s)))
+          ,@(cond-list
+             ((language-link page))
+             ((wiliki:top-link page))
+             ((wiliki:edit-link page))
+             ((wiliki:history-link page))
+             ((wiliki:all-link page))
+             ((wiliki:recent-link page))
+             ((wiliki:search-box page))))))
 
 (define (wiliki:page-title page)
-  `(h1 ,(if (wiliki:persistent-page? page)
-          `(a (@ (href ,(url "c=s&key=[[~a]]" (ref page 'key))))
-              ,(ref page 'title))
-          (ref page 'title))))
+  `((h1 ,(if (wiliki:persistent-page? page)
+           `(a (@ (href ,(url "c=s&key=[[~a]]" (ref page 'key))))
+               ,(ref page 'title))
+           (ref page 'title)))))
 
 (define (wiliki:default-page-header page opts)
-  `(,(wiliki:page-title page)
-    ,(wiliki:menu-links page)
+  `(,@(wiliki:page-title page)
+    (div (@ (align "right")) ,@(wiliki:menu-links page))
     (hr)))
 
 (define (wiliki:default-page-footer page opts)
@@ -281,12 +291,21 @@
             "body { background-color: #eeeedd }"))
     ))
 
-(define (format-wikiname-anchor wikiname) ;; for backward compatibility
+;; these are not used in the default wiliki.cgi, but useful to
+;; build a custom format.
+(define (wiliki:recent-changes-alist . keys)
+  (take* (wdb-recent-changes (db)) (get-keyword :length keys 50)))
+
+(define (wiliki:get-formatted-page-content pagename . keys)
+  (wiliki:format-content (wdb-get (db) pagename #t)))
+
+;; for backward compatibility
+(define (format-wikiname-anchor wikiname)
   (html:a :href (url "~a" (cv-out wikiname)) (html-escape-string wikiname)))
 
+;; internal use
 (define (wiki-name-anchor wikiname)
-  `(a (@ (href ,(url "~a" (cv-out wikiname))))
-      ,(html-escape-string wikiname)))
+  `(a (@ (href ,(url "~a" (cv-out wikiname)))) ,wikiname))
 
 (define (default-format-time time)
   (if time
@@ -321,7 +340,7 @@
           ((or (string-index name #[\s])
                (string-prefix? "$" name))
            ;;invalid wiki name
-           #`"[[,(html-escape-string name)]]")
+           (list "[[" name "]]"))
           (else #f)))
   (define (inter-wiki-name? name)
     (receive (head after) (string-scan name ":" 'both)
@@ -334,21 +353,19 @@
           (prefix
            (let ((scheme
                   (if (#/^(https?|ftp|mailto):/ prefix) "" "http://")))
-             (tree->string (html:a
-                            :href (format "~a~a~a" scheme prefix
-                                          (uri-encode-string (cv-out inner)))
-                            (html-escape-string name)))))
+             `((a (@ (href ,(format "~a~a~a" scheme prefix
+                                    (uri-encode-string (cv-out inner)))))
+                  ,name))))
           ;; NB: the order of checks here is debatable.  Should a virtual
           ;; page shadow an existing page, or an existing page shadow a
           ;; virtual one?  Note also the order of this check must match
           ;; the order in cmd-view.
           ((or (wdb-exists? (db) name) (virtual-page? name))
-           (tree->string
-            (wiliki:sxml->stree (wiki-name-anchor name))))
+           (list (wiki-name-anchor name)))
           (else
-           (tree->string
-            `(,(html-escape-string name)
-              ,(html:a :href (url "p=~a&c=e" (cv-out name)) "?")))))))
+           `(,name
+             (a (@ (href ,(url "p=~a&c=e" (cv-out name)))) "?")))))
+  )
 
 (wiliki:formatter
  (make <wiliki-formatter>
@@ -446,12 +463,11 @@
    (make <wiliki-page>
      :title #`",(title-of (wiliki)) : Error"
      :content
-     `((p ,(html-escape-string (ref e 'message)))
+     `((p ,(ref e 'message))
        ,@(if (positive? (debug-level (wiliki)))
-           `((pre (html-escape-string
-                   (call-with-output-string
+           `((pre ,(call-with-output-string
                      (cut with-error-to-port <>
-                          (cut report-error e))))))
+                          (cut report-error e)))))
            '())))
    ))
 
@@ -484,7 +500,7 @@
           (make <wiliki-page>
             :title (string-append ($$ "Nonexistent page: ") pagename)
             :content `((p ,($$ "Create a new page: ")
-                          (stree ,(wiliki:format-wiki-name pagename)))))))
+                          ,@(wiliki:format-wiki-name pagename))))))
         ))
 
 (define (cmd-all)
