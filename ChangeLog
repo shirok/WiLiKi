@@ -1,3 +1,8 @@
+2004-03-29  Shiro Kawai  <shiro@acm.org>
+
+	* src/format.scm (fmt-lines) : fixed a bug that caused infinite loop
+	  (thanks to Kouhei Sutou for a patch).
+
 2004-03-21  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/db.scm, src/wiliki.scm : made wiliki.db only depend on

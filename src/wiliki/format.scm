@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.32 2004-03-19 23:41:21 shirok Exp $
+;;; $Id: format.scm,v 1.33 2004-03-30 07:26:59 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -467,7 +467,7 @@
           (let ((new-level (h-level (token-value tok)))
                 (cur-level (l-level ctx)))
             (cond ((< new-level bottom)
-                   (values tok `((,(car ctx) ,@(reverse! items)))))
+                  (values tok `((,(car ctx) ,@(reverse! items)))))
                   ((and (eq? (token-type tok) (car ctx))
                         (= new-level cur-level))
                    (fold-content tok ctx items))
@@ -543,8 +543,8 @@
            (table tok ctx (lambda (tok ctx elt)
                             (loop tok '() (cons elt (fold-p))))))
           ((ul ol)
-           (if (>= (h-level (token-value tok))
-                   (l-level ctx))
+           (if (> (h-level (token-value tok))
+                  (l-level ctx))
              (list-item tok ctx (lambda (tok ctx elt)
                                   (loop tok '() (cons elt (fold-p)))))
              (values tok (finish))))

@@ -436,6 +436,21 @@
           "# fff"
           ":ggg:"))
 
+(tp "dl & other list"
+    '(result (ul (li "a\n"
+                     (dl (dt "b\n") (dd (p))))
+                 (li "c\n")))
+    (page "- a"
+          ":b:"
+          "- c"))
+(tp "dl & other list"
+    '(result (ul (ul (li "a\n"
+                         (dl (dt "b\n") (dd (p))))
+                     (li "c\n"))))
+    (page "-- a"
+          ":b:"
+          "-- c"))
+
 ;; NB: the last "iii" should be enclosed by <p>.
 (tp "dl & other blocks"
     '(result (pre " aaa\n")
