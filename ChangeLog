@@ -7,6 +7,8 @@
 	  now derived from CGI metavariables SCRIPT_NAME.
 	  Added db-type slot to <wiliki>, so that dbm system other than
 	  gdbm can be used.
+	  Added table support (using PukiWiki syntax, i.e. '|' as the
+	  delimiter).
 
 2003-02-06  Shiro Kawai  <shiro@acm.org>
 

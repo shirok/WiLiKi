@@ -1,14 +1,10 @@
 /* sample style sheet for wiliki */
 
 body {
-  font-family: sans-serif;
+  font-family: verdana, arial, helvetica, sans-serif;
   color: black;
   background-color: #eeeedd;
   margin-left: 2em;
-}
-
-th, td { /* ns 4 */
-  font-family: sans-serif;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -16,12 +12,12 @@ h1, h2, h3, h4, h5, h6 {
    color: #006655;
    background: transparent;
 }
-h1 { font: bold 190% sans-serif }
-h2 { font: bold 160% sans-serif }
-h3 { font: bold 130% sans-serif }
-h4 { font: bold 110% sans-serif }
-h5 { font: italic 100% sans-serif }
-h6 { font: small-caps 100% sans-serif }
+h1 { font: bold 190% }
+h2 { font: bold 160% }
+h3 { font: bold 130% }
+h4 { font: bold 110% }
+h5 { font: italic 100% }
+h6 { font: small-caps 100% }
 
 pre {
     margin-left: 2em;
@@ -33,5 +29,7 @@ pre {
 
 dt { font-weight: bold }
 
+td.inbody { background: #dddddd }   /* used in formatted body */
+td.preview { background: #eeddaa }  /* used in preview page */
 
 

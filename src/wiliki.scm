@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.58 2003-02-09 03:22:32 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.59 2003-02-09 07:42:20 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -262,7 +262,7 @@
 
 (define (colored-box content)
   (html:table :width "100%" :cellpadding 5
-              (html:tr (html:td :bgcolor "#eeddaa" content))))
+              (html:tr (html:td :class "preview" :bgcolor "#eeddaa" content))))
 
 (define (inter-wiki-name-prefix head)
   (and-let* ((page (wdb-get (db) "InterWikiName"))
@@ -347,9 +347,9 @@
      #/(\[)?(http:(\/\/[^\/?#\s]*)?[^?#\s]*(\?[^#\s]*)?(#\S*)?)(\s([^\]]+)\])?/
      line
      (lambda (match)
-       (let ((url    (rxmatch-substring match 2))
-             (openp  (rxmatch-substring match 1))
-             (name   (rxmatch-substring match 7)))
+       (let ((url    (match 2))
+             (openp  (match 1))
+             (name   (match 7)))
          ;; NB: url is already HTML-escaped.  we can't use
          ;; (html:a :href url url) here, for it will escape the first URL
          ;; again.
@@ -386,7 +386,7 @@
                        (hfn (ref `(,html:h2 ,html:h3 ,html:h4) (- lev 1)))
                        (anchor (cut html:a :name <> <>)))
                   `(,nestings
-                    ,(hfn (anchor id (format-line (rxmatch-after m))))
+                    ,(hfn (anchor id (format-line (m 'after))))
                     ,(loop (read-line) '() (+ id 1))))))
           ((rxmatch #/^(--*) / line)
            => (lambda (m)
@@ -401,9 +401,13 @@
                 `(,@(if (equal? nestings '("</dl>"))
                         '()
                         `(,nestings "<dl>"))
-                  "<dt>" ,(format-line (rxmatch-substring m 1))
-                  "<dd>" ,(format-line (rxmatch-substring m 2))
+                  "<dt>" ,(format-line (m 1))
+                  "<dd>" ,(format-line (m 2))
                   ,(loop (read-line) '("</dl>") id))))
+          ((rxmatch #/^\|(.*)\|$/ line)
+           => (lambda (m)
+                `(,nestings "<table class=\"inbody\" border=1 cellspacing=0>"
+                            ,(table (m 1) id))))
           (else
            (cons (format-line line) (loop (read-line) nestings id)))))
 
@@ -418,6 +422,16 @@
           ((string=? line "}}}")
            (cons "</pre>" (loop (read-line) '() id)))
           (else (cons (format-line line) (pre* (read-line) id)))))
+
+  (define (table body id)
+    `(,(html:tr :class "inbody"
+                (map (lambda (seg) (html:td :class "inbody" (format-line seg)))
+                     (string-split body  #\|)))
+      ,(let1 next (read-line)
+         (cond ((eof-object? next) '("</table>"))
+               ((rxmatch #/^\|(.*)\|$/ next)
+                => (lambda (m) (table (m 1) id)))
+               (else `("</table>\n" ,@(loop next '() id)))))))
 
   (define (list-item match level nestings opentag closetag id)
     (let ((line  (rxmatch-after match))
