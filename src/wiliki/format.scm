@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.34 2004-04-02 12:10:56 shirok Exp $
+;;; $Id: format.scm,v 1.35 2005-03-27 03:49:41 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -550,7 +550,7 @@
              (values tok (finish))))
           (else
            (loop (next-token ctx) '()
-                 (fmt-line ctx (token-value tok) p) r))
+                 (fmt-line ctx (token-value tok) (fold-p))))
           ))))
 
   ;; Main body
