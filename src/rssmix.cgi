@@ -24,7 +24,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: rssmix.cgi,v 1.9 2003-02-19 11:41:45 shirok Exp $
+;;;  $Id: rssmix.cgi,v 1.10 2003-02-20 22:05:05 shirok Exp $
 ;;;
 
 ;; THIS IS AN EXPERIMENTAL SCRIPT.  Eventually this will be a part of
@@ -74,6 +74,8 @@
    ;; - lifetime of cache, in seconds.
    (fetch-timeout :init-keyword :fetch-timeout :init-value 15)
    ;; - timeout value to fetch RSS
+   (max-title-width :init-keyword :max-title-width :init-value 65)
+   ;; - entry longer than this will be truncated
    (db      :init-value #f)
    ;; - opened dbm instance
    (db-lock :init-form (make-mutex))
@@ -108,6 +110,21 @@
                   (apply values r))))))
         (lambda () (mutex-unlock! lock))))
      )))
+
+;; an ad-hoc function to estimate width of the string
+(define (char-width ch)
+  (if (< (char->integer ch) 256) 1 2))
+
+(define (string-width str)
+  (string-fold (lambda (ch w) (+ w (char-width ch))) 0 str))
+
+(define (string-chop str width)
+  (with-string-io str
+    (lambda ()
+      (let loop ((w 0) (ch (read-char)))
+        (unless (or (eof-object? ch) (> w width))
+          (write-char ch)
+          (loop (+ w (char-width ch)) (read-char)))))))
 
 (define (rss-format-date unix-time)
   (sys-strftime "%Y/%m/%d %H:%M:%S %Z" (sys-localtime unix-time)))
@@ -144,11 +161,20 @@
            (html:tr
             (html:td (rss-format-date (ref item 'date)))
             (html:td
-             (html:a :href (ref item 'site-url) (ref item 'site-id))
-             ": "
-             (html:a :href (ref item 'link)
-                     (html-escape-string (ref item 'title)))
-             )))
+             (let* ((id (ref item 'site-id))
+                    (title (ref item 'title))
+                    (titlew (string-width title))
+                    (len (- (ref self 'max-title-width)
+                            (+ (string-width id) titlew)))
+                    )
+               (when (negative? len)
+                 (set! title #`",(string-chop title (+ titlew len)) ..."))
+               (list
+                (html:a :href (ref item 'site-url) (html-escape-string id))
+                ": "
+                (html:a :href (ref item 'link) (html-escape-string title))
+                )
+               ))))
          (take* (collect self) (ref self 'num-items)))
     )))
 
@@ -370,6 +396,9 @@
               ("SchemeXref"
                "http://www.shiro.dreamhost.com/scheme/wiliki/schemexref.cgi"
                "http://www.shiro.dreamhost.com/scheme/wiliki/schemexref.cgi?c=rss")
+              ("ねるWiki"
+               "http://www.soraneko.com/~nel/wiliki.cgi"
+               "http://www.soraneko.com/~nel/wiliki.cgi?c=rss")
               ("スラド"
                "http://slashdot.jp/"
                "http://slashdot.jp/slashdot.rdf")
