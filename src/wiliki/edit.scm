@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: edit.scm,v 1.12 2004-01-20 02:10:04 shirok Exp $
+;;;  $Id: edit.scm,v 1.13 2004-02-10 04:27:51 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -187,11 +187,14 @@
             (push! difflist chunk)))
         (reverse! difflist)))
 
-    ;; body of cmd-commit-edit
+    ;; The body of cmd-commit-edit
+    ;; If content is empty and the page is not the top page, we erase
+    ;; the page.
     (unless (editable? (wiliki))
       (errorf "Can't edit the page ~s: the database is read-only" pagename))
     (if (or (not (ref p 'mtime)) (eqv? (ref p 'mtime) mtime))
-      (if (string-every #[\s] content)
+      (if (and (not (equal? pagename (top-page-of (wiliki))))
+               (string-every #[\s] content))
         (erase-page)
         (update-page content))
       (handle-conflict))))

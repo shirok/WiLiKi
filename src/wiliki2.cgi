@@ -33,7 +33,7 @@
      (@ (border 0) (cellspacing 8) (width "100%") (class "content-table"))
      (tr (td (@ (class "menu-strip")
                 (valign "top") (style "font-size:80%;width:10em"))
-             (div (@ (class "menu-title")) "Topics")
+             (div (@ (class "menu-title")) ,@(wiliki:format-wikiname "Topics"))
              ,@(wiliki:get-formatted-page-content "Topics")
              (div (@ (class "menu-title")) "Search")
              (div (@ (style "margin-top:2pt;margin-bottom:2pt"))

@@ -1,5 +1,11 @@
 2004-02-09  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki2.cgi (my-page-content): make 'Topics' of side-bar
+	  a wiki-link (suggested by Zukeran Shin).
+
+	* src/wiliki/edit.scm (cmd-commit-edit): make top page not deleted
+	  even if the content is empty (suggested by Kimura Fuyuki).
+
 	* src/wiliki/format.scm (fmt-line): let em and strong take the
 	  innermost apostrophes instead of first-match.
 
