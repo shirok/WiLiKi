@@ -1,0 +1,226 @@
+#!/usr/bin/env gosh
+;;;
+;;; wiliki - managing wiliki database
+;;;
+;;;  Copyright (c) 2004 Shiro Kawai, All rights reserved.
+;;;
+;;;  Permission is hereby granted, free of charge, to any person
+;;;  obtaining a copy of this software and associated documentation
+;;;  files (the "Software"), to deal in the Software without restriction,
+;;;  including without limitation the rights to use, copy, modify,
+;;;  merge, publish, distribute, sublicense, and/or sell copies of
+;;;  the Software, and to permit persons to whom the Software is
+;;;  furnished to do so, subject to the following conditions:
+;;;
+;;;  The above copyright notice and this permission notice shall be
+;;;  included in all copies or substantial portions of the Software.
+;;;
+;;;  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+;;;  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+;;;  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+;;;  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+;;;  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+;;;  AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+;;;  IN THE SOFTWARE.
+;;;
+;;;  $Id: wiliki,v 1.1 2004-04-03 13:42:54 shirok Exp $
+
+;; NB: This is just a quick hack.  The next version of wiliki
+;; will provide enough APIs so that users can create applications
+;; like this by just "use"-ing wiliki, instead of overriding
+;; internal procedures.  Please do not think this as an example
+;; of wiliki-based applications!
+
+(use srfi-2)
+(use srfi-13)
+(use gauche.sequence)
+(use gauche.uvector)
+(use gauche.parseopt)
+(use gauche.parameter)
+(use util.list)
+(use text.tree)
+(use file.filter)
+(use file.util)
+(use wiliki.db)
+(use wiliki.format)
+
+(require "wiliki/macro")
+
+;;;=====================================================
+;;; Utilities
+;;;
+
+(define (p . args) (for-each print args))
+
+(define (usage)
+  (p "Usage: wiliki <command> [options] [args ...]"
+     "Commands:"
+     "  export     Exports the content of a wiliki database to a set of"
+     "             HTML, SXML or text files."
+     "  format     Takes wiliki-marked up text file(s) and generates"
+     "             HTML or SXML file(s)."
+     "Type wiliki help <command> for the detailed usage of each command.")
+  (exit 0))
+
+(define (app-error . args)
+  (apply format (current-error-port) args)
+  (newline (current-error-port))
+  (exit 70))
+
+(define (pagename->path pagename)
+  (with-string-io pagename
+    (lambda ()
+      (let loop ((ch (read-char)))
+        (cond ((eof-object? ch))
+              ((char-set-contains? #[[:alpha:][:digit:]] ch)
+               (display ch) (loop (read-char)))
+              (else (for-each (cut format #t "_~2,'0X" <>)
+                              (string->u8vector (string ch)))
+                    (loop (read-char))))))))
+
+;; Loads wiliki.cgi.  Returns <wiliki> object.
+(define (load-wiliki.cgi path)
+  (let ((mod (make-module #f)))
+    (with-error-handler
+        (lambda (e)
+          (app-error "Loading ~a failed: ~a" path (ref e 'message)))
+      (lambda ()
+        (eval '(define wiliki-main values) mod)
+        (load path :paths '(".") :environment mod)
+        (eval '(main '()) mod)))))
+
+;;;=====================================================
+;;; Format
+;;;
+
+(define (usage-format)
+  (p "Usage: wiliki format [-t type][-s style][-l scm][-o output] [file.txt]"
+     "       wiliki format [-t type][-s style][-l scm] source-dir dest-dir"
+     "Options:"
+     "  -t type   : specifies output type, which should be either html or sxml."
+     "              (Default html)."
+     "  -s style  : uses style as a style sheet path."
+     "  -l scm    : <scm> is a Scheme source, which is loaded before"
+     "              start processing the inpu file.  You can define your own"
+     "              formatter in it."
+     "  -o output : specifies an output file name."
+     "Description:"
+     "  Takes a text file with wiliki markup, or a directory that contains"
+     "  such text files, and generates html or sxml file(s)."
+     "  The first line of each text file will be the page name."
+     ""
+     "  The first format takes a single text file and writes out HTML or"
+     "  SXML as specified by -t option to stdout.  If an input file name is"
+     "  omitted, input is taken from stdin.  If -o option is given, the"
+     "  output goes to the specified file."
+     ""
+     "  The second format converts all text files inside a directory"
+     "  <source-dir>, and puts the output files in a directory <dest-dir>."
+     "  <dest-dir> will be created if it doesn't exist."
+     ""
+     "  The WikiNames in input text files will become a relative link to the"
+     "  generated file within the same directory, regardless of whether"
+     "  such file exists or not; it can be customized by giving your own"
+     "  formatter definition file (by -l option)."))
+
+(define-class <text-formatter> (<wiliki-formatter>) ())
+
+(define the-style (make-parameter '()))
+
+(define-method wiliki:format-wikiname ((f <text-formatter>) name)
+  `((a (@ (href ,(pagename->path name))) ,name)))
+
+(define-method wiliki:format-head-elements ((f <text-formatter>) page)
+  `((title ,(ref page 'title))
+    ,@(the-style)))
+
+(define-method wiliki:format-page-header ((f <text-formatter>) page)
+  `((h1 ,(ref page 'title))))
+
+(define (cmd-format args)
+  (let-args args ((type     "t|type=y" 'html)
+                  (style    "s|style=s" #f)
+                  (loadfile "l|load=s" #f)
+                  (outfile  "o|output=s" #f)
+                  . args)
+    (define emitter
+      (case type
+        ((html) (lambda (s o) (write-tree (wiliki:sxml->stree s) o)))
+        ((sxml) (lambda (s o) (write s o)))
+        (else (app-error "type must be either html or sxml: ~a" type))))
+    (when (> (length args) 2) (usage-format))
+    (when style
+      (the-style
+       `((link (@ (ref "stylesheet") (href ,style) (type "text/css"))))))
+    (let-optionals* args ((src #f) (dst #f))
+      (wiliki:formatter (make <text-formatter>))
+      (when loadfile (load loadfile))
+      (cond ((and dst (file-is-directory? src))
+             (format-dir src dst type emitter))
+            ((or (not src) (file-is-regular? src))
+             (file-filter (cut format-single <> <> emitter)
+                          :input (or src (current-input-port))
+                          :output (or outfile (current-output-port))))
+            (else
+             (app-error "input is not a regular file: ~a" src))))
+    ))
+
+(define (format-single in out emitter)
+  (receive (title content) (get-text-content in)
+    (emitter (wiliki:format-page (make <wiliki-page>
+                                   :title title :content content))
+             out)))
+
+(define (format-dir src dst type emitter)
+  (define (dst-path title)
+    (build-path dst #`",(pagename->path title).,|type|"))
+  (define (process path)
+    (receive (title content) (call-with-input-file path get-text-content)
+      (call-with-output-file (dst-path title)
+        (lambda (out)
+          (emitter (wiliki:format-page (make <wiliki-page>
+                                         :title title :content content))
+                   out)))))
+  
+  (unless (file-exists? dst)
+    (make-directory* dst))
+  (for-each process
+            (directory-list src
+                            :children? #t :add-path? #t
+                            :filter file-is-regular?
+                            :filter-add-path? #t)))
+      
+(define (get-text-content in)
+  (let1 s (port->string-list in)
+    (when (null? s)
+      (app-error "input file is empty: ~a" (port-name in)))
+    (values (car s) (string-join (cdr s) "\n" 'suffix))))
+
+;;;=====================================================
+;;; Help
+;;;
+
+(define (cmd-help args)
+  (cond ((null? args) (usage))
+        ((string=? (car args) "export") (usage-export))
+        ((string=? (car args) "format") (usage-format))
+        (else (usage))))
+
+;;;=====================================================
+;;; Main
+;;;
+
+(define (main args)
+  (unless (> (length args) 2) (usage))
+  (let ((cmd  (cadr args))
+        (args (cddr args)))
+    (cond ((string=? cmd "help")   (cmd-help args))
+          ((string=? cmd "export") (cmd-export args))
+          ((string=? cmd "format") (cmd-format args))
+          (else (usage)))
+    0))
+
+;; Local variables:
+;; mode: scheme
+;; end:

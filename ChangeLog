@@ -1,3 +1,11 @@
+2004-04-03  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki2html: removed.  The function is implemented by 'wiliki'
+	  command.
+	* bin/wiliki: added.  A general command-line tool to handle wiliki
+	  database.
+	* test/test-bin.scm: added.
+
 2004-04-02  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/format.scm (fmt-lines): fixed a bug that caused infinite
