@@ -7,7 +7,7 @@
 ;;  (1) Change the #!-line on top to point gosh's path at your site.
 ;;  (2) Tailor keyword arguments after 'make <wiliki>'.
 ;;
-;;    :db-path - A path to the dbm database.  if it's relative, it's
+;;    :db-path - A path to the dbm database.  If it's relative, it's
 ;;               relative to the directory the CGI script exists.
 ;;               I recommend to put the database outside the directory
 ;;               tree accessible via http.
@@ -17,6 +17,10 @@
 ;;
 ;;    :top-page - The name of the top page.  If the named page doesn't
 ;;               exist, it is created for the first time it accessed.
+;;
+;;    :title    - The name of your WiLiKi site.  A string given here
+;;               is used in some places, like in the title of the 
+;;               "Search results" or "Recent changes" pages.
 ;;
 ;;    :editable? - If #f, editing is prohibited.
 ;;
@@ -29,6 +33,14 @@
 ;;               used to generate webpage.
 ;;
 ;;    :image-urls - specify which URL is allowed as an in-line image.
+;;
+;;    :db-type - A class that implements database functions;
+;;               Default is <gdbm>.  I think <odbm> and <ndbm> should
+;;               work, although they might have a problem in locking
+;;               the database.  You can also define your database class
+;;               and implement wdb* methods (see wiliki.scm).
+;;               Don't add this argument if you're not sure about these stuff.
+;;
 
 (define (main args)
   (wiliki-main
@@ -36,7 +48,7 @@
      :db-path "/home/shiro/data/wikidata.dbm"
      :top-page "WiLiKi"
      :style-sheet "wiliki-sample.css"
-     :charsets '((jp . euc-jp) (en . utf-8))
+     :charsets '((jp . euc-jp) (en . euc-jp))
      )))
 
 ;; Local variables:
