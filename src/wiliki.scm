@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.72 2003-03-05 20:16:24 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.73 2003-03-06 04:46:42 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -48,7 +48,8 @@
 
 ;; Load extra code only when needed.
 (autoload dbm.gdbm <gdbm>)
-(autoload "wiliki/macro" handle-reader-macro handle-writer-macro)
+(autoload "wiliki/macro" handle-reader-macro handle-writer-macro
+                         handle-virtual-page virtual-page?)
 (autoload "wiliki/rss"   rss-page)
 (autoload "wiliki/pasttime" how-long-since)
 
@@ -306,7 +307,11 @@
                           :href (format #f "http://~a~a" prefix
                                         (uri-encode-string (cv-out inner)))
                           (html-escape-string name))))
-          ((wdb-exists? (db) name)
+          ;; NB: the order of checks here is debatable.  Should a virtual
+          ;; page shadow an existing page, or an existing page shadow a
+          ;; virtual one?  Note also the order of this check must match
+          ;; the order in cmd-view.
+          ((or (wdb-exists? (db) name) (virtual-page? name))
            (tree->string (wikiname-anchor name)))
           (else
            (tree->string `(,(html-escape-string name)
@@ -626,7 +631,12 @@
    :show-edit? #f))
 
 (define (cmd-view pagename)
+  ;; NB: see the comment in format-wiki-name about the order of
+  ;; wdb-get and virtual-page? check.
   (cond ((wdb-get (db) pagename) => (cut format-page pagename <>))
+        ((virtual-page? pagename)
+         (format-page pagename (handle-virtual-page pagename)
+                      :show-edit? #f))
         ((equal? pagename (top-page-of (wiliki)))
          (let ((toppage (make <page> :key pagename :mtime (sys-time))))
            (wdb-put! (db) (top-page-of (wiliki)) toppage)

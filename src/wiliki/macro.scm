@@ -23,14 +23,16 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.8 2003-02-12 03:23:51 shirok Exp $
+;;; $Id: macro.scm,v 1.9 2003-03-06 04:46:42 shirok Exp $
 
 (select-module wiliki)
+(use srfi-19)
 
 ;; Macro alist
 
 (define *reader-macro-alist* '())
 (define *writer-macro-alist* '())
+(define *virtual-page-alist* '())
 
 ;;----------------------------------------------
 ;; API called from main WiLiKi system
@@ -47,6 +49,10 @@
     (cond ((assoc (car args) *writer-macro-alist*)
            => (lambda (p) (apply (cdr p) (cdr args))))
           (else (unrecognized name)))))
+
+(define (handle-virtual-page name)
+  (cond ((get-virtual-page name) => (lambda (p) ((cdr p) name)))
+        (else (unrecognized name))))
 
 ;;----------------------------------------------
 ;; Utility to define macros
@@ -81,6 +87,24 @@
                     *writer-macro-alist*))))
     ))
 
+(define-syntax define-virtual-page
+  (syntax-rules ()
+    ((_ (expr (var ...)) . body)
+     (set! *virtual-page-alist*
+	   (acons expr
+		  (lambda p
+		    (rxmatch-if (rxmatch expr (car p)) (var ...)
+                      (receive args (apply values p) . body)
+                      (unrecognized (regexp->string expr))))
+		  *virtual-page-alist*)))
+    ))
+
+(define (get-virtual-page name)
+  (find (lambda (e) (rxmatch (car e) name)) *virtual-page-alist*))
+
+(define (virtual-page? name)
+  (not (not (get-virtual-page name))))
+  
 (define (arity-matches? list formals)
   (cond ((null? list)
          (or (null? formals) (not (pair? formals))))
@@ -189,3 +213,19 @@
       (cond ((wdb-get (db) (car maybe-page)) => make-toc)
             (else #`"[[$$toc ,(html-escape-string page)]]")))
   )
+
+;;----------------------------------------------
+;; Virtual page definitions
+;;
+
+;; This is just a sample.
+
+(define-virtual-page (#/^RecentChanges$/ (_))
+  (html:table
+   (map (lambda (p)
+          (html:tr
+           (html:td (format-time (cdr p)))
+           (html:td "(" (how-long-since (cdr p)) " ago)")
+           (html:td (wikiname-anchor (car p)))))
+        (wdb-recent-changes (db)))))
+

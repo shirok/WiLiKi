@@ -1,5 +1,9 @@
 2003-03-05  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki.scm (format-wiki-name, cmd-view),
+	  src/wiliki/macro.scm (handle-virtual-page, virtual-page?) :
+	  Added "virtual page" feature (Patch from Hisazumi Kenji).
+
 	* src/wiliki.scm (format-parts): in URI formatting, omitting protocol
 	  scheme part when a server name is not given; allows the same page
 	  to be used from http and https (Patch from YAEGASHI Takeshi).
