@@ -10,6 +10,8 @@
 	    error in the previous version.
 	  - keep language setting across edit.
 	* src/wiliki/msgs.jp : modified accordingly.
+	* src/wiliki/macro.scm : fixed toc macro expander to accomodate
+	  "{{{" tag.
 
 2002-10-07  Shiro Kawai  <shiro@acm.org>
 
