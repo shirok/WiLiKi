@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.54 2003-02-09 01:24:31 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.55 2003-02-09 02:30:57 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -33,6 +33,7 @@
   (use gauche.parameter)
   (use text.html-lite)
   (use text.tree)
+  (use util.list)
   (use www.cgi)
   (use rfc.uri)
   (use dbm)
@@ -46,6 +47,7 @@
 ;; Load extra code only when needed.
 (autoload dbm.gdbm <gdbm>)
 (autoload "wiliki/macro" handle-reader-macro handle-writer-macro)
+(autoload "wiliki/rss"   rss-page)
 
 ;; Version check.
 (when (version<? (gauche-version) "0.6.7.1")
@@ -93,6 +95,8 @@
                 :init-value #f)
    (image-urls :accessor image-urls-of :init-keyword :image-urls
                :init-value ())
+   (description :accessor description-of :init-keyword :description
+                :init-value "WiLiKi, a Wiki engine written in Scheme")
    (server-name :accessor server-name-of :init-keyword :server-name
                 :init-form (or (sys-getenv "SERVER_NAME")
                                "localhost"))
@@ -104,11 +108,19 @@
 (define (cgi-name-of wiliki)
   (sys-basename (script-name-of wiliki)))
 
-(define (url fmt . args)
-  (let ((fstr #`",(cgi-name-of (wiliki))?,|fmt|&l=,(lang)"))
-    (if (null? args)
-        fstr
-        (apply format #f fstr (map uri-encode-string args)))))
+(define (%url-format full? fmt args)
+  (let ((self (wiliki))
+        (fstr #`"?,|fmt|&l=,(lang)"))
+    (string-append
+     (if full?
+         #`"http://,(server-name-of self),(script-name-of self)"
+         (cgi-name-of self))
+     (if (null? args)
+         fstr
+         (apply format #f fstr (map uri-encode-string args))))))
+
+(define (url fmt . args) (%url-format #f fmt args))
+(define (url-full fmt . args) (%url-format #t fmt args))
 
 (define (language-link pagename)
   (receive (target label)
@@ -460,23 +472,19 @@
        :method "POST" :action (cgi-name-of wlki)
        (html:input :type "hidden" :name "c" :value "s")
        (language-link page-id)
-       (if (string=? title (top-page-of wlki))
-           ""
-           (html:a :href (cgi-name-of wlki) ($$ "[Top Page]")))
-       (if show-edit?
-           (html:a :href (url "p=~a&c=e" title) ($$ "[Edit]"))
-           "")
-       (if show-all?
-           (html:a :href (url "c=a") ($$ "[All Pages]"))
-           "")
-       (if show-recent-changes?
-           (html:a :href (url "c=r") ($$ "[Recent Changes]"))
-           "")
-       (if show-search-box?
-           `("[" ,($$ "Search:")
-             ,(html:input :type "text" :name "key" :size 10)
-             "]")
-           "")
+       (cond-list
+        ((not (string=? title (top-page-of wlki)))
+         (html:a :href (cgi-name-of wlki) ($$ "[Top Page]")))
+        (show-edit?
+         (html:a :href (url "p=~a&c=e" title) ($$ "[Edit]")))
+        (show-all?
+         (html:a :href (url "c=a") ($$ "[All Pages]")))
+        (show-recent-changes?
+         (html:a :href (url "c=r") ($$ "[Recent Changes]")))
+        (show-search-box?
+         `("[" ,($$ "Search:")
+           ,(html:input :type "text" :name "key" :size 10)
+           "]")))
        ))
      (html:hr)
      content)))
@@ -722,6 +730,7 @@
                                  :convert x->integer
                                  :default 0)
               (cgi-get-parameter "donttouch" param :default #f)))
+            ((equal? command "rss") (rss-page (db)))
             (else (error "Unknown command" command))))))
         ))
    :merge-cookies #t
