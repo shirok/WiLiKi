@@ -1,3 +1,11 @@
+2002-03-01  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm (cmd-commit-edit) : delete page if it contains
+	  only whitespace characters.  (string-null? is not enough, for
+	  some browsers sends extra \n in some cases.).
+	* src/wiliki.scm : added search box.
+	* src/wiliki.scm : added $$index reader macro.
+
 2002-02-27  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm : sort search result.
