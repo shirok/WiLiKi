@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.16 2001-12-13 09:46:23 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.17 2002-01-14 09:27:55 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -16,12 +16,15 @@
   (use dbm)
   (use dbm.gdbm)
   (use gauche.charconv)
+  (use wiliki.mcatalog)
   (export <wiliki> wiliki-main))
 (select-module wiliki)
 
 ;; Some constants
 
 (define *recent-changes* " %recent-changes")
+
+(define $$ gettext)
 
 ;; Class <wiliki> ------------------------------------------
 
@@ -39,132 +42,6 @@
    ;; internal
    (db       :accessor db-of)
    ))
-
-;; Language-specific parameters ----------------------------
-;; ** This should be in separate databases.
-
-(define (msg-edit-helper wiliki)
-  (case (language-of wiliki)
-    ((jp)
-      "<h2>テキスト整形ルール</h2>
-       <p>HTMLは使えない。
-       <p>空行は段落の区切り (&lt;p&gt;)
-       <p>行頭の`<tt>- </tt>', `<tt>-- </tt>', `<tt>--- </tt>'
-       はそれぞれネストレベル1, 2, 3の順序無しリスト (&lt;ul&gt;)。
-       ダッシュの後に空白が必要。
-       <p>行頭の`<tt>1. </tt>', `<tt>1.. </tt>', `<tt>1... </tt>'
-       はそれぞれネストレベル1, 2, 3の順序つきリスト (&lt;ol&gt;)。
-       ピリオドの後に空白が必要。数字は整形時にリナンバーされる。
-       <p>行頭の`<tt>----</tt>' は &lt;hr&gt;
-       <p>行頭の `<tt>:項目:説明</tt>' は &lt;dl&gt;。
-          項目は最後に現われるコロンまで取られる。説明中にコロンを入れたければ次の行に。
-       <p><tt>[[名前]]</tt> と書くと `名前' がWikiNameになる。
-          名前が `$' で始まっていると特殊な意味(例: `[[$date]]' は書き込み時に
-          その時間を表す文字列に変換される)。
-       <p>`<tt>http:</tt>'で始まるURLはリンクになる。
-          `<tt>[URL name]</tt>' と書くと<tt>name</tt>に対して<tt>URL</tt>への
-          リンクが貼られる。
-       <p>2つのシングルクオートで囲む (<tt>''ほげ''</tt>) と
-          強調 (&lt;em&gt;)
-       <p>3つのシングルクオートで囲む (<tt>'''ほげ'''</tt>) と
-          もっと強調 (&lt;strong&gt;)
-       <p>行頭の `<tt>*</tt>', `<tt>**</tt>', `<tt>***</tt>' は
-          それぞれ見出し、小見出し。もっと小見出し。アスタリスクの後に空白が必要。
-       <p>行頭に空白があると &lt;pre&gt;。
-       <p>行頭に上記の特殊な文字をそのまま入れたい場合は、ダミーの強調項目
-          (6つの連続するシングルクオート)を行頭に入れると良い。")
-    (else
-     "<h2>Text Formatting Rules</h2>
-      <p>No HTML.</p>
-      <p>Empty line to separating paragraphs (&lt;p&gt;)
-      <p>`<tt>- </tt>', `<tt>-- </tt>' and `<tt>--- </tt>' at the
-         beginning of a line for an item of unordered list (&lt;ul&gt;)
-         of level 1, 2 and 3, respectively.
-         Put a space after dash(es).
-      <p>`<tt>1. </tt>', `<tt>1.. </tt>', `<tt>1... </tt>' at the
-         beginning of a line for an item of ordered list (&lt;ol&gt;)
-         of level 1, 2 and 3, respectively.
-         Put a space after dot(s).
-      <p>`<tt>----</tt>' at the beginning of a line is &lt;hr&gt;.
-      <p>`<tt>:item:description</tt>' at the beginning of a line is &lt;dl&gt;.
-         The item includes all colons but the last one.  If you want to include
-         a colon in the description, put it in the next line.
-      <p><tt>[[Name]]</tt> to make `Name' a WikiName.  Note that
-         a simple mixed-case word doesn't become a WikiName.
-         `Name' beginning with `$' has special meanings (e.g. 
-         `[[$date]]' is replaced for the time at the editing.)
-      <p>A URL-like string beginning with `<tt>http:</tt>' becomes
-         a link.  `<tt>[URL name]</tt>' becomes a <tt>name</tt> that linked
-         to <tt>URL</tt>.
-      <p>Words surrounded by two single quotes (<tt>''foo''</tt>)
-         to emphasize.
-      <p>Words surrounded by three single quotes (<tt>'''foo'''</tt>)
-         to emphasize more.
-      <p>`<tt>*</tt>', `<tt>**</tt>' and `<tt>***</tt>'' at the beginning
-         of a lineis a level 1, 2 and 3 header, respectively.  Put a space
-         after the asterisk(s).
-      <p>Whitespace(s) at the beginning of line for preformatted text.
-      <p>If you want to use characters of special meaning at the
-         beginning of line, put six consecutive single quotes.
-         It emphasizes a null string, so it's effectively nothing.")))
-
-(define (msg-top-link wiliki)
-  (case (language-of wiliki)
-    ((jp) "[トップ]")
-    (else "[Top Page]")))
-
-(define (msg-edit-link wiliki)
-  (case (language-of wiliki)
-    ((jp) "[編集]")
-    (else "[Edit]")))
-
-(define (msg-all-link wiliki)
-  (case (language-of wiliki)
-    ((jp) "[一覧]")
-    (else "[All Pages]")))
-
-(define (msg-recent-changes-link wiliki)
-  (case (language-of wiliki)
-    ((jp) "[最近の更新]")
-    (else "[Recent Changes]")))
-
-(define (msg-all-pages wiliki)
-  (case (language-of wiliki)
-    ((jp) "Wiliki: 一覧")
-    (else "Wiliki: All Pages")))
-
-(define (msg-recent-changes wiliki)
-  (case (language-of wiliki)
-    ((jp) "Wiliki: 最近の更新")
-    (else "Wiliki: Recent Changes")))
-
-(define (msg-search-results wiliki)
-  (case (language-of wiliki)
-    ((jp) "Wiliki: 検索結果")
-    (else "Wiliki: Search results")))
-
-(define (msg-conflict-page wiliki)
-  (case (language-of wiliki)
-    ((jp) "Wiliki: 更新の衝突")
-    (else "Wiliki: Update Conflict")))
-
-(define (msg-conflict-helper wiliki)
-  (case (language-of wiliki)
-    ((jp) "<p>あなたが編集している間に、他の人がこのページを更新したようです。
-           最新の内容を以下に表示します。</p>")
-    (else "<p>It seems that somebody has updated this page while you're
-           editing.  The most recent content is shown below.</p>")))
-
-(define (msg-conflict-helper2 wiliki)
-  (case (language-of wiliki)
-    ((jp) "<p>以下は、あなたが提出しようとした内容です。再編集してSubmitして下さい。</p>")
-    (else "<p>The following shows what you are about to submit.
-              Please re-edit the content and submit again.</p>")))
-
-(define (msg-preview wiliki)
-  (case (language-of wiliki)
-    ((jp) "~a のプレビュー")
-    (else "Preview of ~a")))
 
 (define (language-link wiliki pagename)
   (receive (target label)
@@ -434,16 +311,15 @@
                    (language-link self page-id)
                    (if (string=? title (top-page-of self))
                        ""
-                       (html:a :href (cgi-name-of self) (msg-top-link self)))
+                       (html:a :href (cgi-name-of self) ($$ "[Top Page]")))
                    (if show-edit?
-                       (html:a :href (url self "p=~a&c=e" title)
-                               (msg-edit-link self))
+                       (html:a :href (url self "p=~a&c=e" title) ($$ "[Edit]"))
                        "")
                    (if show-all?
-                       (html:a :href (url self "c=a") (msg-all-link self))
+                       (html:a :href (url self "c=a") ($$ "[All Pages]"))
                        "")
                    (if show-recent-changes?
-                       (html:a :href (url self "c=r") (msg-recent-changes-link self))
+                       (html:a :href (url self "c=r") ($$ "[Recent Changes]"))
                        ""))
          (html:hr)
          content)))))
@@ -493,7 +369,39 @@
                :value (if preview? "Preview" "Commit"))
    (html:input :type "reset"  :name "reset"  :value "Reset")
    (html:br)
-   (msg-edit-helper self)
+   ($$ "<h2>Text Formatting Rules</h2>
+      <p>No HTML.</p>
+      <p>Empty line to separating paragraphs (&lt;p&gt;)
+      <p>`<tt>- </tt>', `<tt>-- </tt>' and `<tt>--- </tt>' at the
+         beginning of a line for an item of unordered list (&lt;ul&gt;)
+         of level 1, 2 and 3, respectively.
+         Put a space after dash(es).
+      <p>`<tt>1. </tt>', `<tt>1.. </tt>', `<tt>1... </tt>' at the
+         beginning of a line for an item of ordered list (&lt;ol&gt;)
+         of level 1, 2 and 3, respectively.
+         Put a space after dot(s).
+      <p>`<tt>----</tt>' at the beginning of a line is &lt;hr&gt;.
+      <p>`<tt>:item:description</tt>' at the beginning of a line is &lt;dl&gt;.
+         The item includes all colons but the last one.  If you want to include
+         a colon in the description, put it in the next line.
+      <p><tt>[[Name]]</tt> to make `Name' a WikiName.  Note that
+         a simple mixed-case word doesn't become a WikiName.
+         `Name' beginning with `$' has special meanings (e.g. 
+         `[[$date]]' is replaced for the time at the editing.)
+      <p>A URL-like string beginning with `<tt>http:</tt>' becomes
+         a link.  `<tt>[URL name]</tt>' becomes a <tt>name</tt> that linked
+         to <tt>URL</tt>.
+      <p>Words surrounded by two single quotes (<tt>''foo''</tt>)
+         to emphasize.
+      <p>Words surrounded by three single quotes (<tt>'''foo'''</tt>)
+         to emphasize more.
+      <p>`<tt>*</tt>', `<tt>**</tt>' and `<tt>***</tt>'' at the beginning
+         of a lineis a level 1, 2 and 3 header, respectively.  Put a space
+         after the asterisk(s).
+      <p>Whitespace(s) at the beginning of line for preformatted text.
+      <p>If you want to use characters of special meaning at the
+         beginning of line, put six consecutive single quotes.
+         It emphasizes a null string, so it's effectively nothing.")
    ))
 
 (define (cmd-edit self pagename)
@@ -508,7 +416,7 @@
   (let ((page (wdb-get (db-of self) pagename #t)))
     (if (or (not (mtime-of page)) (eqv? (mtime-of page) mtime))
         (format-page
-         self (format #f (msg-preview self) pagename)
+         self (format #f ($$ "Preview of ~a") pagename)
          `(,(colored-box (format-content self (make <page> :content content)))
            ,(html:hr)
            ,(edit-form self #f pagename content mtime))
@@ -526,18 +434,18 @@
           (wdb-put! (db-of self) pagename page)
           (format-page self pagename page))
         (format-page
-         self (msg-conflict-page self)
-         `(,(msg-conflict-helper self)
+         self ($$ "Wiliki: Update Conflict")
+         `(,($$ "<p>It seems that somebody has updated this page while you're editing.  The most recent content is shown below.</p>")
            ,(html:hr)
            ,(colored-box (html:pre (html-escape-string (content-of page))))
            ,(html:hr)
-           ,(msg-conflict-helper2 self)
+           ,($$ "<p>The following shows what you are about to submit.  Please re-edit the content and submit again.</p>")
            ,(edit-form self #t pagename content (mtime-of page))
            )))))
 
 (define (cmd-all self)
   (format-page
-   self (msg-all-pages self)
+   self ($$ "Wiliki: All Pages")
    (html:ul
     (map (lambda (k)
            (html:li (html:a :href (url self "~a" k) (html-escape-string k))))
@@ -548,7 +456,7 @@
 
 (define (cmd-recent-changes self)
   (format-page
-   self (msg-recent-changes self)
+   self ($$ "Wiliki: Recent Changes")
    (html:table
     (map (lambda (p)
            (html:tr
@@ -561,7 +469,7 @@
 
 (define  (cmd-search self key)
   (format-page
-   self (msg-search-results self)
+   self ($$ "Wiliki: Search results")
    (html:ul
     (map (lambda (k) (html:li (html:a :href (url self "~a" k) k)))
          (wdb-search (db-of self) (format #f "[[~a]]" key))))
@@ -582,7 +490,7 @@
                                                :convert ccv))))
            (command  (cgi-get-parameter "c" param))
            (lang     (cgi-get-parameter "l" param :convert string->symbol)))
-       (when lang (set! (language-of self) lang))
+       (when lang (set! (language-of self) lang) (textdomain lang))
        `(,(cgi-header :content-type "text/html; charset=euc-jp")
          ,(with-db self
                    (lambda ()
