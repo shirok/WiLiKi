@@ -1,5 +1,12 @@
 2003-04-06  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki/macro.scm : fixed function call
+	  wikiname-anchor -> format-wikiname-anchor.  sort the result
+	  of $$index and $$cindex alphabetically.
+
+	* src/wiliki.scm (wdb-search): allow optional comparison method for
+	  sorting the result.
+
 	* Makefile.am and other files : adapted to automake
 
 	* src/wiliki.scm, src/wiliki/format.scm : separated formatting stuff

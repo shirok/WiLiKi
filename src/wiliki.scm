@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.75 2003-04-06 22:14:31 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.76 2003-04-07 02:45:21 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -214,21 +214,24 @@
                             (cons (proc k v) r)))
                       '())))
 
-(define-method wdb-search ((db <dbm>) pred)
+(define-method wdb-search ((db <dbm>) pred . maybe-sorter)
   (sort
    (dbm-fold db
              (lambda (k v r)
                (if (pred k v) (acons k (read-from-string v) r) r))
              '())
-   (lambda (a b)
-     (> (get-keyword :mtime (cdr a) 0) (get-keyword :mtime (cdr b) 0)))))
+   (get-optional maybe-sorter
+                 (lambda (a b)
+                   (> (get-keyword :mtime (cdr a) 0)
+                      (get-keyword :mtime (cdr b) 0))))))
 
-(define-method wdb-search-content ((db <dbm>) key)
-  (wdb-search db
-              (lambda (k v)
-                (and (not (string-prefix? " " k))
-                     (string-contains (content-of (wdb-record->page db key v))
-                                      key)))))
+(define-method wdb-search-content ((db <dbm>) key . maybe-sorter)
+  (apply wdb-search db
+         (lambda (k v)
+           (and (not (string-prefix? " " k))
+                (string-contains (content-of (wdb-record->page db key v))
+                                      key)))
+         maybe-sorter))
 
 ;; Macros -----------------------------------------
 

@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.10 2003-04-01 08:36:10 shirok Exp $
+;;; $Id: macro.scm,v 1.11 2003-04-07 02:45:21 shirok Exp $
 
 (select-module wiliki)
 (use srfi-19)
@@ -132,20 +132,24 @@
 
 (define-reader-macro (index prefix)
   (html:ul
-   (map (lambda (key) (html:li (wikiname-anchor (car key))))
+   (map (lambda (key) (html:li (format-wikiname-anchor (car key))))
         (wdb-search (db)
-                    (lambda (k v) (string-prefix? prefix k))))))
+                    (lambda (k v) (string-prefix? prefix k))
+                    (lambda (a b)
+                      (string<? (car a) (car b)))))))
 
 (define-reader-macro (cindex prefix . maybe-delim)
   (fold-right (lambda (key r)
                 (if (null? r)
-                    (list (wikiname-anchor (car key)))
-                    (cons* (wikiname-anchor (car key))
+                    (list (format-wikiname-anchor (car key)))
+                    (cons* (format-wikiname-anchor (car key))
                            (get-optional maybe-delim "")
                            " " r)))
               '()
               (wdb-search (db)
-                          (lambda (k v) (string-prefix? prefix k)))))
+                          (lambda (k v) (string-prefix? prefix k))
+                          (lambda (a b)
+                            (string<? (car a) (car b))))))
 
 ;(define-reader-macro (anchor name . maybe-tag)
 ;  (html:a :name name 
@@ -234,6 +238,6 @@
           (html:tr
            (html:td (format-time (cdr p)))
            (html:td "(" (how-long-since (cdr p)) " ago)")
-           (html:td (wikiname-anchor (car p)))))
+           (html:td (format-wikiname-anchor (car p)))))
         (wdb-recent-changes (db)))))
 
