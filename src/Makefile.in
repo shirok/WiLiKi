@@ -15,7 +15,7 @@ install:
 	  $(INSTALL) -d $(SCM_INSTALL_DIR)/wiliki; \
 	fi
 	for f in $(TARGET); do \
-	  $(INSTALL) -m 444 $(SCM_INSTALL_DIR)/; \
+	  $(INSTALL) -m 444 $$f $(SCM_INSTALL_DIR)/; \
 	done
 
 distclean : clean
