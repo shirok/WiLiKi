@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: edit.scm,v 1.4 2003-12-18 04:04:23 shirok Exp $
+;;;  $Id: edit.scm,v 1.5 2003-12-21 21:36:12 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -70,7 +70,7 @@
       <p>A line begins with \";;\" doesn't appear in the output (comment).</p>
       <p>A line begins with \"~\" is treated as if it is continued
          from the previous line, except comments.  (line continuation).</p>
-      <p>Empty line to separating paragraphs (&lt;p&gt;)
+      <p>Empty line to separating paragraphs (&lt;p&gt;)</p>
       <p>\"<tt>- </tt>\", \"<tt>-- </tt>\" and \"<tt>--- </tt>\" ... at the
          beginning of a line for an item of unordered list (&lt;ul&gt;).
          Put a space after dash(es).</p>

@@ -1,3 +1,8 @@
+2003-12-21  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/edit.scm: added missing </p> in the text editing help
+	message.
+
 2003-12-18  Shiro Kawai  <shiro@acm.org>
 
 	* aux/*, test/test-wiliki.scm : creating a scaffold for solid testing.
