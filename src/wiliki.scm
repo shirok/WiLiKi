@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.103 2004-01-11 11:13:57 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.104 2004-01-12 06:24:24 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -48,6 +48,7 @@
           wiliki:top-link wiliki:edit-link wiliki:history-link
           wiliki:all-link wiliki:recent-link wiliki:search-box
           wiliki:menu-links wiliki:page-title
+          wiliki:wikiname-anchor wiliki:wikiname-anchor-string
           wiliki:get-formatted-page-content
           wiliki:recent-changes-alist
           wiliki:db wiliki:lang
@@ -62,7 +63,7 @@
                          wdb-put! wdb-delete!
                          wdb-recent-changes wdb-map
                          wdb-search wdb-search-content)
-(autoload "wiliki/macro" handle-reader-macro handle-writer-macro
+(autoload wiliki.macro   handle-reader-macro handle-writer-macro
                          handle-virtual-page virtual-page?)
 (autoload wiliki.rss     rss-page)
 (autoload wiliki.pasttime how-long-since)
@@ -219,6 +220,16 @@
 (define-method title-of (obj) "WiLiKi")
 (define-method debug-level (obj) 0)
 
+;; WiLiKi utilities -----------------------------------------
+;;  Useful procedures to write custom macros and/or custom
+;;  page layouts.
+
+(define (wiliki:recent-changes-alist . keys)
+  (take* (wdb-recent-changes (db)) (get-keyword :length keys 50)))
+
+(define (wiliki:get-formatted-page-content pagename . keys)
+  (wiliki:format-content (wdb-get (db) pagename #t)))
+
 ;; WiLiKi-specific formatting routines ----------------------
 
 ;; Default menu link composers
@@ -291,21 +302,18 @@
             "body { background-color: #eeeedd }"))
     ))
 
-;; these are not used in the default wiliki.cgi, but useful to
-;; build a custom format.
-(define (wiliki:recent-changes-alist . keys)
-  (take* (wdb-recent-changes (db)) (get-keyword :length keys 50)))
+;; Returns SXML anchor node and string for given wikiname.
+(define (wiliki:wikiname-anchor wikiname)
+  `(a (@ (href ,(url "~a" (cv-out wikiname)))) ,wikiname))
 
-(define (wiliki:get-formatted-page-content pagename . keys)
-  (wiliki:format-content (wdb-get (db) pagename #t)))
+(define (wiliki:wikiname-anchor-string wikiname)
+  (tree->string
+   (wiliki:sxml->stree
+    `(a (@ (href ,(url "~a" (cv-out wikiname)))) ,wikiname))))
 
 ;; for backward compatibility
 (define (format-wikiname-anchor wikiname)
   (html:a :href (url "~a" (cv-out wikiname)) (html-escape-string wikiname)))
-
-;; internal use
-(define (wiki-name-anchor wikiname)
-  `(a (@ (href ,(url "~a" (cv-out wikiname)))) ,wikiname))
 
 (define (default-format-time time)
   (if time
@@ -316,8 +324,8 @@
 
 (define format-time default-format-time)  ;; for backward compatibility
 
-(define (default-format-wiki-name name)
-  (define (inter-wiki-name-prefix head)
+(define (default-format-wikiname name)
+  (define (inter-wikiname-prefix head)
     (and-let* ((page (wdb-get (db) "InterWikiName"))
                (rx   (string->regexp #`"^:,|head|:\\s*")))
       (call-with-input-string (ref page 'content)
@@ -334,7 +342,7 @@
                              (string-trim-both prefix)))
                          (string-trim-both prefix)))))
                   (else (loop (read-line p)))))))))
-  (define (reader-macro-wiki-name? name)
+  (define (reader-macro-wikiname? name)
     (cond ((string-prefix? "$$" name)
            (handle-reader-macro name))
           ((or (string-index name #[\s])
@@ -342,14 +350,14 @@
            ;;invalid wiki name
            (list "[[" name "]]"))
           (else #f)))
-  (define (inter-wiki-name? name)
+  (define (inter-wikiname? name)
     (receive (head after) (string-scan name ":" 'both)
       (or (and head
-               (and-let* ((inter-prefix (inter-wiki-name-prefix head)))
+               (and-let* ((inter-prefix (inter-wikiname-prefix head)))
                  (values inter-prefix after)))
           (values #f #f))))
-  (receive (prefix inner) (inter-wiki-name? name)
-    (cond ((reader-macro-wiki-name? name))
+  (receive (prefix inner) (inter-wikiname? name)
+    (cond ((reader-macro-wikiname? name))
           (prefix
            (let ((scheme
                   (if (#/^(https?|ftp|mailto):/ prefix) "" "http://")))
@@ -361,7 +369,7 @@
           ;; virtual one?  Note also the order of this check must match
           ;; the order in cmd-view.
           ((or (wdb-exists? (db) name) (virtual-page? name))
-           (list (wiki-name-anchor name)))
+           (list (wiliki:wikiname-anchor name)))
           (else
            `(,name
              (a (@ (href ,(url "p=~a&c=e" (cv-out name)))) "?")))))
@@ -369,7 +377,7 @@
 
 (wiliki:formatter
  (make <wiliki-formatter>
-   :bracket       default-format-wiki-name
+   :bracket       default-format-wikiname
    :time          default-format-time
    :header        wiliki:default-page-header
    :footer        wiliki:default-page-footer
@@ -476,7 +484,7 @@
         (cgi-header :location (url "~a" key))))
 
 (define (cmd-view pagename)
-  ;; NB: see the comment in format-wiki-name about the order of
+  ;; NB: see the comment in format-wikiname about the order of
   ;; wdb-get and virtual-page? check.
   (cond ((wdb-get (db) pagename) => html-page)
         ((virtual-page? pagename)
@@ -500,7 +508,7 @@
           (make <wiliki-page>
             :title (string-append ($$ "Nonexistent page: ") pagename)
             :content `((p ,($$ "Create a new page: ")
-                          ,@(wiliki:format-wiki-name pagename))))))
+                          ,@(wiliki:format-wikiname pagename))))))
         ))
 
 (define (cmd-all)
@@ -510,7 +518,7 @@
      :command "c=a"
      :content `((ul
                  ,@(map (lambda (k)
-                          `(li ,(wiki-name-anchor k)))
+                          `(li ,(wiliki:wikiname-anchor k)))
                         (sort (wdb-map (db) (lambda (k v) k)) string<?)))))))
 
 (define (cmd-recent-changes)
@@ -524,7 +532,7 @@
                  `(tr
                    (td ,(wiliki:format-time (cdr p)))
                    (td "(" ,(how-long-since (cdr p)) " ago)")
-                   (td ,(wiki-name-anchor (car p)))))
+                   (td ,(wiliki:wikiname-anchor (car p)))))
                (wdb-recent-changes (db))))))))
 
 (define (cmd-search key)
@@ -536,7 +544,7 @@
      `((ul
         ,@(map (lambda (p)
                  `(li
-                   ,(wiki-name-anchor (car p))
+                   ,(wiliki:wikiname-anchor (car p))
                    ,(or (and-let* ((mtime (get-keyword :mtime (cdr p) #f)))
                           #`"(,(how-long-since mtime))")
                         "")))

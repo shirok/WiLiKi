@@ -23,9 +23,19 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.22 2004-01-11 20:57:58 shirok Exp $
+;;; $Id: macro.scm,v 1.23 2004-01-12 06:24:24 shirok Exp $
 
-(select-module wiliki)
+(define-module wiliki.macro
+  (use srfi-1)
+  (use srfi-13)
+  (use text.html-lite)
+  (use text.tree)
+  (use util.list)
+  (use wiliki.format)
+  (extend wiliki)
+  (export handle-reader-macro handle-writer-macro
+          handle-virtual-page virtual-page?))
+(select-module wiliki.macro)
 (use srfi-19)
 
 ;; Macro alist
@@ -89,7 +99,7 @@
 ;;
 
 (define (unrecognized name)
-  #`"[[,name]]")
+  (list #`"[[,name]]"))
 
 (define-syntax define-reader-macro 
   (syntax-rules ()
@@ -159,28 +169,23 @@
 
 (define-reader-macro (index prefix)
   `((ul
-     ,@(map (lambda (key) `(li ,(wiki-name-anchor (car key))))
+     ,@(map (lambda (key) `(li ,(wiliki:wikiname-anchor (car key))))
             (wdb-search (db)
                         (lambda (k v) (string-prefix? prefix k))
                         (lambda (a b)
                           (string<? (car a) (car b))))))))
 
 (define-reader-macro (cindex prefix . maybe-delim)
-  (fold-right (lambda (key r)
-                (if (null? r)
-                    (list (format-wikiname-anchor (car key)))
-                    (cons* (format-wikiname-anchor (car key))
-                           (get-optional maybe-delim "")
-                           " " r)))
-              '()
-              (wdb-search (db)
-                          (lambda (k v) (string-prefix? prefix k))
-                          (lambda (a b)
-                            (string<? (car a) (car b))))))
+  (intersperse (get-optional maybe-delim " ")
+               (map (lambda (key) (wiliki:wikiname-anchor (car key)))
+                    (wdb-search (db)
+                                (lambda (k v) (string-prefix? prefix k))
+                                (lambda (a b)
+                                  (string<? (car a) (car b)))))))
 
 (define-reader-macro (include page)
   (cond ((wdb-get (db) page) => wiliki:format-content)
-        (else (list #`"[[$$include page]]"))))
+        (else (list #`"[[$$include ,page]]"))))
 
 (define-reader-macro (img url . maybe-alt)
   (define (alt) (if (null? maybe-alt) "[image]" (string-join maybe-alt " ")))
@@ -204,7 +209,8 @@
                                     (ref (wiliki:current-page) 'key)))
     (define (anchor id line)
       (html:a :href #`",(url \"~a\" pagename)#,id"
-              (html-escape-string line)))
+              (html-escape-string
+               (tree->string (wiliki:format-line-plainly line)))))
     (define (make-toc context)
       (let loop ((line (read-line))
                  (depth 0)

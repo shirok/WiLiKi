@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: history.scm,v 1.13 2004-01-11 11:13:57 shirok Exp $
+;;;  $Id: history.scm,v 1.14 2004-01-12 06:24:24 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -109,9 +109,7 @@
                     ((not (null? picked)))
                     )
            `((h2 (stree ,(format ($$ "Edit history of ~a")
-                                 (tree->string
-                                  (wiliki:sxml->stree
-                                   (wiki-name-anchor pagename))))))
+                                 (wiliki:wikiname-anchor-string pagename))))
              ,(history-table (map wiliki-log-parse-entry picked))))
          (no-history-info pagename)))
    ))
@@ -126,9 +124,7 @@
   (define (diff-to-current entries current)
     (let* ((diffpage (wiliki-log-diff* entries current)))
       `((h2 (stree ,(format ($$ "Changes of ~a since ~a")
-                            (tree->string
-                             (wiliki:sxml->stree
-                              (wiki-name-anchor pagename)))
+                            (wiliki:wikiname-anchor-string pagename)
                             (format-time old-time))))
         ,(explanation)
         ,(return-to-edit-history pagename)
@@ -146,9 +142,7 @@
                             cons
                             '() oldpage newpage)))
       `((h2 (stree ,(format ($$ "Changes of ~a between ~a and ~a")
-                            (tree->string
-                             (wiliki:sxml->stree
-                              (wiki-name-anchor pagename)))
+                            (wiliki:wikiname-anchor-string pagename)
                             (format-time old-time)
                             (format-time new-time))))
         ,(explanation)
@@ -181,9 +175,7 @@
            (let* ((entries  (wiliki-log-entries-after picked old-time))
                   (reverted (wiliki-log-revert* entries (ref page 'content))))
              `((h2 (stree ,(format ($$ "Content of ~a at ~a")
-                                   (tree->string
-                                    (wiliki:sxml->stree
-                                     (wiki-name-anchor pagename)))
+                                   (wiliki:wikiname-anchor-string pagename)
                                    (format-time old-time))))
                (p (@ (style "text-align:right"))
                   (a (@ (href ,(url "~a&c=hd&t=~a"
@@ -196,9 +188,7 @@
 
 (define (no-history-info pagename)
   `((p (stree ,(format ($$ "No edit history available for page ~a")
-                       (tree->string
-                        (wiliki:sxml->stree
-                         (wiki-name-anchor pagename))))))))
+                       (wiliki:wikiname-anchor-string pagename))))))
 
 (define (return-to-edit-history pagename)
   `(p (@ (style "text-align:right"))

@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.22 2004-01-11 20:57:58 shirok Exp $
+;;; $Id: format.scm,v 1.23 2004-01-12 06:24:24 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -43,11 +43,12 @@
           <wiliki-page>
           wiliki:persistent-page?
           wiliki:transient-page?
-          wiliki:format-wiki-name
+          wiliki:format-wikiname
           wiliki:format-time
           wiliki:format-content
           wiliki:formatter
           wiliki:page-stack
+          wiliki:page-circular?
           wiliki:current-page
           wiliki:format-page-header
           wiliki:format-page-content
@@ -55,10 +56,10 @@
           wiliki:format-page-body
           wiliki:format-head-elements
           wiliki:format-page
+          wiliki:format-line-plainly
           wiliki:sxml->stree
           wiliki:format-diff-pre
           wiliki:format-diff-line
-          wiliki:page->heading-tree
           )
   )
 (select-module wiliki.format)
@@ -85,7 +86,7 @@
                   :init-value (lambda (page opts) '()))
    ))
 
-(define (fmt-wiki-name name)
+(define (fmt-wikiname name)
   ((ref (the-formatter) 'bracket) name))
 
 (define (fmt-time time)
@@ -164,7 +165,7 @@
   (node sxml '()))
 
 ;;=================================================
-;; Formatting: Wiki -> HTML
+;; Formatting: Wiki -> SXML
 ;;
 
 (define (regexp-fold rx proc-nomatch proc-match seed line)
@@ -265,7 +266,7 @@
           (receive (wikiname rest) (find-closer post 0 '())
             (if wikiname
               (loop rest
-                    (append (reverse! (fmt-wiki-name wikiname))
+                    (append (reverse! (fmt-wikiname wikiname))
                             (bold pre seed)))
               (loop rest (bold pre seed))))
           (loop "" (bold line seed))))))
@@ -518,6 +519,20 @@
                (begin (ungetline line) (string-concatenate-reverse r))))
             )))
   )
+
+;; utility : strips wiki markup and returns a plaintext line.
+(define wiliki:format-line-plainly
+  (let ((plain-formatter (make <wiliki-formatter> :bracket list)))
+    (lambda (line)
+      (parameterize ((the-formatter plain-formatter))
+        (reverse! ((rec (tree-fold tree seed)
+                     (cond ((string? tree)
+                            (if (equal? tree "\n") seed (cons tree seed)))
+                           ((and (pair? tree) (not (eq? (car tree) '@)))
+                            (fold tree-fold seed (cdr tree)))
+                           (else seed)))
+                   `(x ,@(reverse! (fmt-line line '()))) '()))))
+    ))
   
 ;; Page ======================================================
 
@@ -563,10 +578,7 @@
           (cut fmt-lines (make-line-scanner p))))))
   (cond ((string? page) (do-fmt page))
         ((is-a? page <wiliki-page>)
-         (if (member page (page-stack)
-                     (lambda (p1 p2)
-                       (and (ref p1 'key) (ref p2 'key)
-                            (string=? (ref p1 'key) (ref p2 'key)))))
+         (if (wiliki:page-circular? page)
            ;; loop in $$include chain detected
            `(p ">>>$$include loop detected<<<")
            (parameterize
@@ -576,27 +588,23 @@
                (ref page 'content)))))
         (else page)))
 
+(define (wiliki:page-circular? page)
+  (member page (page-stack)
+          (lambda (p1 p2)
+            (and (ref p1 'key) (ref p2 'key)
+                 (string=? (ref p1 'key) (ref p2 'key))))))
+
 ;; default page body formatter
 (define (fmt-body page opts)
   `(,@(wiliki:format-page-header  page opts)
     ,@(wiliki:format-page-content page opts)
     ,@(wiliki:format-page-footer  page opts)))
 
-;; utility procedure to extract document heading structure from the page.
-;; this works on page (not content), since it handles $$include and
-;; needs to detect loop.
-
-(define (wiliki:page->heading-tree page)
-;  (define (pick context)
-;    (
-  #f
-  )
-
 ;;;
 ;;; Exported functions
 ;;;
 
-(define wiliki:format-wiki-name fmt-wiki-name)
+(define wiliki:format-wikiname  fmt-wikiname)
 (define wiliki:format-time      fmt-time)
 (define wiliki:format-content   fmt-content)
 (define wiliki:formatter        the-formatter)
