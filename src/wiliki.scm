@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.30 2002-03-03 06:34:57 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.31 2002-03-03 09:12:52 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -50,6 +50,9 @@
 ;; Parameters
 
 (define-parameter page-format-history '())
+(define-parameter wiliki #f)
+(define-parameter lang   #f)
+(define-parameter db     #f)
 
 ;; Class <wiliki> ------------------------------------------
 
@@ -64,26 +67,31 @@
              :init-value 'jp)
    (editable? :accessor editable?  :init-keyword :editable?
               :init-value #t)
-   ;; internal
-   (db       :accessor db-of)
    ))
 
-(define (language-link wiliki pagename)
+(define (url fmt . args)
+  (let ((fstr #`",(cgi-name-of (wiliki))?,|fmt|&l=,(lang)"))
+    (if (null? args)
+        fstr
+        (apply format #f fstr (map uri-encode-string args)))))
+
+(define (language-link pagename)
   (receive (target label)
-      (case (language-of wiliki)
+      (case (lang)
         ((jp) (values 'en "->English"))
         (else (values 'jp "->Japanese")))
-    (html:a :href (format #f "~a?~a&l=~s" (cgi-name-of wiliki) pagename target)
-            "[" label "]")))
+    (html:a :href #`",(cgi-name-of (wiliki))?,|pagename|&l=,|target|"
+            "[" (html-escape-string label) "]")))
 
 ;; Database access ------------------------------------------
 
-(define-method with-db ((self <wiliki>) thunk)
-  (let ((db (dbm-open <gdbm> :path (db-path-of self) :rwmode :write)))
-    (dynamic-wind
-     (lambda () (set! (db-of self) db))
-     (lambda () (thunk))
-     (lambda () (set! (db-of self) #f) (dbm-close db)))))
+(define (with-db thunk)
+  (parameterize*
+   ((db (dbm-open <gdbm> :path (db-path-of (wiliki)) :rwmode :write)))
+   (dynamic-wind
+    (lambda () #f)
+    thunk
+    (lambda () (dbm-close (db))))))
 
 (define-class <page> ()
   ((key   :init-keyword :key :accessor key-of)
@@ -177,7 +185,7 @@
              (let ((name (rxmatch-substring m 1)))
                (cond ((string=? name "date")
                       (format-time (sys-time)))
-                     (else (format #f "[[$~a]]" name)))))))
+                     (else #`"[[$,|name|]]"))))))
          (newline))
        read-line))))
 
@@ -190,18 +198,13 @@
 (define (format-time time)
   (sys-strftime "%Y/%m/%d %T %Z" (sys-localtime time)))
 
-(define (url self fmt . args)
-  (apply format #f
-         (format #f "~a?~a&l=~s" (cgi-name-of self) fmt (language-of self))
-         (map uri-encode-string args)))
-
 (define (colored-box content)
   (html:table :width "100%" :cellpadding 5
               (html:tr (html:td :bgcolor "#eeddaa" content))))
 
-(define (inter-wiki-name-prefix self head)
-  (and-let* ((page (wdb-get (db-of self) "InterWikiName"))
-             (rx   (string->regexp (format #f "^:~a:(\\S+)" head))))
+(define (inter-wiki-name-prefix head)
+  (and-let* ((page (wdb-get (db) "InterWikiName"))
+             (rx   (string->regexp #`"^:,|head|:(\\S+)")))
     (call-with-input-string (content-of page)
       (lambda (p)
         (let loop ((line (read-line p)))
@@ -210,43 +213,43 @@
             ((rxmatch rx line) (#f prefix) prefix)
             (else (loop (read-line p)))))))))
 
-(define (wikiname-anchor self wikiname)
+(define (wikiname-anchor wikiname)
   ;; assumes wikiname already exist in the db.
-  (html:a :href (url self "~a" wikiname) (html-escape-string wikiname)))
+  (html:a :href (url "~a" wikiname) (html-escape-string wikiname)))
 
-(define (expand-$$index self prefix)
+(define (expand-$$index prefix)
   (html:ul
-   (map (lambda (key) (html:li (wikiname-anchor self key)))
-        (wdb-search (db-of self)
+   (map (lambda (key) (html:li (wikiname-anchor key)))
+        (wdb-search (db)
                     (lambda (k v) (string-prefix? prefix k))))))
 
-(define (expand-$$cindex self prefix . maybe-delim)
+(define (expand-$$cindex prefix . maybe-delim)
   (define delim (if (pair? maybe-delim) (car maybe-delim) ""))
   (fold-right (lambda (key r)
                 (if (null? r)
-                    (list (wikiname-anchor self key))
-                    (cons* (wikiname-anchor self key) delim " " r)))
+                    (list (wikiname-anchor key))
+                    (cons* (wikiname-anchor key) delim " " r)))
               '()
-              (wdb-search (db-of self)
+              (wdb-search (db)
                           (lambda (k v) (string-prefix? prefix k)))))
 
-(define (expand-$$include self page)
-  (cond ((wdb-get (db-of self) page) =>
-         (lambda (page) (format-content self page)))
-        (else #`"[[$$include ,|page|]]")))
+(define (expand-$$include page)
+  (cond ((wdb-get (db) page) =>
+         (lambda (page) (format-content page)))
+        (else #`"[[$$include ,(html-escape-string page)]]")))
 
-(define (reader-macro-wiki-name? self name)
+(define (reader-macro-wiki-name? name)
   (cond ((string-prefix? "$$" name)
          (let ((args (string-tokenize name)))
            (cond ((and (string=? (car args) "$$index")
                        (not (null? (cadr args))))
-                  (expand-$$index self (cadr args)))
+                  (expand-$$index (cadr args)))
                  ((and (string=? (car args) "$$cindex")
                        (not (null? (cadr args))))
-                  (apply expand-$$cindex self (cdr args)))
+                  (apply expand-$$cindex (cdr args)))
                  ((and (string=? (car args) "$$include")
                        (not (null? (cadr args))))
-                  (expand-$$include self (cadr args)))
+                  (expand-$$include (cadr args)))
                  (else #`"[[,(html-escape-string name)]]"))))
         ((or (string-index name #[\s])
              (string-prefix? "$" name))
@@ -254,28 +257,28 @@
          #`"[[,(html-escape-string name)]]")
         (else #f)))
 
-(define (inter-wiki-name? self name)
+(define (inter-wiki-name? name)
   (receive (head after) (string-scan name ":" 'both)
     (or (and head
-             (and-let* ((inter-prefix (inter-wiki-name-prefix self head)))
+             (and-let* ((inter-prefix (inter-wiki-name-prefix head)))
                (values inter-prefix after)))
         (values #f #f))))
 
-(define (format-wiki-name self name)
-  (receive (prefix inner) (inter-wiki-name? self name)
-    (cond ((reader-macro-wiki-name? self name))
+(define (format-wiki-name name)
+  (receive (prefix inner) (inter-wiki-name? name)
+    (cond ((reader-macro-wiki-name? name))
           (prefix
            (tree->string (html:a :href (format #f "http://~a~a" prefix
                                                (uri-encode-string inner))
                                  (html-escape-string name))))
-          ((wdb-exists? (db-of self) name)
-           (tree->string (wikiname-anchor self name)))
+          ((wdb-exists? (db) name)
+           (tree->string (wikiname-anchor name)))
           (else
-           (tree->string `(,(html-escape-string name) ,(html:a :href (url self "p=~a&c=e" name) "?")))))))
+           (tree->string `(,(html-escape-string name) ,(html:a :href (url "p=~a&c=e" name) "?")))))))
 
 ;; Find wiki name in the line.
 ;; Correctly deal with nested "[[" and "]]"'s.
-(define (format-line self line)
+(define (format-line line)
   ;; parse to next "[[" or "]]"
   (define (token s)
     (cond ((rxmatch #/\[\[|\]\]/ s)
@@ -300,17 +303,17 @@
    (let loop ((s line))
      (receive (pre post) (string-scan s "[[" 'both)
        (if pre
-           (cons (format-parts self pre)
+           (cons (format-parts pre)
                  (receive (wikiname rest) (find-closer post 0 '())
                    (if wikiname
-                       (cons (format-wiki-name self wikiname)
+                       (cons (format-wiki-name wikiname)
                              (loop rest))
                        (list rest))))
-           (format-parts self s))))
+           (format-parts s))))
    "\n")
   )
 
-(define (format-parts self line)
+(define (format-parts line)
   (define (uri line)
     (regexp-replace-all
      #/(\[)?(http:(\/\/[^\/?#\s]*)?[^?#\s]*(\?[^#\s]*)?(#\S*)?)(\s([^\]]+)\])?/
@@ -340,7 +343,7 @@
        (format #f "<em>~a</em>" (rxmatch-substring match 1)))))
   (uri (italic (bold (html-escape-string line)))))
 
-(define (format-content self page)
+(define (format-content page)
   (define (loop line nestings)
     (cond ((eof-object? line) nestings)
           ((string-null? line)
@@ -355,7 +358,7 @@
                        (hfn (list-ref (list html:h2 html:h3 html:h4)
                                       (- lev 1))))
                   `(,@nestings
-                    ,(hfn (format-line self (rxmatch-after m)))
+                    ,(hfn (format-line (rxmatch-after m)))
                     ,@(loop (read-line) '())))))
           ((rxmatch #/^(--?-?) / line)
            => (lambda (m)
@@ -370,16 +373,16 @@
                 `(,@(if (equal? nestings '("</dl>"))
                         '()
                         `(,@nestings "<dl>"))
-                  "<dt>" ,(format-line self (rxmatch-substring m 1))
-                  "<dd>" ,(format-line self (rxmatch-substring m 2))
+                  "<dt>" ,(format-line (rxmatch-substring m 1))
+                  "<dd>" ,(format-line (rxmatch-substring m 2))
                   ,@(loop (read-line) '("</dl>")))))
           (else
-           (cons (format-line self line) (loop (read-line) nestings)))))
+           (cons (format-line line) (loop (read-line) nestings)))))
 
   (define (pre line)
     (cond ((eof-object? line) '("</pre>"))
           ((string-prefix? " " line)
-           `(,@(format-line self line) ,@(pre (read-line))))
+           `(,@(format-line line) ,@(pre (read-line))))
           (else (cons "</pre>\n" (loop line '())))))
 
   (define (list-item match level nestings opentag closetag)
@@ -393,7 +396,7 @@
                 ((> cur level)
                  (split-at nestings (- cur level)))
                 (else (values '() nestings)))
-        `(,@opener "<li>" ,(format-line self line)
+        `(,@opener "<li>" ,(format-line line)
           ,@(loop (read-line) closer)))))
 
   (if (member page (page-format-history)
@@ -407,7 +410,7 @@
            (cons "<p>" (loop (read-line) '()))))))
   )
 
-(define (format-footer self page)
+(define (format-footer page)
   (if (mtime-of page)
       `(,(html:hr)
         ,(html:div :align "right"
@@ -415,42 +418,48 @@
                    (format-time (mtime-of page))))
       '()))
 
-(define (format-page self title page . args)
-  (let ((show-edit? (and (editable? self) (get-keyword :show-edit? args #t)))
-        (show-all?  (get-keyword :show-all? args #t))
-        (show-recent-changes? (get-keyword :show-recent-changes? args #t))
-        (show-search-box? (get-keyword :show-search-box? args #t))
-        (page-id (get-keyword :page-id args title))
-        (content (if (is-a? page <page>)
-                     (list (format-content self page)
-                           (format-footer self page))
-                     page)))
-    `(,(html-doctype :type :transitional)
+(define (format-header type)       ;type may be 'html or 'plain
+  (cgi-header :content-type #`"text/,|type|; charset=,(if (eq? (lang) 'jp) 'euc-jp 'iso8859-1)"))
+
+(define (format-page title page . args)
+  (let* ((wlki (wiliki))
+         (show-edit? (and (editable? wlki)
+                          (get-keyword :show-edit? args #t)))
+         (show-all?  (get-keyword :show-all? args #t))
+         (show-recent-changes? (get-keyword :show-recent-changes? args #t))
+         (show-search-box? (get-keyword :show-search-box? args #t))
+         (page-id (get-keyword :page-id args title))
+         (content (if (is-a? page <page>)
+                      (list (format-content page)
+                            (format-footer page))
+                      page)))
+    `(,(format-header 'html)
+      ,(html-doctype :type :transitional)
       ,(html:html
         (html:head (html:title (html-escape-string title)))
         (html:body
          :bgcolor "#eeeedd"
          (html:h1 (if (is-a? page <page>)
-                      (html:a :href (url self "c=s&key=[[~a]]" title)
+                      (html:a :href (url "c=s&key=[[~a]]" title)
                               (html-escape-string title))
                       (html-escape-string title)))
          (html:div
           :align "right"
           (html:form
-           :method "POST" :action (cgi-name-of self)
+           :method "POST" :action (cgi-name-of wlki)
            (html:input :type "hidden" :name "c" :value "s")
-           (language-link self page-id)
-           (if (string=? title (top-page-of self))
+           (language-link page-id)
+           (if (string=? title (top-page-of wlki))
                ""
-               (html:a :href (cgi-name-of self) ($$ "[Top Page]")))
+               (html:a :href (cgi-name-of wlki) ($$ "[Top Page]")))
            (if show-edit?
-               (html:a :href (url self "p=~a&c=e" title) ($$ "[Edit]"))
+               (html:a :href (url "p=~a&c=e" title) ($$ "[Edit]"))
                "")
            (if show-all?
-               (html:a :href (url self "c=a") ($$ "[All Pages]"))
+               (html:a :href (url "c=a") ($$ "[All Pages]"))
                "")
            (if show-recent-changes?
-               (html:a :href (url self "c=r") ($$ "[Recent Changes]"))
+               (html:a :href (url "c=r") ($$ "[Recent Changes]"))
                "")
            (if show-search-box?
                `("[" ,($$ "Search:")
@@ -471,26 +480,19 @@
          (html:body
           (html:h1 "Error")
           (html:p (html-escape-string (slot-ref e 'message)))
-          ;; for debug
-          (html:p (tree->string
-                   (map (lambda (frame)
-                          (list (html-escape-string (write-to-string frame))
-                                "<br>\n"))
-                        (vm-get-stack-trace))))
           )))
   )
 
-(define (cmd-view self pagename)
-  (cond ((wdb-get (db-of self) pagename)
-         => (lambda (page)
-              (format-page self pagename page)))
-        ((equal? pagename (top-page-of self))
+(define (cmd-view pagename)
+  (cond ((wdb-get (db) pagename)
+         => (lambda (page) (format-page pagename page)))
+        ((equal? pagename (top-page-of (wiliki)))
          (let ((toppage (make <page> :key pagename :mtime (sys-time))))
-           (wdb-put! (db-of self) (top-page-of self) toppage)
-           (format-page self (top-page-of self) toppage)))
+           (wdb-put! (db) (top-page-of (wiliki)) toppage)
+           (format-page (top-page-of (wiliki)) toppage)))
         (else (error "No such page" pagename))))
 
-(define (edit-form self preview? pagename content mtime)
+(define (edit-form preview? pagename content mtime)
   (define (buttons)
     (if preview?
         (list (html:input :type "submit" :name "preview"
@@ -506,7 +508,7 @@
         ))
 
   (html:form
-   :method "POST" :action (cgi-name-of self)
+   :method "POST" :action (cgi-name-of (wiliki))
    (buttons)
    (html:br)
    (html:input :type "hidden" :name "c" :value "c")
@@ -551,85 +553,83 @@
          It emphasizes a null string, so it's effectively nothing.")
    ))
 
-(define (cmd-edit self pagename)
-  (unless (editable? self)
+(define (cmd-edit pagename)
+  (unless (editable? (wiliki))
     (errorf "Can't edit the page ~s: the database is read-only" pagename))
-  (let ((page (wdb-get (db-of self) pagename #t)))
-    (format-page self pagename
-                 (edit-form self #t pagename
+  (let ((page (wdb-get (db) pagename #t)))
+    (format-page pagename
+                 (edit-form #t pagename
                             (content-of page) (mtime-of page)))))
 
-(define (cmd-preview self pagename content mtime)
-  (let ((page (wdb-get (db-of self) pagename #t)))
+(define (cmd-preview pagename content mtime)
+  (let ((page (wdb-get (db) pagename #t)))
     (if (or (not (mtime-of page)) (eqv? (mtime-of page) mtime))
         (format-page
-         self (format #f ($$ "Preview of ~a") pagename)
-         `(,(colored-box (format-content self (make <page>
-                                                :key pagename
-                                                :content content)))
+         (format #f ($$ "Preview of ~a") pagename)
+         `(,(colored-box (format-content (make <page>
+                                           :key pagename
+                                           :content content)))
            ,(html:hr)
-           ,(edit-form self #f pagename content mtime))
+           ,(edit-form #f pagename content mtime))
          ))))
 
-(define (cmd-commit-edit self pagename content mtime)
-  (unless (editable? self)
+(define (cmd-commit-edit pagename content mtime)
+  (unless (editable? (wiliki))
     (errorf "Can't edit the page ~s: the database is read-only" pagename))
-  (let ((page (wdb-get (db-of self) pagename #t))
+  (let ((page (wdb-get (db) pagename #t))
         (now  (sys-time)))
     (if (or (not (mtime-of page)) (eqv? (mtime-of page) mtime))
         (if (string-every #[\s] content)
             (begin
               (set! (content-of page) "")
-              (wdb-delete! (db-of self) pagename)
-              (format-page self pagename page))
+              (wdb-delete! (db) pagename)
+              (format-page pagename page))
             (begin
               (set! (mtime-of page) now)
               (set! (content-of page) (expand-writer-macros content))
-              (wdb-put! (db-of self) pagename page)
-              (format-page self pagename page)))
+              (wdb-put! (db) pagename page)
+              (format-page pagename page)))
         (format-page
-         self ($$ "Wiliki: Update Conflict")
+         ($$ "Wiliki: Update Conflict")
          `(,($$ "<p>It seems that somebody has updated this page while you're editing.  The most recent content is shown below.</p>")
            ,(html:hr)
            ,(colored-box (html:pre (html-escape-string (content-of page))))
            ,(html:hr)
            ,($$ "<p>The following shows what you are about to submit.  Please re-edit the content and submit again.</p>")
-           ,(edit-form self #t pagename content (mtime-of page))
+           ,(edit-form #t pagename content (mtime-of page))
            )))))
 
-(define (cmd-all self)
+(define (cmd-all)
   (format-page
-   self ($$ "Wiliki: All Pages")
+   ($$ "Wiliki: All Pages")
    (html:ul
-    (map (lambda (k)
-           (html:li (html:a :href (url self "~a" k) (html-escape-string k))))
-         (sort (wdb-map (db-of self) (lambda (k v) k)) string<?)))
+    (map (lambda (k) (html:li (wikiname-anchor k)))
+         (sort (wdb-map (db) (lambda (k v) k)) string<?)))
    :page-id "c=a"
    :show-edit? #f
    :show-all? #f))
 
-(define (cmd-recent-changes self)
+(define (cmd-recent-changes)
   (format-page
-   self ($$ "Wiliki: Recent Changes")
+   ($$ "Wiliki: Recent Changes")
    (html:table
     (map (lambda (p)
            (html:tr
             (html:td (format-time (cdr p)))
-            (html:td (html:a :href (url self "~a" (car p)) (car p)))))
-         (wdb-recent-changes (db-of self))))
+            (html:td (wikiname-anchor (car p)))))
+         (wdb-recent-changes (db))))
    :page-id "c=r"
    :show-edit? #f
    :show-recent-changes? #f))
 
-(define  (cmd-search self key)
+(define  (cmd-search key)
   (format-page
-   self ($$ "Wiliki: Search results")
+   ($$ "Wiliki: Search results")
    (html:ul
-    (map (lambda (k) (html:li (html:a :href (url self "~a" k) k)))
-         (wdb-search-content (db-of self) key)))
+    (map (lambda (k) (html:li (wikiname-anchor k)))
+         (wdb-search-content (db) key)))
    :page-id (format #f "c=s&key=~a" (html-escape-string key))
    :show-edit? #f))
-
 
 ;; Entry ------------------------------------------
 
@@ -644,33 +644,33 @@
                                                :default (top-page-of self)
                                                :convert ccv))))
            (command  (cgi-get-parameter "c" param))
-           (lang     (cgi-get-parameter "l" param :convert string->symbol)))
-       (when lang (set! (language-of self) lang))
-       (textdomain (language-of self))
-       `(,(cgi-header :content-type #`"text/html; charset=,(if (eq? (language-of self) 'jp) 'euc-jp 'iso8859-1)")
-         ,(with-db self
-                   (lambda ()
-                     (cond
-                      ;; command may #t if we're looking at the page named "c".
-                      ((or (not command) (eq? command #t))
-                       (cmd-view self pagename))
-                      ((equal? command "e") (cmd-edit self pagename))
-                      ((equal? command "a") (cmd-all self))
-                      ((equal? command "r") (cmd-recent-changes self))
-                      ((equal? command "s")
-                       (cmd-search self (cgi-get-parameter "key" param
-                                                           :convert ccv)))
-                      ((equal? command "c")
-                       ((if (cgi-get-parameter "commit" param :default #f)
-                            cmd-commit-edit
-                            cmd-preview)
-                        self pagename
-                        (cgi-get-parameter "content" param :convert ccv)
-                        (cgi-get-parameter "mtime" param
-                                           :convert x->integer
-                                           :default 0)))
-                      (else (error "Unknown command" command))))))
-       ))
+           (language (cgi-get-parameter "l" param :convert string->symbol)))
+       (parameterize*
+        ((wiliki self)
+         (lang   (or language (language-of self))))
+        (textdomain (lang))
+        (with-db
+         (lambda ()
+           (cond
+            ;; command may #t if we're looking at the page named "c".
+            ((or (not command) (eq? command #t))
+             (cmd-view pagename))
+            ((equal? command "e") (cmd-edit pagename))
+            ((equal? command "a") (cmd-all))
+            ((equal? command "r") (cmd-recent-changes))
+            ((equal? command "s")
+             (cmd-search (cgi-get-parameter "key" param :convert ccv)))
+            ((equal? command "c")
+             ((if (cgi-get-parameter "commit" param :default #f)
+                  cmd-commit-edit
+                  cmd-preview)
+              pagename
+              (cgi-get-parameter "content" param :convert ccv)
+              (cgi-get-parameter "mtime" param
+                                 :convert x->integer
+                                 :default 0)))
+            (else (error "Unknown command" command))))))
+        ))
    :merge-cookies #t
    :on-error error-page))
 
