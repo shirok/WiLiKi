@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.4 2001-11-23 22:19:00 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.5 2001-11-24 07:19:55 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -357,7 +357,7 @@
   (cgi-main
    (lambda (param)
      (let ((pagename (cond ((null? param) (top-page-of self))
-                           ((and (null? (cdr param)) (eq? (cadar param) #t))
+                           ((eq? (cadar param) #t)
                             (ccv (uri-decode-string (caar param))))
                            (else
                             (cgi-get-parameter "p" param
@@ -379,6 +379,7 @@
                                                            :convert ccv)))
                       (else (error "Unknown command" command))))))
        ))
+   :merge-cookies #t
    :on-error error-page))
 
 ;; Local variables:
