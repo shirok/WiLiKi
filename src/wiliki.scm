@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.49 2002-12-19 01:29:24 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.50 2002-12-27 00:34:10 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -59,6 +59,8 @@
              :init-value "wiliki.cgi")
    (language :accessor language-of :init-keyword :language
              :init-value 'jp)
+   (charsets :accessor charsets-of :init-keyword :charsets
+             :init-value ())
    (editable? :accessor editable?  :init-keyword :editable?
               :init-value #t)
    (style-sheet :accessor style-sheet-of :init-keyword :style-sheet
@@ -185,7 +187,21 @@
        read-line))))
 
 ;; Character conv ---------------------------------
-(define (ccv str) (ces-convert str "*JP"))
+
+;; input conversion - get data from outside world
+(define (cv-in str) (ces-convert str "*JP"))
+
+;; output conversion - put data to outside world, according to charsets spec
+(define (cv-out str)
+  (ces-convert str (symbol->string (gauche-character-encoding))
+               (output-charset)))
+
+(define (output-charset)
+  (cond ((assoc (lang) (charsets-of (wiliki)))
+         => (lambda (p) (symbol->string (cdr p))))
+        ;; fallback
+        ((eq? (lang) 'jp) "EUC-JP")
+        (else "ISO8859-1")))
 
 ;; Formatting html --------------------------------
 
@@ -208,7 +224,7 @@
 
 (define (wikiname-anchor wikiname)
   ;; assumes wikiname already exist in the db.
-  (html:a :href (url "~a" wikiname) (html-escape-string wikiname)))
+  (html:a :href (url "~a" (cv-out wikiname)) (html-escape-string wikiname)))
 
 (define (reader-macro-wiki-name? name)
   (cond ((string-prefix? "$$" name)
@@ -230,13 +246,15 @@
   (receive (prefix inner) (inter-wiki-name? name)
     (cond ((reader-macro-wiki-name? name))
           (prefix
-           (tree->string (html:a :href (format #f "http://~a~a" prefix
-                                               (uri-encode-string inner))
-                                 (html-escape-string name))))
+           (tree->string (html:a
+                          :href (format #f "http://~a~a" prefix
+                                        (uri-encode-string (cv-out inner)))
+                          (html-escape-string name))))
           ((wdb-exists? (db) name)
            (tree->string (wikiname-anchor name)))
           (else
-           (tree->string `(,(html-escape-string name) ,(html:a :href (url "p=~a&c=e" name) "?")))))))
+           (tree->string `(,(html-escape-string name)
+                           ,(html:a :href (url "p=~a&c=e" (cv-out name)) "?")))))))
 
 ;; Find wiki name in the line.
 ;; Correctly deal with nested "[[" and "]]"'s.
@@ -395,7 +413,7 @@
                             (format-footer page))
                       page)))
     (html-page
-     (html:title (html-escape-string title))
+     (html:title (cv-out (html-escape-string title)))
      (html:h1 (if (is-a? page <page>)
                   (html:a :href (url "c=s&key=[[~a]]" title)
                           (html-escape-string title))
@@ -434,12 +452,12 @@
   ;; for now, I add extra headers manually.
   `("Content-Style-Type: text/css\n"
     ,(cgi-header
-      :content-type #`"text/html; charset=,(if (eq? (lang) 'jp) 'euc-jp 'iso8859-1)")
+      :content-type #`"text/html; charset=,(output-charset)")
     ,(html-doctype :type :transitional)
     ,(html:html
       (html:head
        head-elements
-       (or (and-let* ((ss (style-sheet-of (wiliki))))
+       (or (and-let* ((w (wiliki)) (ss (style-sheet-of w)))
              (html:link :rel "stylesheet" :href ss :type "text/css"))
            ;; default
            "<style type=\"text/css\"> body { background-color: #eeeedd }</style>"))
@@ -634,11 +652,11 @@
    (lambda (param)
      (let ((pagename (cond ((null? param) (top-page-of self))
                            ((eq? (cadar param) #t)
-                            (ccv (uri-decode-string (caar param))))
+                            (cv-in (uri-decode-string (caar param))))
                            (else
                             (cgi-get-parameter "p" param
                                                :default (top-page-of self)
-                                               :convert ccv))))
+                                               :convert cv-in))))
            (command  (cgi-get-parameter "c" param))
            (language (cgi-get-parameter "l" param :convert string->symbol)))
        (parameterize
@@ -656,13 +674,13 @@
             ((equal? command "a") (cmd-all))
             ((equal? command "r") (cmd-recent-changes))
             ((equal? command "s")
-             (cmd-search (cgi-get-parameter "key" param :convert ccv)))
+             (cmd-search (cgi-get-parameter "key" param :convert cv-in)))
             ((equal? command "c")
              ((if (cgi-get-parameter "commit" param :default #f)
                   cmd-commit-edit
                   cmd-preview)
               pagename
-              (cgi-get-parameter "content" param :convert ccv)
+              (cgi-get-parameter "content" param :convert cv-in)
               (cgi-get-parameter "mtime" param
                                  :convert x->integer
                                  :default 0)
