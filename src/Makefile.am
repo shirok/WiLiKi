@@ -5,7 +5,6 @@ INSTALL_TYPE = @INSTALL_TYPE@
 COMMON = wiliki.scm \
          wiliki/format.scm \
          wiliki/mcatalog.scm \
-         wiliki/msgs.jp \
          wiliki/macro.scm \
          wiliki/rss.scm \
          wiliki/pasttime.scm 
