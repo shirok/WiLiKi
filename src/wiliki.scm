@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.8 2001-11-24 21:49:10 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.9 2001-11-27 20:13:48 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -128,6 +128,11 @@
     ((jp) "Wiliki: 最近の更新")
     (else "Wiliki: Recent Changes")))
 
+(define (msg-search-results wiliki)
+  (case (language-of wiliki)
+    ((jp) "Wiliki: 検索結果")
+    (else "Wiliki: Search results")))
+
 (define (language-link wiliki pagename)
   (receive (target label)
       (case (language-of wiliki)
@@ -156,18 +161,20 @@
 (define-method wdb-exists? ((db <dbm>) key)
   (dbm-exists? db key))
 
+(define-method wdb-record->page ((db <dbm>) record)
+  ;; backward compatibility
+  (if (and (not (string-null? record)) (char=? (string-ref record 0) #\( ))
+      (call-with-input-string record
+        (lambda (p)
+          (let* ((params  (read p))
+                 (content (port->string p)))
+            (apply make <page> :content content params))))
+      (make <page> :content record)))
+
 ;; WDB-GET db key &optional create-new
 (define-method wdb-get ((db <dbm>) key . option)
   (cond ((dbm-get db key #f)
-         => (lambda (s)
-              ;; backward compatibility
-              (if (and (not (string-null? s)) (char=? (string-ref s 0) #\( ))
-                  (call-with-input-string s
-                    (lambda (p)
-                      (let* ((params  (read p))
-                             (content (port->string p)))
-                        (apply make <page> :content content params))))
-                  (make <page> :content s))))
+         => (lambda (s) (wdb-record->page db s)))
         ((and (pair? option) (car option))
          (make <page>))
         (else #f)))
@@ -195,6 +202,16 @@
 
 (define-method wdb-map ((db <dbm>) proc)
   (dbm-map db proc))
+
+(define-method wdb-search ((db <dbm>) key)
+  (dbm-fold db
+            (lambda (k v r)
+              (if (and (not (string-prefix? " " k))
+                       (string-contains (content-of (wdb-record->page db v))
+                                        key))
+                  (cons k r)
+                  r))
+            '()))
 
 ;; Macros -----------------------------------------
 
@@ -338,7 +355,9 @@
         (html:head (html:title title))
         (html:body
          :bgcolor "#eeeedd"
-         (html:h1 title)
+         (html:h1 (if (is-a? page <page>)
+                      (html:a :href (url self "c=s&key=~a" title) title)
+                      title))
          (html:div :align "right"
                    (language-link self page-id)
                    (if (string=? title (top-page-of self))
@@ -389,7 +408,7 @@
     (format-page
      self pagename
      (html:form :method "POST" :action (cgi-name-of self)
-                (html:input :type "hidden" :name "c" :value "s")
+                (html:input :type "hidden" :name "c" :value "c")
                 (html:input :type "hidden" :name "p" :value pagename)
                 (html:textarea :name "content" :rows 40 :cols 80
                                (content-of page))
@@ -436,6 +455,18 @@
    :show-edit? #f
    :show-recent-changes? #f))
 
+(define  (cmd-search self key)
+  (format-page
+   self (msg-search-results self)
+   (html:ul
+    (map (lambda (k)
+           (if (string-prefix? " " k)
+               '()
+               (html:li (html:a :href (url self "~a" k) k))))
+         (wdb-search (db-of self) (format #f "[[~a]]" key))))
+   :page-id (format #f "c=s&key=~a" (html-escape-string key))
+   :show-edit? #f))
+
 ;; Entry ------------------------------------------
 
 (define-method wiliki-main ((self <wiliki>))
@@ -460,6 +491,9 @@
                       ((equal? command "a") (cmd-all self))
                       ((equal? command "r") (cmd-recent-changes self))
                       ((equal? command "s")
+                       (cmd-search self (cgi-get-parameter "key" param
+                                                           :convert ccv)))
+                      ((equal? command "c")
                        (cmd-commit-edit self pagename
                                         (cgi-get-parameter "content" param
                                                            :convert ccv)))
