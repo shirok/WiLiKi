@@ -4,13 +4,11 @@ TESTS = format.scm log.scm test-wiliki.scm
 
 all: gosh-path
 
-check : test
-
 gosh-path :
 	echo "$(GOSH)" > gosh-path
 
-test : all
-	@rm -f $(TEST_OUT)
+check : all
+	@rm -rf $(TEST_OUT)
 	@for t in $(TESTS); do \
 	  $(GOSH) -I. -I../src $$t >> test.log; \
 	done

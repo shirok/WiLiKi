@@ -1,7 +1,7 @@
 ;;
 ;; test for wiliki
 ;;
-;; $Id: test-wiliki.scm,v 1.1 2003-12-19 03:42:10 shirok Exp $
+;; $Id: test-wiliki.scm,v 1.2 2003-12-19 04:11:55 shirok Exp $
 
 (use gauche.test)
 (use gauche.parameter)
@@ -63,6 +63,35 @@
                 (div ?*))))
        (receive (_ body)       
            (run-cgi-script->sxml *cgi-path*)
+         body)
+       test-sxml-match?)
+
+(test* "base uri test"
+       '(*TOP* (html (head (title "TEST")
+                           (base (@ (href "https://foo.com/cgi-bin/w.cgi")))
+                           ?*)
+                     ?*))
+       (receive (_ body)       
+           (run-cgi-script->sxml
+            *cgi-path*
+            :environment '((HTTPS . 1)
+                           (SERVER_NAME . "foo.com")
+                           (SERVER_PORT . 443)
+                           (SCRIPT_NAME . "/cgi-bin/w.cgi")))
+         body)
+       test-sxml-match?)
+
+(test* "base uri test"
+       '(*TOP* (html (head (title "TEST")
+                           (base (@ (href "http://foo.com:8080/cgi-bin/w.cgi")))
+                           ?*)
+                     ?*))
+       (receive (_ body)       
+           (run-cgi-script->sxml
+            *cgi-path*
+            :environment '((SERVER_NAME . "foo.com")
+                           (SERVER_PORT . 8080)
+                           (SCRIPT_NAME . "/cgi-bin/w.cgi")))
          body)
        test-sxml-match?)
 

@@ -9,9 +9,7 @@ clean:
 	cd src; $(MAKE) clean
 	cd test; $(MAKE) clean
 
-check: test
-
-test:
+check:
 	cd test; $(MAKE) check
 
 install: all
