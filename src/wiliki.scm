@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.27 2002-03-02 10:48:51 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.28 2002-03-02 11:12:36 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -232,7 +232,9 @@
                        (not (null? (cadr args))))
                   (expand-$$include self (cadr args)))
                  (else #`"[[,(html-escape-string name)]]"))))
-        ((string-index name #[\s%$]) ;;invalid wiki name
+        ((or (string-index name #[\s])
+             (string-prefix? "$" name))
+         ;;invalid wiki name
          #`"[[,(html-escape-string name)]]")
         (else #f)))
 
