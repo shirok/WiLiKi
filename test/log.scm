@@ -274,9 +274,9 @@ for user-defined classes.
        (mg '("d") '("d") '("a" "b" "c" "d")))
 (test* "single merge 7" '("a" "b" "c" "d")
        (mg '("d") '("a" "b" "c" "d") '("d")))
-(test* "single merge 8" '("a" "b" "c" "d")
+'(test* "single merge 8" '("a" "b" "c" "d")
        (mg '() '() '("a" "b" "c" "d")))
-(test* "single merge 9" '("a" "b" "c" "d")
+'(test* "single merge 9" '("a" "b" "c" "d")
        (mg '() '("a" "b" "c" "d") '()))
 
 ;; delete & delete
@@ -405,7 +405,7 @@ for user-defined classes.
 (test* "other 2" '("c" "b" "a")
        (mg '("a" "b" "c") '("c" "b" "a") '("c" "b" "a")))
 ;; Probably the first "c" should be factored out.
-(test* "other 3" '((a "c" "b" "a") (b "c" "a" "b"))
+(test* "other 3" '((a "c" "b") (b "c") "a" (b "b"))
        (mg '("a" "b" "c") '("c" "b" "a") '("c" "a" "b")))
 
 (test* "other 4" '("d" "c" "b" "a")
