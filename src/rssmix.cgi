@@ -24,7 +24,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: rssmix.cgi,v 1.4 2003-02-18 04:09:06 shirok Exp $
+;;;  $Id: rssmix.cgi,v 1.5 2003-02-18 06:47:22 shirok Exp $
 ;;;
 
 ;; THIS IS AN EXPERIMENTAL SCRIPT.  Eventually this will be a part of
@@ -146,7 +146,12 @@
          (sites  (ref self 'sites))
          (rss-list (map (lambda (site) (get-rss self (car site) (caddr site)))
                         sites))
-         (timeout (ref self 'fetch-timeout))
+         (timeout (add-duration
+                   (current-time)
+                   ;; NB: this uses broken srfi-19's make-time.
+                   ;; Don't forget to fix when srfi-19 is replaced!
+                   (make-time 'time-duration
+                              (ref self 'fetch-timeout) 0)))
          )
     (sort (append-map
            (lambda (site rss)
