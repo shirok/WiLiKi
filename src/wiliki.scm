@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.7 2001-11-24 11:10:07 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.8 2001-11-24 21:49:10 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -57,6 +57,8 @@
        <p>行頭の`<tt>----</tt>' は &lt;hr&gt;
        <p>行頭の `<tt>:項目:説明</tt>' は &lt;dl&gt;
        <p><tt>[[名前]]</tt> と書くと `名前' がWikiNameになる。
+          名前が `$' で始まっていると特殊な意味(例: `[[$date]]' は書き込み時に
+          その時間を表す文字列に変換される)。
        <p>2つのシングルクオートで囲む (<tt>''ほげ''</tt>) と
           強調 (&lt;em&gt;)
        <p>3つのシングルクオートで囲む (<tt>'''ほげ'''</tt>) と
@@ -82,6 +84,8 @@
       <p>`<tt>:item:description</tt>' at the beginning of a line is &lt;dl&gt;.
       <p><tt>[[Name]]</tt> to make `Name' a WikiName.  Note that
          a simple mixed-case word doesn't become a WikiName.
+         `Name' beginning with `$' has special meanings (e.g. 
+         `[[$date]]' is replaced for the time at the editing.)
       <p>Words surrounded by two single quotes (<tt>''foo''</tt>)
          to emphasize.
       <p>Words surrounded by three single quotes (<tt>'''foo'''</tt>)
@@ -192,6 +196,24 @@
 (define-method wdb-map ((db <dbm>) proc)
   (dbm-map db proc))
 
+;; Macros -----------------------------------------
+
+(define (expand-writer-macros content)
+  (with-string-io content
+    (lambda ()
+      (port-for-each
+       (lambda (line)
+         (display
+          (regexp-replace-all
+           #/\[\[$(\w+)\]\]/ line
+           (lambda (m)
+             (let ((name (rxmatch-substring m 1)))
+               (cond ((string=? name "date")
+                      (format-time (sys-time)))
+                     (else (format #f "[[$~a]]" name)))))))
+         (newline))
+       read-line))))
+
 ;; Character conv ---------------------------------
 ;;  string-null? check is to avoid a bug in Gauche-0.4.9
 (define (ccv str) (if (string-null? str) "" (ces-convert str "*JP")))
@@ -199,7 +221,7 @@
 ;; Formatting html --------------------------------
 
 (define (format-time time)
-  (sys-strftime "%Y/%m/%d %T" (sys-localtime time)))
+  (sys-strftime "%Y/%m/%d %T %Z" (sys-localtime time)))
 
 (define (url self fmt . args)
   (apply format #f
@@ -384,7 +406,7 @@
   (let ((page (wdb-get (db-of self) pagename #t))
         (now  (sys-time)))
     (set! (mtime-of page) now)
-    (set! (content-of page) content)
+    (set! (content-of page) (expand-writer-macros content))
     (wdb-put! (db-of self) pagename page)
     (format-page self pagename page)))
 
