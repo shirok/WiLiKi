@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.79 2003-05-03 23:34:05 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.80 2003-07-04 10:30:57 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -215,7 +215,7 @@
 
 (define (error-page e)
   (html-page
-   (html:title ",(title-of (wiliki)): Error")
+   (html:title #`",(title-of (wiliki)): Error")
    (list (html:h1 "Error")
          (html:p (html-escape-string (ref e 'message)))
          (html:pre (html-escape-string
@@ -476,31 +476,38 @@
             (lang   (or language (language-of self))))
         (cgi-output-character-encoding (output-charset))
         (textdomain (lang))
-        (with-db
-         (lambda ()
-           (cond
-            ;; command may #t if we're looking at the page named "c".
-            ((or (not command) (eq? command #t))
-             (cmd-view pagename))
-            ((equal? command "lv") (cmd-lwp-view pagename))
-            ((equal? command "e") (cmd-edit pagename))
-            ((equal? command "a") (cmd-all))
-            ((equal? command "r") (cmd-recent-changes))
-            ((equal? command "s")
-             (cmd-search (cgi-get-parameter "key" param :convert cv-in)))
-            ((equal? command "c")
-             ((if (cgi-get-parameter "commit" param :default #f)
-                  cmd-commit-edit
-                  cmd-preview)
-              pagename
-              (cgi-get-parameter "content" param :convert cv-in)
-              (cgi-get-parameter "mtime" param
-                                 :convert x->integer
-                                 :default 0)
-              (cgi-get-parameter "donttouch" param :default #f)))
-            ((equal? command "rss") (rss-page (db)))
-            (else (error "Unknown command" command))))))
-        ))
+        (cond
+         ;; command may #t if we're looking at the page named "c".
+         ((or (not command) (eq? command #t))
+          (with-db (cut cmd-view pagename)))
+         ((equal? command "lv")
+          (with-db (cut cmd-lwp-view pagename)))
+         ((equal? command "e")
+          (with-db (cut cmd-edit pagename)))
+         ((equal? command "a")
+          (with-db cmd-all))
+         ((equal? command "r")
+          (with-db cmd-recent-changes))
+         ((equal? command "s")
+          (with-db
+           (cut cmd-search (cgi-get-parameter "key" param :convert cv-in))))
+         ((equal? command "c")
+          (with-db
+           (cut
+            (if (cgi-get-parameter "commit" param :default #f)
+              cmd-commit-edit
+              cmd-preview)
+            pagename
+            (cgi-get-parameter "content" param :convert cv-in)
+            (cgi-get-parameter "mtime" param
+                               :convert x->integer
+                               :default 0)
+            (cgi-get-parameter "donttouch" param :default #f))
+           :write))
+         ((equal? command "rss")
+          (with-db (cut rss-page (db))))
+         (else (error "Unknown command" command))
+         ))))
    :merge-cookies #t
    :on-error error-page))
 

@@ -1,3 +1,10 @@
+2003-07-04  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/db.scm (db-try-open): fixed a typo of keyword parameter
+	  for dbm-open (Patch from kou)
+	* src/wiliki.scm (main): changed so that all commands except
+	  edit will open the database in read-only mode (Suggested by kou).
+
 2003-06-06  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/db.scm (with-db): capture EAVAIL error from dbm-open
