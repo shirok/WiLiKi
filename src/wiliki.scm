@@ -16,6 +16,28 @@
   (export <wiliki> wiliki-main))
 (select-module wiliki)
 
+(define *edit-helper* "
+  <h2>テキスト編集ルール</h2>
+  <p>HTMLは使えない。
+  <p>空行は段落の区切り (&lt;p&gt;)
+  <p>行頭の`<tt>- </tt>', `<tt>-- </tt>', `<tt>--- </tt>'
+     はそれぞれネストレベル1, 2, 3の順序無しリスト (&lt;ul&gt;)。
+     ダッシュの後に空白が必要。
+  <p>行頭の`<tt>1. </tt>', `<tt>2. </tt>', `<tt>3. </tt>'
+     はそれぞれネストレベル1, 2, 3の順序つきリスト (&lt;ol&gt;)。
+     ピリオドの後に空白が必要。数字は整形時にリナンバーされる。
+  <p>行頭の`<tt>----</tt>' は &lt;hr&gt;
+  <p>行頭の `<tt>:項目:説明</tt>' は &lt;dl&gt;
+  <p><tt>[[名前]]</tt> と書くと `名前' がWikiNameになる。
+  <p>2つのシングルクオートで囲む <tt>''ほげ''</tt> と
+     強調 (&lt;em&gt;)
+  <p>3つのシングルクオートで囲む <tt>'''ほげ'''</tt> と
+     もっと強調 (&lt;strong&gt;)
+  <p>行頭の `<tt>*</tt>', `<tt>**</tt>'' は
+     それぞれ見出し、小見出し。
+  <p>行頭に空白があると &lt;pre&gt;。
+ ")
+
 (define-class <wiliki> ()
   ((db-path  :accessor db-path-of :init-keyword :db-path
              :init-value "wikidata.dbm")
@@ -28,7 +50,7 @@
    ))
 
 ;; Character conv ---------------------------------
-
+;;  string-null? check is to avoid bug in Gauche-0.4.9
 (define (ccv str) (if (string-null? str) "" (ces-convert str "*JP")))
 
 ;; DB part ----------------------------------------
@@ -145,6 +167,7 @@
       ,(html:html
         (html:head (html:title title))
         (html:body
+         :bgcolor "#eeeedd"
          (html:h1 title)
          (html:div :align "right"
                    (if (string=? title (top-page-of self))
@@ -190,9 +213,12 @@
      (html:form :method "POST" :action (cgi-name-of self)
                 (html:input :type "hidden" :name "c" :value "s")
                 (html:input :type "hidden" :name "p" :value pagename)
-                (html:textarea :name "content" :rows 25 :cols 60 page)
+                (html:textarea :name "content" :rows 40 :cols 80 page)
+                (html:br)
                 (html:input :type "submit" :name "submit" :value "Submit")
                 (html:input :type "reset"  :name "reset"  :value "Reset")
+                (html:br)
+                *edit-helper*
                 ))))
 
 (define (cmd-commit-edit self pagename content)
