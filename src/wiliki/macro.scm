@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.26 2004-01-13 06:21:09 shirok Exp $
+;;; $Id: macro.scm,v 1.27 2004-03-22 11:44:35 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
@@ -33,6 +33,7 @@
   (use text.tree)
   (use util.list)
   (use wiliki.format)
+  (use wiliki.db)
   (extend wiliki)
   (export handle-reader-macro handle-writer-macro
           handle-virtual-page virtual-page?))
@@ -171,21 +172,21 @@
 (define-reader-macro (index prefix)
   `((ul
      ,@(map (lambda (key) `(li ,(wiliki:wikiname-anchor (car key))))
-            (wdb-search (db)
-                        (lambda (k v) (string-prefix? prefix k))
-                        (lambda (a b)
-                          (string<? (car a) (car b))))))))
+            (wiliki-db-search
+             (lambda (k v) (string-prefix? prefix k))
+             (lambda (a b)
+               (string<? (car a) (car b))))))))
 
 (define-reader-macro (cindex prefix . maybe-delim)
   (intersperse (get-optional maybe-delim " ")
                (map (lambda (key) (wiliki:wikiname-anchor (car key)))
-                    (wdb-search (db)
-                                (lambda (k v) (string-prefix? prefix k))
-                                (lambda (a b)
-                                  (string<? (car a) (car b)))))))
+                    (wiliki-db-search
+                     (lambda (k v) (string-prefix? prefix k))
+                     (lambda (a b)
+                       (string<? (car a) (car b)))))))
 
 (define-reader-macro (include page)
-  (cond ((wdb-get (db) page) => wiliki:format-content)
+  (cond ((wiliki-db-get page) => wiliki:format-content)
         (else (list #`"[[$$include ,page]]"))))
 
 (define-reader-macro (img url . maybe-alt)
@@ -206,7 +207,7 @@
 
 (define-reader-macro (toc . maybe-page)
   (let1 page (or (and-let* ((name (get-optional maybe-page #f)))
-                   (wdb-get (db) name #f))
+                   (wiliki-db-get name #f))
                  (wiliki:current-page))
     (if (not page)
       (if (pair? maybe-page)
@@ -277,6 +278,6 @@
               `(tr (td ,(wiliki:format-time (cdr p)))
                    (td "(" ,(how-long-since (cdr p)) " ago)")
                    (td ,(wiliki:wikiname-anchor (car p)))))
-            (wdb-recent-changes (db))))))
+            (wiliki-db-recent-changes)))))
 
 (provide "wiliki/macro")

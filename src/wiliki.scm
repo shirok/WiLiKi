@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.111 2004-03-22 05:38:41 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.112 2004-03-22 11:44:35 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -372,7 +372,7 @@
 
 (define (default-format-wikiname name)
   (define (inter-wikiname-prefix head)
-    (and-let* ((page (wdb-get (db) "InterWikiName"))
+    (and-let* ((page (wiliki-db-get "InterWikiName"))
                (rx   (string->regexp #`"^:,|head|:\\s*")))
       (call-with-input-string (ref page 'content)
         (lambda (p)
@@ -414,7 +414,7 @@
           ;; page shadow an existing page, or an existing page shadow a
           ;; virtual one?  Note also the order of this check must match
           ;; the order in cmd-view.
-          ((or (wdb-exists? (db) name) (virtual-page? name))
+          ((or (wiliki-db-exists? name) (virtual-page? name))
            (list (wiliki:wikiname-anchor name)))
           (else
            `(,name
@@ -531,8 +531,8 @@
 
 (define (cmd-view pagename)
   ;; NB: see the comment in format-wikiname about the order of
-  ;; wdb-get and virtual-page? check.
-  (cond ((wdb-get (db) pagename) => html-page)
+  ;; wiliki-db-get and virtual-page? check.
+  (cond ((wiliki-db-get pagename) => html-page)
         ((virtual-page? pagename)
          (html-page (handle-virtual-page pagename)))
         ((equal? pagename (top-page-of (wiliki)))
@@ -542,7 +542,7 @@
            ;; create it automatically.  We need to ensure db is writable.
            (if (editable? (wiliki))
              (with-db (lambda ()
-                        (wdb-put! (db) (top-page-of (wiliki)) toppage)
+                        (wiliki-db-put! (top-page-of (wiliki)) toppage)
                         (html-page toppage))
                :write)
              (errorf "Top-page (~a) doesn't exist, and the database is read-only" toppage))))
@@ -565,7 +565,7 @@
      :content `((ul
                  ,@(map (lambda (k)
                           `(li ,(wiliki:wikiname-anchor k)))
-                        (sort (wdb-map (db) (lambda (k v) k)) string<?)))))))
+                        (sort (wiliki-db-map (lambda (k v) k)) string<?)))))))
 
 (define (cmd-recent-changes)
   (html-page
@@ -579,7 +579,7 @@
                    (td ,(wiliki:format-time (cdr p)))
                    (td "(" ,(how-long-since (cdr p)) " ago)")
                    (td ,(wiliki:wikiname-anchor (car p)))))
-               (wdb-recent-changes (db))))))))
+               (wiliki-db-recent-changes)))))))
 
 (define (cmd-search key)
   (html-page
@@ -594,10 +594,10 @@
                    ,(or (and-let* ((mtime (get-keyword :mtime (cdr p) #f)))
                           #`"(,(how-long-since mtime))")
                         "")))
-               (wdb-search-content (db) key)))))))
+               (wiliki-db-search-content key)))))))
 
 (define (cmd-lwp-view key)
-  (let ((page (wdb-get (db) key #f)))
+  (let ((page (wiliki-db-get key #f)))
     `(,(cgi-header
         :content-type #`"text/plain; charset=,(output-charset)")
       ,#`"title: ,|key|\n"

@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: history.scm,v 1.14 2004-01-12 06:24:24 shirok Exp $
+;;;  $Id: history.scm,v 1.15 2004-03-22 11:44:35 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -154,7 +154,7 @@
      :title ($$ "Edit History:Diff")
      :content
      (or (and-let* ((logfile (log-file-path (wiliki)))
-                    (page    (wdb-get (db) pagename))
+                    (page    (wiliki-db-get pagename))
                     (picked  (wiliki-log-pick-from-file pagename logfile)))
            (let ((entries  (wiliki-log-entries-after picked old-time)))
              (if (>= old-time new-time)
@@ -170,7 +170,7 @@
      :title ($$ "Edit History:View")
      :content
      (or (and-let* ((logfile (log-file-path (wiliki)))
-                    (page    (wdb-get (db) pagename))
+                    (page    (wiliki-db-get pagename))
                     (picked  (wiliki-log-pick-from-file pagename logfile)))
            (let* ((entries  (wiliki-log-entries-after picked old-time))
                   (reverted (wiliki-log-revert* entries (ref page 'content))))

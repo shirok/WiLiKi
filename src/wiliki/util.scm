@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: util.scm,v 1.3 2004-01-13 06:21:10 shirok Exp $
+;;;  $Id: util.scm,v 1.4 2004-03-22 11:44:35 shirok Exp $
 ;;;
 
 ;; This file contains a collection of procedures useful to write
@@ -51,7 +51,7 @@
 
     (define (handle-include pagename after seed)
       (content-fold (if (string-null? after) (read-line) after)
-                    (handle-page (wdb-get (db) pagename #f) seed)))
+                    (handle-page (wiliki-db-get pagename #f) seed)))
 
     (define (handle-page page seed)
       (if (or (not (is-a? page <wiliki-page>))
@@ -74,10 +74,10 @@
 
 ;; Returns recent changes
 (define (wiliki:recent-changes-alist . keys)
-  (take* (wdb-recent-changes (db)) (get-keyword :length keys 50)))
+  (take* (wiliki-db-recent-changes) (get-keyword :length keys 50)))
 
 ;; Returns [SXML]
 (define (wiliki:get-formatted-page-content pagename)
-  (wiliki:format-content (wdb-get (db) pagename #t)))
+  (wiliki:format-content (wiliki-db-get pagename #t)))
 
 (provide "wiliki/util")

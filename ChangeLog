@@ -3,6 +3,7 @@
 	* src/wiliki/db.scm, src/wiliki.scm : made wiliki.db only depend on
 	  wiliki.format.  The APIs are renamed.  Compatibility functions
 	  are moved to wiliki.scm.
+	* src/wiliki/*.scm : adapted to the new wiliki.db api.
 
 2004-03-19  Shiro Kawai  <shiro@acm.org>
 
