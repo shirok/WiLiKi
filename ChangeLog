@@ -1,3 +1,12 @@
+2004-05-23  Shiro Kawai  <shiro@acm.org>
+
+	* release 0.5
+	
+	* doc/Makefile.in : suppress making docs for the time being; it's
+	  not ready.
+	* src/wiliki/rssmix.scm, src/rssmix.cgi : splitted customizable part
+	  and library part.
+
 2004-04-04  Shiro Kawai  <shiro@acm.org>
 
 	* doc/* : start adding documentation.  Yet to determine the format.
