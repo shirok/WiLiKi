@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: db.scm,v 1.5 2003-08-18 06:48:07 shirok Exp $
+;;; $Id: db.scm,v 1.6 2003-09-01 04:57:49 shirok Exp $
 
 (define-module wiliki.db
   (use srfi-13)
@@ -160,8 +160,8 @@
   (apply wdb-search db
          (lambda (k v)
            (and (not (string-prefix? " " k))
-                (string-contains (content-of (wdb-record->page db key v))
-                                      key)))
+                (string-contains-ci (content-of (wdb-record->page db key v))
+                                    key)))
          maybe-sorter))
 
 

@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.13 2003-08-18 06:48:07 shirok Exp $
+;;; $Id: macro.scm,v 1.14 2003-09-01 04:57:49 shirok Exp $
 
 (select-module wiliki)
 (use srfi-19)
@@ -137,6 +137,10 @@
 
 (define-writer-macro (date) (format-time (sys-time)))
 
+;; sample
+(define-writer-macro (srfi n)
+  (format "[http://srfi.schemers.org/srfi-~a/srfi-~a.html srfi-~a]" n n n))
+
 ;;----------------------------------------------
 ;; Reader macro definitions
 ;;
@@ -241,7 +245,7 @@
 ;; Virtual page definitions
 ;;
 
-;; This is just a sample.
+;; These are just samples.
 
 (define-virtual-page (#/^RecentChanges$/ (_))
   (html:table
@@ -251,4 +255,3 @@
            (html:td "(" (how-long-since (cdr p)) " ago)")
            (html:td (format-wikiname-anchor (car p)))))
         (wdb-recent-changes (db)))))
-

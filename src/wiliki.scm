@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.93 2003-09-01 03:45:59 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.94 2003-09-01 04:57:49 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -187,29 +187,31 @@
 ;; Macros -----------------------------------------
 
 (define (expand-writer-macros content)
-  (with-string-io
-   content
-   (lambda ()
-     (define (normal line)
-       (cond ((eof-object? line))
-             ((string=? line "{{{")
-              (print line)
-              (verbatim (read-line)))
-             (else
-              (display
-               (regexp-replace-all
-                #/\[\[($\w+)\]\]/ line
-                (lambda (m) (tree->string (handle-writer-macro (m 1))))))
-              (newline)
-              (normal (read-line)))))
-     (define (verbatim line)
-       (cond ((eof-object? line) (print "}}}")) ;; close verbatim block
-             ((string=? line "}}}")
-              (print line) (normal (read-line)))
-             (else
-              (print line) (verbatim (read-line)))))
 
-     (normal (read-line)))))
+  (define (normal line)
+    (cond ((eof-object? line))
+          ((string=? line "{{{")
+           (print line)
+           (verbatim (read-line)))
+          (else
+           (display
+            (regexp-replace-all
+             #/\[\[($\w+(?:\s+[^\]]*)?)\]\]/ line
+             (lambda (m) (tree->string (handle-writer-macro (m 1))))))
+           (newline)
+           (normal (read-line)))))
+
+  (define (verbatim line)
+    (cond ((eof-object? line) (print "}}}")) ;; close verbatim block
+          ((string=? line "}}}")
+           (print line) (normal (read-line)))
+          (else
+           (print line) (verbatim (read-line)))))
+
+  (with-string-io content
+    (lambda ()
+      (with-port-locking (current-input-port)
+        (lambda () (normal (read-line)))))))
 
 ;; Character conv ---------------------------------
 

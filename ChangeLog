@@ -1,5 +1,10 @@
 2003-08-31  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki/db.scm (wdb-search-content): use case-insensitive search
+
+	* src/wiliki.scm (expand-writer-macros): fix regexp so that args
+	  for writer macros can be handled.
+
 	* src/wiliki/format.scm (format-colored-box): use :style attribute
 	  instead of :bgcolor, so that it won't interfere with different
 	  style sheets.
