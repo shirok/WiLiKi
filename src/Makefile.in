@@ -13,16 +13,22 @@ SCMFILES = wiliki.scm \
            wiliki/macro.scm \
            wiliki/util.scm \
            wiliki/rss.scm \
-           wiliki/pasttime.scm
+           wiliki/pasttime.scm \
+	   wiliki/version.scm
 
 TARGET = $(SCMFILES) wiliki/msgs.jp
 
+GENERATED = wiliki/msgs.jp wiliki/version.scm
+
 SCM_INSTALL_DIR = $(DESTDIR)`$(GAUCHE_CONFIG) --$(INSTALL_TYPE)libdir`
 
-all : wiliki/msgs.jp
+all : wiliki/msgs.jp wiliki/version.scm
 
 wiliki/msgs.jp: wiliki/msgs.jp.euc
 	$(GOSH) -ugauche.charconv -e '(call-with-input-file "wiliki/msgs.jp.euc" (lambda (in) (call-with-output-file "wiliki/msgs.jp" (cut copy-port in <> :unit (quote char)))) :encoding "euc-jp")' -Eexit
+
+wiliki/version.scm : ../VERSION
+	$(GOSH) ./gen-version ../VERSION > wiliki/version.scm
 
 extract :
 	$(GOSH) ./extract.scm wiliki/msgs.jp.euc $(SCMFILES)
@@ -36,7 +42,7 @@ install :
 	done
 
 clean :
-	rm -f core *~ wiliki/*~ wiliki/*.orig wiliki/msgs.jp
+	rm -f core *~ wiliki/*~ wiliki/*.orig $(GENERATED)
 
 distclean : clean
 	rm -f Makefile

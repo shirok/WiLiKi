@@ -1,0 +1,11 @@
+;;-*-Scheme-*-
+
+(define (main args)
+  (let* ((vfile  (cadr args))
+         (verstr (call-with-input-file vfile read-line)))
+    (write '(select-module wiliki))
+    (newline)
+    (write `(define (wiliki:version) ,verstr))
+    (newline))
+  0)
+

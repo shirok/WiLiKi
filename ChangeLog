@@ -1,5 +1,8 @@
 2004-01-19  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki.scm (wiliki:version): added procedure to get wiliki
+	  version.
+
 	* src/wiliki/edit.scm (edit-form) : make "don't update recent changes"
 	  a label of the checkbox.
 

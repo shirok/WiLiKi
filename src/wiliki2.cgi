@@ -22,10 +22,11 @@
     (div (@ (class "footer") (style "text-align:right"))
          "Last modified : " ,(wiliki:format-time (ref page 'mtime))
          (br)
-         "Powered by "
-         (a (@ (href "http://www.shiro.dreamhost.com/scheme/gauche"))
-            "Gauche ")
-         ,(gauche-version))))
+         (a (@ (href "http://www.shiro.dreamhost.com/scheme/wiliki/wiliki.cgi"))
+            "WiLiKi " ,(wiliki:version))
+         " running on "
+         (a (@ (href "http://www.shiro.dreamhost.com/scheme/gauche/"))
+            "Gauche ",(gauche-version)))))
 
 (define (my-page-content page opts)
   `((table
