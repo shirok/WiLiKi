@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: history.scm,v 1.2 2003-08-31 11:17:30 shirok Exp $
+;;;  $Id: history.scm,v 1.3 2003-08-31 12:03:06 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -132,7 +132,7 @@
                       :style "background-color:#ffffff; color:#000000; margin:0"
                       (map diffline diffpage)))))
        (no-history-info pagename))
-   :show-lang? #f :show-edit? #f :show-histroy? #f)
+   :show-lang? #f :show-edit? #f :show-history? #f)
   )
 
 (define (cmd-viewold pagename old-time)
@@ -159,7 +159,7 @@
                       :style "background-color:#ffffff; color:#000000; margin:0"
                       (map (cut string-append <> "\n") reverted)))))
        (no-history-info pagename))
-   :show-lang? #f :show-edit? #f :show-histroy? #f)
+   :show-lang? #f :show-edit? #f :show-history? #f)
   )
 
 (define (no-history-info pagename)
