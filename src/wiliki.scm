@@ -23,14 +23,13 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.59 2003-02-09 07:42:20 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.60 2003-02-11 14:03:16 shirok Exp $
 ;;;
 
 (define-module wiliki
   (use srfi-1)
   (use srfi-2)                          ;and-let*
   (use srfi-13)
-  (use gauche.parameter)
   (use text.html-lite)
   (use text.tree)
   (use util.list)
@@ -39,6 +38,7 @@
   (use dbm)
   (use gauche.charconv)
   (use gauche.version)
+  (use gauche.parameter)
   (use gauche.sequence)
   (use wiliki.mcatalog)
   (export <wiliki> wiliki-main))
@@ -84,6 +84,8 @@
              :init-value "wikidata.dbm")
    (db-type  :accessor db-type-of :init-keyword :db-type
              :initform <gdbm>)
+   (title    :accessor title-of   :init-keyword :title
+             :init-value "WiLiKi")
    (top-page :accessor top-page-of :init-keyword :top-page
              :init-value "TopPage")
    (language :accessor language-of :init-keyword :language
@@ -528,7 +530,7 @@
 
 (define (error-page e)
   (html-page
-   (html:title "Wiliki: Error")
+   (html:title ",(title-of (wiliki)): Error")
    (list (html:h1 "Error")
          (html:p (html-escape-string (ref e 'message)))))
   )
@@ -539,7 +541,7 @@
 
 (define (conflict-page page pagename content donttouch)
   (format-page
-   ($$ "Wiliki: Update Conflict")
+   (string-append (title-of (wiliki))": "($$ "Update Conflict"))
    `(,($$ "<p>It seems that somebody has updated this page while you're editing.  The most recent content is shown below.</p>")
      ,(html:hr)
      ,(colored-box (html:pre (html-escape-string (content-of page))))
@@ -614,6 +616,9 @@
       <p>Whitespace(s) at the beginning of line for preformatted text.
       <p>A line of \"{{{\" also starts a preformatted text, until
          a line of \"}}}\".
+      <p>A line begins with `|' and also ends with `|' becomes a
+         row of a table.  Consecutive rows forms a table.  Inside a row,
+         `|' delimits columns.
       <p>If you want to use special characters at the
          beginning of line, put six consecutive single quotes.
          It emphasizes a null string, so it's effectively nothing.")
@@ -664,7 +669,7 @@
 
 (define (cmd-all)
   (format-page
-   ($$ "Wiliki: All Pages")
+   (string-append (title-of (wiliki))": "($$ "All Pages"))
    (html:ul
     (map (lambda (k) (html:li (wikiname-anchor k)))
          (sort (wdb-map (db) (lambda (k v) k)) string<?)))
@@ -674,7 +679,7 @@
 
 (define (cmd-recent-changes)
   (format-page
-   ($$ "Wiliki: Recent Changes")
+   (string-append (title-of (wiliki))": "($$ "Recent Changes"))
    (html:table
     (map (lambda (p)
            (html:tr
@@ -687,7 +692,7 @@
 
 (define (cmd-search key)
   (format-page
-   ($$ "Wiliki: Search results")
+   (string-append (title-of (wiliki))": "($$ "Search results"))
    (html:ul
     (map (lambda (p)
            (html:li
