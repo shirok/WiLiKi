@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.94 2003-09-01 04:57:49 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.95 2003-11-19 14:59:01 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -477,6 +477,5 @@
    :merge-cookies #t
    :on-error error-page))
 
-;; Local variables:
-;; mode: scheme
-;; end:
+(provide "wiliki")
+

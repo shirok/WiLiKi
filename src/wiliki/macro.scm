@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.14 2003-09-01 04:57:49 shirok Exp $
+;;; $Id: macro.scm,v 1.15 2003-11-19 14:59:06 shirok Exp $
 
 (select-module wiliki)
 (use srfi-19)
@@ -255,3 +255,5 @@
            (html:td "(" (how-long-since (cdr p)) " ago)")
            (html:td (format-wikiname-anchor (car p)))))
         (wdb-recent-changes (db)))))
+
+(provide "wiliki/macro")
