@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.62 2003-02-12 03:23:44 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.63 2003-02-12 06:53:38 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -362,16 +362,12 @@
              (format #f "~a<a href=\"~a\">~a</a>"
                      (if openp "[" "") url url))))))
   (define (bold line)
-    (regexp-replace-all
-     #/'''([^']*)'''/
-     line
-     (lambda (m) #`"<strong>,(m 1)</strong>")))
+    (regexp-replace-all #/'''([^']*)'''/ line "<strong>\\1</strong>"))
   (define (italic line)
-    (regexp-replace-all
-     #/''([^']*)''/
-     line
-     (lambda (m) #`"<em>,(m 1)</em>")))
-  (uri (italic (bold (html-escape-string line)))))
+    (regexp-replace-all #/''([^']*)''/ line "<em>\\1</em>"))
+  (define (nl line)
+    (regexp-replace-all #/~%/ line "<br>"))
+  (uri (nl (italic (bold (html-escape-string line))))))
 
 ;; Read lines from generator and format them.
 (define (format-lines generator)
@@ -480,6 +476,19 @@
               (list* (format-line line) "<li>" opener pre r)))))
 
   (loop (generator) '() 0 '()))
+
+(define (make-line-fetcher port)
+  (let1 buf (read-line port)
+    (lambda ()
+      (if (eof-object? buf)
+          buf
+          (let loop ((next (read-line port))
+                     (r    (list buf)))
+            (set! buf next)
+            (cond ((eof-object? next) (string-concatenate-reverse r))
+                  ((string-prefix? "~" next)
+                   (loop (read-line port) (cons (string-drop next 1) r)))
+                  (else (string-concatenate-reverse r))))))))
   
 (define (format-content page)
   (if (member page (page-format-history)
@@ -488,8 +497,11 @@
       ">>>$$include loop detected<<<"
       (parameterize
        ((page-format-history (cons page (page-format-history))))
-       (with-input-from-string (content-of page)
-         (lambda () (format-lines read-line)))))
+       (call-with-input-string (content-of page)
+         (lambda (p)
+           (with-port-locking p
+             (lambda ()
+               (format-lines (make-line-fetcher p))))))))
   )
 
 (define (format-footer page)
