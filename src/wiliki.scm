@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.53 2003-02-09 00:25:59 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.54 2003-02-09 01:24:31 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -36,7 +36,6 @@
   (use www.cgi)
   (use rfc.uri)
   (use dbm)
-  (use dbm.gdbm)
   (use gauche.charconv)
   (use gauche.version)
   (use gauche.sequence)
@@ -44,14 +43,16 @@
   (export <wiliki> wiliki-main))
 (select-module wiliki)
 
+;; Load extra code only when needed.
+(autoload dbm.gdbm <gdbm>)
 (autoload "wiliki/macro" handle-reader-macro handle-writer-macro)
 
 ;; Version check.
-(when (version<? (gauche-version) "0.6.7")
+(when (version<? (gauche-version) "0.6.7.1")
   (print (tree->string
           `(,(cgi-header)
             ,(html:html (html:head (html:title "Error")))
-            ,(html:body "Gauche 0.6.7 or later is required."))))
+            ,(html:body "Gauche 0.6.7.1 or later is required."))))
   (exit 0))
 
 ;; Some constants
@@ -71,10 +72,15 @@
     (if (null? hist) #f (car hist))))
 
 ;; Class <wiliki> ------------------------------------------
+;;   A main data structure that holds run-time information.
+;;   Available as the value of the parameter wiliki in
+;;   almost all locations.
 
 (define-class <wiliki> ()
   ((db-path  :accessor db-path-of :init-keyword :db-path
              :init-value "wikidata.dbm")
+   (db-type  :accessor db-type-of :init-keyword :db-type
+             :initform <gdbm>)
    (top-page :accessor top-page-of :init-keyword :top-page
              :init-value "TopPage")
    (language :accessor language-of :init-keyword :language
@@ -116,7 +122,8 @@
 
 (define (with-db thunk)
   (parameterize
-   ((db (dbm-open <gdbm> :path (db-path-of (wiliki)) :rwmode :write)))
+   ((db (dbm-open (db-type-of (wiliki))
+                  :path (db-path-of (wiliki)) :rwmode :write)))
    (dynamic-wind
     (lambda () #f)
     thunk
