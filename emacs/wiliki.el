@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2004 Tokuya Kameshima.  All rights reserved.
 
-;; $Id: wiliki.el,v 1.8 2004-03-24 15:36:51 tkame Exp $
+;; $Id: wiliki.el,v 1.9 2004-03-26 15:03:11 tkame Exp $
 
 ;;; Installation:
 
@@ -701,6 +701,11 @@ if BASE-URL is a base url of a WiLiKi site."
 		(string-match wiliki-site-regexp base-url))
 	    base-url))))
 
+(defun wiliki-pseudo-page-p (page)
+  "Return non-nil if PAGE is a pseudo page (not a regular page)."
+  (save-match-data
+    (string-match "^\\$" page)))
+
 ;;
 ;; page view history
 ;;
@@ -980,7 +985,8 @@ If COUNT is a negative number, moving forward is performed."
 (defun wiliki-view-up-page (&optional refetch)
   "View the superior page of the current page."
   (interactive)
-  (let ((upper-page (if (string-match "\\(.*\\):\\([^:]\\)" wiliki-title)
+  (let ((upper-page (if (and (not (wiliki-pseudo-page-p wiliki-title))
+			     (string-match "\\(.*\\):\\([^:]\\)" wiliki-title))
 			(match-string 1 wiliki-title)
 		      (wiliki-base-url->top-page wiliki-base-url))))
     (if (string= wiliki-title upper-page)
@@ -998,17 +1004,17 @@ If COUNT is a negative number, moving forward is performed."
   "Search pages."
   (interactive (list (read-string "Search for: " nil 'wiliki-search-hist)
 		     current-prefix-arg))
-  (wiliki-view-wikiname (concat "$search:" key)))
+  (wiliki-view-wikiname (concat "$search:" key) force-fetch))
 
 (defun wiliki-view-recent (&optional force-fetch)
   "View recent changes."
   (interactive "P")
-  (wiliki-view-wikiname "$recent"))
+  (wiliki-view-wikiname "$recent" force-fetch))
 
 (defun wiliki-view-all (&optional force-fetch)
   "View list of all the pages."
   (interactive "P")
-  (wiliki-view-wikiname "$all"))
+  (wiliki-view-wikiname "$all" force-fetch))
 
 (defun wiliki-view-top (&optional force-fetch)
   "View the top page."
@@ -1021,7 +1027,7 @@ If COUNT is a negative number, moving forward is performed."
 (defun wiliki-backlink (&optional force-fetch)
   "Search for the current page name."
   (interactive "P")
-  (if (string-match "^\\$" wiliki-title)
+  (if (wiliki-pseudo-page-p wiliki-title)
       (error "Not a regular page.")
     (wiliki-search (format "[[%s]]" wiliki-title) force-fetch)))
 
