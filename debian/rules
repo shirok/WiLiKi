@@ -51,7 +51,7 @@ binary-indep: build install
 	dh_testroot -i
 #	dh_installdebconf	
 	dh_installdocs -i
-	dh_installexamples -i src/wiliki-sample.css
+	dh_installexamples -i src/wiliki*.css src/wiliki*.cgi
 	dh_installmenu -i
 #	dh_installlogrotate
 #	dh_installemacsen

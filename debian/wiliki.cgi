@@ -60,7 +60,7 @@
      :top-page "WiLiKi"
      :title "Debian WiLiKi"
      :description "Debian's Default WiLiKi Site"
-;;   :style-sheet "wiliki-sample.css"
+;;   :style-sheet "wiliki.css"
      :language 'en
      :charsets '((jp . euc-jp) (en . utf-8))
      :image-urls '((#/^http:\/\/sourceforge.net\/sflogo/ allow))

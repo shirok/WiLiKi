@@ -1,3 +1,9 @@
+wiliki (0.4+cvs-3) unstable; urgency=low
+
+  * debian/rules: install wiliki*.cgi and wiliki*.css as examples.
+
+ -- YAEGASHI Takeshi <yaegashi@debian.org>  Tue, 24 Feb 2004 20:58:36 +0900
+
 wiliki (0.4+cvs-2) unstable; urgency=low
 
   * debian/rules: generates package version from date, like 0.4+cvs-2.031012.
