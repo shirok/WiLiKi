@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.5 2001-11-24 07:19:55 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.6 2001-11-24 10:05:18 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -18,6 +18,10 @@
   (export <wiliki> wiliki-main))
 (select-module wiliki)
 
+;; Some constants
+
+(define *recent-changes* " %recent-changes")
+
 ;; Class <wiliki> ------------------------------------------
 
 (define-class <wiliki> ()
@@ -29,6 +33,8 @@
              :init-value "wiliki.cgi")
    (language :accessor language-of :init-keyword :language
              :init-value 'jp)
+   (editable? :accessor editable?  :init-keyword :editable?
+              :init-value #t)
    ;; internal
    (db       :accessor db-of)
    ))
@@ -103,10 +109,28 @@
     ((jp) "[一覧]")
     (else "[All Pages]")))
 
+(define (msg-recent-changes-link wiliki)
+  (case (language-of wiliki)
+    ((jp) "[最近の更新]")
+    (else "[Recent Changes]")))
+
 (define (msg-all-pages wiliki)
   (case (language-of wiliki)
     ((jp) "Wiliki: 一覧")
     (else "Wiliki: All Pages")))
+
+(define (msg-recent-changes wiliki)
+  (case (language-of wiliki)
+    ((jp) "Wiliki: 最近の更新")
+    (else "Wiliki: Recent Changes")))
+
+(define (language-link wiliki pagename)
+  (receive (target label)
+      (case (language-of wiliki)
+        ((jp) (values 'en "->English"))
+        (else (values 'jp "->Japanese")))
+    (html:a :href (format #f "~a?~a&l=~s" (cgi-name-of wiliki) pagename target)
+            "[" label "]")))
 
 ;; Database access ------------------------------------------
 
@@ -144,7 +168,7 @@
          (make <page>))
         (else #f)))
 
-;; DB-PUT-PAGE db key page
+;; WDB-PUT db key page
 (define-method wdb-put! ((db <dbm>) key (page <page>))
   (let ((s (with-output-to-string
              (lambda ()
@@ -152,8 +176,18 @@
                             :cuser (cuser-of page)
                             :mtime (mtime-of page)
                             :muser (muser-of page)))
-               (display (content-of page))))))
-    (dbm-put! db key s)))
+               (display (content-of page)))))
+        (r (alist-delete key
+                         (read-from-string (dbm-get db *recent-changes* "()"))))
+        )
+    (dbm-put! db key s)
+    (dbm-put! db *recent-changes*
+              (write-to-string
+               (acons key (mtime-of page)
+                      (if (>= (length r) 50) (take r 49) r))))))
+
+(define-method wdb-recent-changes ((db <dbm>))
+  (read-from-string (dbm-get db *recent-changes* "()")))
 
 (define-method wdb-map ((db <dbm>) proc)
   (dbm-map db proc))
@@ -163,6 +197,9 @@
 (define (ccv str) (if (string-null? str) "" (ces-convert str "*JP")))
 
 ;; Formatting html --------------------------------
+
+(define (format-time time)
+  (sys-strftime "%Y/%m/%d %T" (sys-localtime time)))
 
 (define (url self fmt . args)
   (apply format #f
@@ -264,14 +301,15 @@
           ,(html:hr)
           ,(html:div :align "right"
                      "Last modified : "
-                     (sys-strftime "%Y/%m/%d %T"
-                                   (sys-localtime (mtime-of page))))))
-      
+                     (format-time (mtime-of page)))))
+
       (cons "<p>" (loop (read-line) '())))))
 
 (define (format-page self title page . args)
-  (let ((show-edit? (get-keyword :show-edit? args #t))
+  (let ((show-edit? (and (editable? self) (get-keyword :show-edit? args #t)))
         (show-all?  (get-keyword :show-all? args #t))
+        (show-recent-changes? (get-keyword :show-recent-changes? args #t))
+        (page-id (get-keyword :page-id args title))
         (content (if (is-a? page <page>) (format-content self page) page)))
     `(,(html-doctype :type :transitional)
       ,(html:html
@@ -280,6 +318,7 @@
          :bgcolor "#eeeedd"
          (html:h1 title)
          (html:div :align "right"
+                   (language-link self page-id)
                    (if (string=? title (top-page-of self))
                        ""
                        (html:a :href (cgi-name-of self) (msg-top-link self)))
@@ -289,6 +328,9 @@
                        "")
                    (if show-all?
                        (html:a :href (url self "c=a") (msg-all-link self))
+                       "")
+                   (if show-recent-changes?
+                       (html:a :href (url self "c=r") (msg-recent-changes-link self))
                        ""))
          (html:hr)
          content)))))
@@ -319,6 +361,8 @@
         (else (error "No such page" pagename))))
 
 (define (cmd-edit self pagename)
+  (unless (editable? self)
+    (errorf "Can't edit the page ~s: the database is read-only" pagename))
   (let ((page (wdb-get (db-of self) pagename #t)))
     (format-page
      self pagename
@@ -335,8 +379,11 @@
                 ))))
 
 (define (cmd-commit-edit self pagename content)
-  (let ((page (wdb-get (db-of self) pagename #t)))
-    (set! (mtime-of page) (sys-time))
+  (unless (editable? self)
+    (errorf "Can't edit the page ~s: the database is read-only" pagename))
+  (let ((page (wdb-get (db-of self) pagename #t))
+        (now  (sys-time)))
+    (set! (mtime-of page) now)
     (set! (content-of page) content)
     (wdb-put! (db-of self) pagename page)
     (format-page self pagename page)))
@@ -346,10 +393,26 @@
    self (msg-all-pages self)
    (html:ul
     (map (lambda (k)
-           (html:li (html:a :href (url self "~a" k) (html-escape-string k))))
+           (if (string-prefix? " " k)
+               '()
+               (html:li (html:a :href (url self "~a" k) (html-escape-string k)))))
          (sort (wdb-map (db-of self) (lambda (k v) k)) string<?)))
+   :page-id "c=a"
    :show-edit? #f
    :show-all? #f))
+
+(define (cmd-recent-changes self)
+  (format-page
+   self (msg-recent-changes self)
+   (html:table
+    (map (lambda (p)
+           (html:tr
+            (html:td (format-time (cdr p)))
+            (html:td (html:a :href (url self "~a" (car p)) (car p)))))
+         (wdb-recent-changes (db-of self))))
+   :page-id "c=r"
+   :show-edit? #f
+   :show-recent-changes? #f))
 
 ;; Entry ------------------------------------------
 
@@ -373,6 +436,7 @@
                       ((not command) (cmd-view self pagename))
                       ((equal? command "e") (cmd-edit self pagename))
                       ((equal? command "a") (cmd-all self))
+                      ((equal? command "r") (cmd-recent-changes self))
                       ((equal? command "s")
                        (cmd-commit-edit self pagename
                                         (cgi-get-parameter "content" param
