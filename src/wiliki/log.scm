@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: log.scm,v 1.3 2003-08-25 20:45:08 shirok Exp $
+;;; $Id: log.scm,v 1.4 2003-08-26 05:13:18 shirok Exp $
 
 (define-module wiliki.log
   (use srfi-1)
@@ -90,11 +90,8 @@
         (lambda ()
           (format #t "C ~s ~s ~s ~s~%"
                   pagename time remote-addr remote-user)
-          (with-input-from-string log
-            (lambda ()
-              (with-port-locking (current-input-port)
-                (lambda ()
-                  (port-for-each (cut print "L " <>) read-line)))))
+          (for-each (cut print "L " <>)
+                    (call-with-input-string log port->string-list))
           (emit-edit-list new old)
           (print "."))
         ))
@@ -244,9 +241,30 @@
              (lambda (deleted-lines r)
                (append! (reverse! r) deleted-lines))))
 
+;; Merge branches  ----------------------------------------
 
-(define (wiliki-log-merge entry current alt)
-  #f)
+;; Arguments:
+;;  c-page : the common ancestor of two branches
+;;  a-page, b-page : the branches
+;;  These can be either a string, or list of lines.
+;;
+;; Return values:
+;;  If successfully merged, a merged page (list of lines) and #t.
+;;  If conflict occurs, a partially merged page (list of lines, with
+;;  a conflicting lines indicated by (a . line) and/or (b . line)), and #f.
+
+(define (wiliki-log-merge c-page a-page b-page)
+  (let* ((c-lines (string->lines c-page))
+		 (a-lines (string->lines a-page))
+		 (b-lines (string->lines b-page)))
+	(let loop ((a-hunks (lcs-edit-list c-lines a-lines string=?))
+			   (b-hunks (lcs-edit-list c-lines b-lines string=?))
+			   (a-cnt   0)
+			   (b-cnt   0)
+			   (c-cnt   0)
+			   (r '())
+			   (success? #t))
+	  ...)))
 
 ;; Utility functions -----------------------------------
 
