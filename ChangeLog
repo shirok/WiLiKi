@@ -1,3 +1,10 @@
+2003-08-19  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm, src/wiliki/format.scm : Oops.  Changing the default
+	  link to pathname notation had one undesirable side effect---it
+	  interferes with PageName begins with '/'.  So the link use
+	  old ?PageName notation now.
+
 2003-08-18  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm, src/wiliki/format.scm : Changed precedence of

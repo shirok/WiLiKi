@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.5 2003-08-19 10:49:23 shirok Exp $
+;;; $Id: format.scm,v 1.6 2003-08-19 11:22:28 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -62,8 +62,7 @@
 
 (define (format-wikiname-anchor wikiname)
   ;; assumes wikiname already exist in the db.
-  (html:a :href (url-page (cv-out wikiname) #f)
-          (html-escape-string wikiname)))
+  (html:a :href (url "~a" (cv-out wikiname)) (html-escape-string wikiname)))
 
 ;;=================================================
 ;; Formatting: Wiki -> HTML

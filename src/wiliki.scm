@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.85 2003-08-19 10:49:23 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.86 2003-08-19 11:22:28 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -129,22 +129,19 @@
 (define (cgi-name-of wiliki)
   (sys-basename (script-name-of wiliki)))
 
-(define (%url-format full? page fmt args)
+(define (%url-format full? fmt args)
   (let ((self (wiliki))
-        (fstr (if fmt #`"?,|fmt|&l=,(lang)" #`"?l=,(lang)"))
-        (page (if page #`"/,(uri-encode-string page)" "")))
+        (fstr (if fmt #`"?,|fmt|&l=,(lang)" #`"?l=,(lang)")))
     (string-append
      (if full?
          #`"http://,(server-name-of self),(script-name-of self)"
          (cgi-name-of self))
-     page
      (if (null? args)
          fstr
          (apply format #f fstr (map uri-encode-string args))))))
 
-(define (url fmt . args) (%url-format #f #f fmt args))
-(define (url-full fmt . args) (%url-format #t #f fmt args))
-(define (url-page page fmt . args) (%url-format #f page fmt args))
+(define (url fmt . args) (%url-format #f fmt args))
+(define (url-full fmt . args) (%url-format #t fmt args))
 
 ;; Creates a link to switch language
 (define (language-link pagename)
@@ -152,7 +149,7 @@
       (case (lang)
         ((jp) (values 'en "->English"))
         (else (values 'jp "->Japanese")))
-    (html:a :href #`",(cgi-name-of (wiliki))/,|pagename|?l=,|target|"
+    (html:a :href #`",(cgi-name-of (wiliki))?,|pagename|?l=,|target|"
             "[" (html-escape-string label) "]")))
 
 ;; fallback
