@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.39 2002-05-22 06:18:47 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.40 2002-09-26 09:32:18 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -94,8 +94,7 @@
 
 ;; WDB-GET db key &optional create-new
 (define-method wdb-get ((db <dbm>) key . option)
-  (cond ((dbm-get db key #f)
-         => (lambda (s) (wdb-record->page db key s)))
+  (cond ((dbm-get db key #f) => (cut wdb-record->page db key <>))
         ((and (pair? option) (car option))
          (make <page> :key key))
         (else #f)))
@@ -163,14 +162,12 @@
          (display
           (regexp-replace-all
            #/\[\[($\w+)\]\]/ line
-           (lambda (m)
-             (tree->string (handle-writer-macro (rxmatch-substring m 1))))))
+           (lambda (m) (tree->string (handle-writer-macro (m 1))))))
          (newline))
        read-line))))
 
 ;; Character conv ---------------------------------
-;;  string-null? check is to avoid a bug in Gauche-0.4.9
-(define (ccv str) (if (string-null? str) "" (ces-convert str "*JP")))
+(define (ccv str) (ces-convert str "*JP"))
 
 ;; Formatting html --------------------------------
 
@@ -187,10 +184,9 @@
     (call-with-input-string (content-of page)
       (lambda (p)
         (let loop ((line (read-line p)))
-          (rxmatch-cond
-            (test (eof-object? line) #f)
-            ((rxmatch rx line) (#f prefix) prefix)
-            (else (loop (read-line p)))))))))
+          (cond ((eof-object? line) #f)
+                ((rx line) => (cut <> 1))
+                (else (loop (read-line p)))))))))
 
 (define (wikiname-anchor wikiname)
   ;; assumes wikiname already exist in the db.
@@ -229,11 +225,8 @@
 (define (format-line line)
   ;; parse to next "[[" or "]]"
   (define (token s)
-    (cond ((rxmatch #/\[\[|\]\]/ s)
-           => (lambda (m)
-                (values (rxmatch-before m)
-                        (rxmatch-substring m)
-                        (rxmatch-after m))))
+    (cond ((#/\[\[|\]\]/ s)
+           => (lambda (m) (values (m 'before) (m) (m 'after))))
           (else (values s #f #f))))
   ;; return <str in paren> and <the rest of string>
   (define (find-closer s level in)
@@ -254,8 +247,7 @@
            (cons (format-parts pre)
                  (receive (wikiname rest) (find-closer post 0 '())
                    (if wikiname
-                       (cons (format-wiki-name wikiname)
-                             (loop rest))
+                       (cons (format-wiki-name wikiname) (loop rest))
                        (list rest))))
            (format-parts s))))
    "\n")
@@ -281,41 +273,39 @@
     (regexp-replace-all
      #/'''([^']*)'''/
      line
-     (lambda (match)
-       (format #f "<strong>~a</strong>" (rxmatch-substring match 1)))))
+     (lambda (m) #`"<strong>,(m 1)</strong>")))
   (define (italic line)
     (regexp-replace-all
      #/''([^']*)''/
      line
-     (lambda (match)
-       (format #f "<em>~a</em>" (rxmatch-substring match 1)))))
+     (lambda (m) #`"<em>,(m 1)</em>")))
   (uri (italic (bold (html-escape-string line)))))
 
 (define (format-content page)
-  (define (loop line nestings)
+  (define (loop line nestings id)
     (cond ((eof-object? line) nestings)
           ((string-null? line)
-           `(,@nestings "</p>\n<p>" ,@(loop (read-line) '())))
+           `(,@nestings "</p>\n<p>" ,@(loop (read-line) '() id)))
           ((string-prefix? "----" line)
-           `(,@nestings "</p><hr><p>" ,@(loop (read-line) '())))
+           `(,@nestings "</p><hr><p>" ,@(loop (read-line) '() id)))
           ((and (string-prefix? " " line) (null? nestings))
-           `(,@nestings "<pre>" ,@(pre line)))
+           `(,@nestings "<pre>" ,@(pre line id)))
           ((rxmatch #/^(\*\*?\*?) / line)
            => (lambda (m)
                 (let* ((lev (- (rxmatch-end m 1) (rxmatch-start m 1)))
-                       (hfn (list-ref (list html:h2 html:h3 html:h4)
-                                      (- lev 1))))
+                       (hfn (ref `(,html:h2 ,html:h3 ,html:h4) (- lev 1)))
+                       (anchor (cut html:a :name <> <>)))
                   `(,@nestings
-                    ,(hfn (format-line (rxmatch-after m)))
-                    ,@(loop (read-line) '())))))
+                    ,(hfn (anchor id (format-line (rxmatch-after m))))
+                    ,@(loop (read-line) '() (+ id 1))))))
           ((rxmatch #/^(--?-?) / line)
            => (lambda (m)
                 (list-item m (- (rxmatch-end m 1) (rxmatch-start m 1))
-                           nestings "<ul>" "</ul>")))
+                           nestings "<ul>" "</ul>" id)))
           ((rxmatch #/^1(\.\.?\.?) / line)
            => (lambda (m)
                 (list-item m (- (rxmatch-end m 1) (rxmatch-start m 1))
-                           nestings "<ol>" "</ol>")))
+                           nestings "<ol>" "</ol>" id)))
           ((rxmatch #/^:(.*):([^:]*)$/ line)
            => (lambda (m)
                 `(,@(if (equal? nestings '("</dl>"))
@@ -323,17 +313,17 @@
                         `(,@nestings "<dl>"))
                   "<dt>" ,(format-line (rxmatch-substring m 1))
                   "<dd>" ,(format-line (rxmatch-substring m 2))
-                  ,@(loop (read-line) '("</dl>")))))
+                  ,@(loop (read-line) '("</dl>") id))))
           (else
-           (cons (format-line line) (loop (read-line) nestings)))))
+           (cons (format-line line) (loop (read-line) nestings id)))))
 
-  (define (pre line)
+  (define (pre line id)
     (cond ((eof-object? line) '("</pre>"))
           ((string-prefix? " " line)
            `(,@(format-line line) ,@(pre (read-line))))
-          (else (cons "</pre>\n" (loop line '())))))
+          (else (cons "</pre>\n" (loop line '() id)))))
 
-  (define (list-item match level nestings opentag closetag)
+  (define (list-item match level nestings opentag closetag id)
     (let ((line  (rxmatch-after match))
           (cur (length nestings)))
       (receive (opener closer)
@@ -345,7 +335,7 @@
                  (split-at nestings (- cur level)))
                 (else (values '() nestings)))
         `(,@opener "<li>" ,(format-line line)
-          ,@(loop (read-line) closer)))))
+          ,@(loop (read-line) closer id)))))
 
   (if (member page (page-format-history)
               (lambda (p1 p2) (string=? (key-of p1) (key-of p2))))
@@ -355,7 +345,7 @@
        ((page-format-history (cons page (page-format-history))))
        (with-input-from-string (content-of page)
          (lambda ()
-           (cons "<p>" (loop (read-line) '()))))))
+           (cons "<p>" (loop (read-line) '() 0))))))
   )
 
 (define (format-footer page)
@@ -427,13 +417,12 @@
          (html:head (html:title "Wiliki: Error"))
          (html:body
           (html:h1 "Error")
-          (html:p (html-escape-string (slot-ref e 'message)))
+          (html:p (html-escape-string (ref e 'message)))
           )))
   )
 
 (define (cmd-view pagename)
-  (cond ((wdb-get (db) pagename)
-         => (lambda (page) (format-page pagename page)))
+  (cond ((wdb-get (db) pagename) => (cut format-page pagename <>))
         ((equal? pagename (top-page-of (wiliki)))
          (let ((toppage (make <page> :key pagename :mtime (sys-time))))
            (wdb-put! (db) (top-page-of (wiliki)) toppage)
