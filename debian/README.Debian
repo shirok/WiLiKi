@@ -1,0 +1,16 @@
+WiLiKi for Debian
+-----------------
+
+The documentation can be found at:
+http://www.shiro.dreamhost.com/scheme/wiliki/wiliki.cgi
+
+After installation you can find a sample WiLiKi site working at
+/cgi-bin/wiliki.cgi on your web server.  /var/lib/wiliki is
+prepared for www-data to store WiLiKi database files such as
+wikidata.dbm.
+
+You can copy and customize /usr/lib/cgi-bin/wiliki.cgi
+(optionally with wiliki-sample.css in the example directory) to
+set up another WiLiKi site.
+
+ -- YAEGASHI Takeshi <t@keshi.org>, Fri, 20 Dec 2002 18:30:05 +0900

@@ -1,0 +1,16 @@
+Source: wiliki
+Section: web
+Priority: optional
+Maintainer: YAEGASHI Takeshi <yaegashi@debian.org>
+Build-Depends-Indep: debhelper (>> 3.0.0), gauche (>= 0.7.1), autoconf
+Standards-Version: 3.6.1
+
+Package: wiliki
+Architecture: all
+Depends: gauche (>= 0.7.1)
+Conflicts: wiliki-experimental
+Description: Yet another Wiki clone written in Scheme
+ WiLiKi is yet another Wiki-clone suitable for intra-net collaborative
+ work in multilingual environment.  The features include multiple
+ back-end databases, permission and version control, and easy access
+ from other programs.

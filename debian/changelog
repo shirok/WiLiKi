@@ -1,0 +1,72 @@
+wiliki (0.4+031009-1) unstable; urgency=low
+
+  * Debian scripts integrated into WiLiKi CVS.
+  * debian/wiliki.cgi: Debian version of the CGI script.
+
+ -- YAEGASHI Takeshi <yaegashi@debian.org>  Thu,  9 Oct 2003 23:35:25 +0900
+
+wiliki (0.4-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- YAEGASHI Takeshi <yaegashi@debian.org>  Thu,  9 Oct 2003 03:52:03 +0900
+
+wiliki (0.3+030913-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- YAEGASHI Takeshi <yaegashi@debian.org>  Sat, 13 Sep 2003 02:32:09 +0900
+
+wiliki (0.3+030824-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- YAEGASHI Takeshi <yaegashi@debian.org>  Sun, 24 Aug 2003 21:37:00 +0900
+
+wiliki (0.3+030815-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- YAEGASHI Takeshi <yaegashi@debian.org>  Fri, 15 Aug 2003 06:32:57 +0900
+
+wiliki (0.3+030405-1) unstable; urgency=low
+    
+  * New upstream release.
+  * src/wiliki.cgi: Set the default title to "Debian WiLiKi".  Commented
+    out style-sheet argument.
+  * debian/TODO.Debian: Renamed.
+  * debian/rules: Specify DH_OPTIONS=-Pdebian/tmp.
+
+ -- YAEGASHI Takeshi <yaegashi@debian.org>  Sun,  6 Apr 2003 03:33:09 +0900
+
+wiliki (0.3+030328-2) unstable; urgency=low
+
+  * debian/TODO: Memos on possible improvements of packaging.
+  * First upload, closes: #186512.
+
+ -- YAEGASHI Takeshi <yaegashi@debian.org>  Fri, 28 Mar 2003 22:57:41 +0900
+
+wiliki (0.3+030328-1) unstable; urgency=low
+
+  * New upstream version (pulled from CVS).
+
+ -- YAEGASHI Takeshi <yaegashi@debian.org>  Fri, 28 Mar 2003 03:09:01 +0900
+
+wiliki (0.3-2) unstable; urgency=low
+
+  * src/wiliki.scm: Support ftp/http/https links.
+
+ -- YAEGASHI Takeshi <yaegashi@debian.org>  Wed,  5 Mar 2003 00:21:27 +0900
+
+wiliki (0.3-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- YAEGASHI Takeshi <yaegashi@debian.org>  Tue,  4 Mar 2003 01:03:14 +0900
+
+wiliki (0.2-1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- YAEGASHI Takeshi <t@keshi.org>  Fri, 20 Dec 2002 18:30:05 +0900
+

@@ -1,3 +1,10 @@
+2003-10-09  YAEGASHI Takeshi  <t@keshi.org>
+
+	* debian: new directory: Debian packaging files.
+	
+	* DIST_EXCLUDE: do not include config.status, config.log and
+	  debian directory in the release distribution.
+
 2003-10-07  Shiro Kawai  <shiro@acm.org>
 
 	* release 0.4
