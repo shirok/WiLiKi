@@ -1,5 +1,6 @@
 2002-03-02  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki.scm : added plaintext mode.
 	* src/wiliki.scm : made the current <wiliki> object, the current
 	  language and the current db parameters; this simplifies the
 	  code a lot.

@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.31 2002-03-03 09:12:52 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.32 2002-03-03 09:20:23 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -622,7 +622,7 @@
    :show-edit? #f
    :show-recent-changes? #f))
 
-(define  (cmd-search key)
+(define (cmd-search key)
   (format-page
    ($$ "Wiliki: Search results")
    (html:ul
@@ -630,6 +630,18 @@
          (wdb-search-content (db) key)))
    :page-id (format #f "c=s&key=~a" (html-escape-string key))
    :show-edit? #f))
+
+(define (cmd-plain-text key)
+  (let ((page (wdb-get (db) key #f)))
+    `(,(format-header 'plain)
+      ,(if page
+           `(,#`"title: ,|key|\n"
+             ,#`"mtime: ,(mtime-of page)\n"
+             "\n"
+             ,(content-of page))
+           `(,#`"title: ,|key|\n"
+             ,#`"mtime: 0\n"
+             "\n")))))
 
 ;; Entry ------------------------------------------
 
@@ -656,6 +668,7 @@
             ((or (not command) (eq? command #t))
              (cmd-view pagename))
             ((equal? command "e") (cmd-edit pagename))
+            ((equal? command "t") (cmd-plain-text pagename))
             ((equal? command "a") (cmd-all))
             ((equal? command "r") (cmd-recent-changes))
             ((equal? command "s")
