@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.20 2002-01-14 19:26:52 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.21 2002-02-27 20:41:54 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -86,7 +86,7 @@
          (make <page>))
         (else #f)))
 
-;; WDB-PUT db key page
+;; WDB-PUT! db key page
 (define-method wdb-put! ((db <dbm>) key (page <page>))
   (let ((s (with-output-to-string
              (lambda ()
@@ -103,6 +103,13 @@
               (write-to-string
                (acons key (mtime-of page)
                       (if (>= (length r) 50) (take r 49) r))))))
+
+;; WDB-DELETE! db key
+(define-method wdb-delete! ((db <dbm>) key)
+  (let ((r (alist-delete key
+                         (read-from-string (dbm-get db *recent-changes* "()")))))
+    (dbm-delete! db key)
+    (dbm-put! db *recent-changes* (write-to-string r))))
 
 (define-method wdb-recent-changes ((db <dbm>))
   (read-from-string (dbm-get db *recent-changes* "()")))
@@ -173,7 +180,7 @@
             (else (loop (read-line p)))))))))
 
 (define (invalid-wiki-name? self name)
-  (string-index name #[\s<>%$]))
+  (string-index name #[\s%$]))
 
 (define (inter-wiki-name? self name)
   (receive (head after) (string-scan name ":" 'both)
@@ -472,11 +479,16 @@
   (let ((page (wdb-get (db-of self) pagename #t))
         (now  (sys-time)))
     (if (or (not (mtime-of page)) (eqv? (mtime-of page) mtime))
-        (begin
-          (set! (mtime-of page) now)
-          (set! (content-of page) (expand-writer-macros content))
-          (wdb-put! (db-of self) pagename page)
-          (format-page self pagename page))
+        (if (string-null? content)
+            (begin
+              (set! (content-of page) "")
+              (wdb-delete! (db-of self) pagename)
+              (format-page self pagename page))
+            (begin
+              (set! (mtime-of page) now)
+              (set! (content-of page) (expand-writer-macros content))
+              (wdb-put! (db-of self) pagename page)
+              (format-page self pagename page)))
         (format-page
          self ($$ "Wiliki: Update Conflict")
          `(,($$ "<p>It seems that somebody has updated this page while you're editing.  The most recent content is shown below.</p>")
