@@ -23,14 +23,13 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: rss.scm,v 1.1 2003-02-09 02:30:57 shirok Exp $
+;;;  $Id: rss.scm,v 1.2 2003-02-09 02:58:23 shirok Exp $
 ;;;
 
 ;; In future, this might be rewritten to use proper XML framework.
 ;; for now, I use an ad-hoc approach.
 
 (select-module wiliki)
-(use util.list)
 
 ;; API
 (define (rss-page db)
@@ -56,7 +55,8 @@
       ,(map (lambda (entry)
               (rdf-item (rdf-title (car entry))
                         (rdf-link (url-full "~a" (cv-out (car entry))))
-                        (rdf-description (car entry))))
+                        (rdf-description
+                         #`",(car entry) (,(how-long-since (cdr entry)))")))
             entries)
       "</rdf:RDF>\n")))
 
@@ -82,3 +82,6 @@
 (define (rdf-title title) (rdf-simple-1 "title" title))
 (define (rdf-link link) (rdf-simple-1 "link" link))
 (define (rdf-description desc) (rdf-simple-1 "description" desc))
+
+
+(provide "wiliki/rss")
