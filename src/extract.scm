@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: extract.scm,v 1.3 2003-02-07 22:01:52 shirok Exp $
+;;; $Id: extract.scm,v 1.4 2003-02-11 14:03:57 shirok Exp $
 
 (define (scan-src file)
   (define msgs '())
@@ -44,6 +44,15 @@
       (call-with-input-file file port->sexp-list)
       '()))
 
+(define (multiline-string str)
+  (string-append
+   "\""
+   (string-join
+    (map (cut regexp-replace-all #/[\"\\]/ <> (lambda (m) #`"\\,(m 0)"))
+         (string-split str #\newline))
+    "\n")
+   "\""))
+
 (define (main args)
   (unless (= (length args) 3)
     (error "usage: gosh extract.scm file.scm msg-file"))
@@ -62,15 +71,15 @@
       (lambda (p)
         (for-each (lambda (src-msg)
                     (apply format p ";; ~a : line ~a\n" (cadr src-msg))
-                    (format p "(~s\n" (car src-msg))
-                    (format p " ~s\n" (caddr src-msg))
+                    (format p "(~a\n" (multiline-string (car src-msg)))
+                    (format p " ~a\n" (multiline-string (caddr src-msg)))
                     (format p ")\n\n"))
                   (reverse src-msgs))
         (for-each (lambda (dst-msg)
                     (when (null? (cddr dst-msg))
-                      (format p ";; obsoleted message\n")
-                      (format p ";; ~s\n" (car dst-msg))
-                      (format p ";; ~s\n\n" (cadr dst-msg))))
+                      (format p "#| obsoleted message\n")
+                      (format p "~a\n" (multiline-string (car dst-msg)))
+                      (format p "~a\n\n" (multiline-string (cadr dst-msg)))))
                   (reverse dst-msgs))))
     (when (file-exists? dst-file)
       (sys-rename dst-file (string-append dst-file ".orig")))
