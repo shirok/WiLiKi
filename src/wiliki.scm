@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.57 2003-02-09 03:19:43 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.58 2003-02-09 03:22:32 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -181,11 +181,11 @@
     (dbm-put! db key s)
     (unless donttouch
       (let1 r (alist-delete key
-                            (read-from-string (dbm-get db *recent-changes* "()")))
+                            (read-from-string
+                             (dbm-get db *recent-changes* "()")))
         (dbm-put! db *recent-changes*
                   (write-to-string
-                   (acons key (mtime-of page)
-                          (if (>= (length r) 50) (take r 49) r))))))
+                   (acons key (mtime-of page) (take* r 49))))))
     ))
 
 ;; WDB-DELETE! db key
