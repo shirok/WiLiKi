@@ -19,7 +19,7 @@ HTMLDIR = manual-html-ja
 
 GENERATED = $(HTMLDIR)
 
-all : $(HTMLDIR)/index.html
+all : 
 
 $(HTMLDIR)/index.html :
 	$(WILIKI) format manual-ja manual-html-ja
