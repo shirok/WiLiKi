@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.77 2003-04-22 01:02:51 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.78 2003-05-03 23:20:24 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -136,6 +136,7 @@
 (define (url fmt . args) (%url-format #f fmt args))
 (define (url-full fmt . args) (%url-format #t fmt args))
 
+;; Creates a link to switch language
 (define (language-link pagename)
   (receive (target label)
       (case (lang)
@@ -200,6 +201,11 @@
     ,(html:html
       (html:head
        head-elements
+       (or (and-let* ((w (wiliki))
+                      (sv (server-name-of w))
+                      (sc (script-name-of w)))
+             (html:base :href #`"http://,|sv|,|sc|"))
+           '())
        (or (and-let* ((w (wiliki)) (ss (style-sheet-of w)))
              (html:link :rel "stylesheet" :href ss :type "text/css"))
            ;; default
@@ -421,18 +427,47 @@
            `(,#`"mtime: 0\n"
              "\n")))))
 
+;; Retrieve requested page name.
+;; The pagename can be specified in one of the following ways:
+;;
+;;  * Using cgi parameter - in this case, PageName must be the
+;;    first parameter before any other CGI parameters.
+;;      http://foo.net/wiliki.cgi?PageName
+;;  * Using cgi 'p' parameter
+;;      http://foo.net/wiliki.cgi?l=jp&p=PageName
+;;  * Using request path
+;;      http://foo.net/wiliki.cgi/PageName
+;;
+;; The url is tested in the order above.  So the following URL points
+;; the page "Bar", no matter what "Foo" and "Baz" are.
+;;      http://foo.net/wiliki.cgi/Foo?Bar&p=Baz
+;;
+;; If no page is given, the top page of WiLiKi is used.
+
+(define (get-page-name wiki param)
+
+  ;; Extract the extra components of REQUEST_URI after the CGI name.
+  ;; Falls back to top page name.
+  (define (get-path)
+    (or (and-let* ((uri (sys-getenv "REQUEST_URI"))
+                   (script (script-name-of wiki))
+                   (path (string-scan uri #`",|script|/" 'after)))
+          (cv-in (uri-decode-string path)))
+        (top-page-of wiki)))
+
+  (cond ((null? param) (get-path))
+        ((eq? (cadar param) #t) (cv-in (caar param)))
+        (else (cgi-get-parameter "p" param
+                                 :default (get-path)
+                                 :convert cv-in)))
+  )
+
 ;; Entry ------------------------------------------
 
 (define-method wiliki-main ((self <wiliki>))
   (cgi-main
    (lambda (param)
-     (let ((pagename (cond ((null? param) (top-page-of self))
-                           ((eq? (cadar param) #t)
-                            (cv-in (caar param)))
-                           (else
-                            (cgi-get-parameter "p" param
-                                               :default (top-page-of self)
-                                               :convert cv-in))))
+     (let ((pagename (get-page-name self param))
            (command  (cgi-get-parameter "c" param))
            (language (cgi-get-parameter "l" param :convert string->symbol)))
        (parameterize

@@ -1,3 +1,8 @@
+2003-05-03  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm (wiliki-main): allow pagenames to be specified by
+	  appending extra path component like "wiliki.cgi/PageName".
+
 2003-04-21  Shiro Kawai  <shiro@acm.org>
 
 	* Makefile, src/Makefile.am, test/Makefile.am, configure.in :
