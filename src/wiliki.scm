@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.48 2002-12-19 00:06:06 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.49 2002-12-19 01:29:24 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -63,6 +63,8 @@
               :init-value #t)
    (style-sheet :accessor style-sheet-of :init-keyword :style-sheet
                 :init-value #f)
+   (image-urls :accessor image-urls-of :init-keyword :image-urls
+               :init-value ())
    ))
 
 (define (url fmt . args)
