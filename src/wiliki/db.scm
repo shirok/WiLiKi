@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: db.scm,v 1.1 2003-04-22 01:02:52 shirok Exp $
+;;; $Id: db.scm,v 1.2 2003-06-07 09:14:34 shirok Exp $
 
 (define-module wiliki.db
   (use srfi-13)
@@ -40,10 +40,23 @@
 
 ;; Database access ------------------------------------------
 
+(define-constant *retry-limit* 5)
+(define-constant *EAVAIL-message* "resource temporarily unavailable")
+
+(define (db-try-open retry)
+  (with-error-handler
+      (lambda (e)
+        (cond ((>= retry *retry-limit*) (raise e))
+              ((string-contains-ci (ref e 'message) *EAVAIL-message*)
+               (sys-sleep 1) (db-try-open (+ retry 1)))
+              (else (raise e))))
+    (lambda ()
+      (dbm-open (db-type-of (wiliki))
+                :path (db-path-of (wiliki)) :rwmode :write))))
+
 (define (with-db thunk)
   (parameterize
-   ((db (dbm-open (db-type-of (wiliki))
-                  :path (db-path-of (wiliki)) :rwmode :write)))
+   ((db (db-try-open 0)))
    (dynamic-wind
     (lambda () #f)
     thunk

@@ -1,5 +1,8 @@
 2003-06-06  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki/db.scm (with-db): capture EAVAIL error from dbm-open
+	  and retry after some delay.
+
 	* src/wiliki/format.scm (format-parts): recognize mailto: scheme
 	  (as suggested by Hisazumi Kenji).
 
