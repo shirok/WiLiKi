@@ -1,5 +1,9 @@
 2003-08-17  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki/format.scm (format-page): changed not to show language
+	  links (->Japanese/->English) at edit and preview pages, for it
+	  causes problems in state tracking.
+
 	* src/wiliki.cgi, src/wiliki.scm (error-page),
 	  src/wiliki/db.scm (db-try-open),
 	  src/wiliki/macro.scm (handle-expansion):

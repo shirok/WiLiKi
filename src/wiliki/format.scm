@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.3 2003-06-07 08:49:04 shirok Exp $
+;;; $Id: format.scm,v 1.4 2003-08-18 07:05:34 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -381,6 +381,7 @@
 
 (define (format-page title page . args)
   (let* ((wlki (wiliki))
+         (show-lang? (get-keyword :show-lang? args #t))
          (show-edit? (and (editable? wlki)
                           (get-keyword :show-edit? args #t)))
          (show-all?  (get-keyword :show-all? args #t))
@@ -402,8 +403,9 @@
       (html:form
        :method "POST" :action (cgi-name-of wlki)
        (html:input :type "hidden" :name "c" :value "s")
-       (language-link page-id)
        (cond-list
+        (show-lang?
+         (language-link page-id))
         ((not (string=? title (top-page-of wlki)))
          (html:a :href (cgi-name-of wlki) ($$ "[Top Page]")))
         (show-edit?

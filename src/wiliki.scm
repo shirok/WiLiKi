@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.81 2003-08-18 06:48:07 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.82 2003-08-18 07:05:33 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -344,7 +344,7 @@
     (format-page pagename
                  (edit-form #t pagename
                             (content-of page) (mtime-of page) #f)
-                 :show-edit? #f)))
+                 :show-edit? #f :show-lang? #f)))
 
 (define (cmd-preview pagename content mtime donttouch)
   (let ((page (wdb-get (db) pagename #t)))
@@ -356,7 +356,7 @@
                                                   :content content)))
            ,(html:hr)
            ,(edit-form #f pagename content mtime donttouch))
-         :show-edit? #f)
+         :show-edit? #f :show-lang? #f)
         (conflict-page page pagename content donttouch)
         )))
 
