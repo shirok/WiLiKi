@@ -1,3 +1,16 @@
+2002-12-01  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm : various fixes:
+	  - added "{{{" and "}}}" to denote <pre> </pre>.
+	  - used redirection to display the fresh page after editing,
+	    to prevent multi-posting by reloading.
+	  - swap "Preview again" and "Commit" button in the preview screen,
+	    for consistency with the edit screen.
+	  - show update conflict screen even in preview; it caused internal
+	    error in the previous version.
+	  - keep language setting across edit.
+	* src/wiliki/msgs.jp : modified accordingly.
+
 2002-10-07  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm: fixed a problem that the text in the textarea

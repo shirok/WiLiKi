@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.45 2002-10-08 09:51:59 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.46 2002-12-02 06:58:37 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -299,20 +299,22 @@
   (define (loop line nestings id)
     (cond ((eof-object? line) nestings)
           ((string-null? line)
-           `(,@nestings "</p>\n<p>" ,@(loop (read-line) '() id)))
-          ((string-prefix? "----" line)
-           `(,@nestings "</p><hr><p>" ,@(loop (read-line) '() id)))
+           `(,nestings "</p>\n<p>" ,(loop (read-line) '() id)))
+          ((string=? "----" line)
+           `(,nestings "</p><hr><p>" ,(loop (read-line) '() id)))
           ((and (string-prefix? " " line) (null? nestings))
-           `(,@nestings "<pre>" ,@(pre line id)))
+           `(,nestings "<pre>" ,(pre line id)))
+          ((string=? "{{{" line)
+           `(,nestings "<pre>" ,(pre* (read-line) id)))
           ((rxmatch #/^(\*\*?\*?) / line)
            => (lambda (m)
                 (let* ((lev (- (rxmatch-end m 1) (rxmatch-start m 1)))
                        (hfn (ref `(,html:h2 ,html:h3 ,html:h4) (- lev 1)))
                        (anchor (cut html:a :name <> <>)))
-                  `(,@nestings
+                  `(,nestings
                     ,(hfn (anchor id (format-line (rxmatch-after m))))
-                    ,@(loop (read-line) '() (+ id 1))))))
-          ((rxmatch #/^(--?-?) / line)
+                    ,(loop (read-line) '() (+ id 1))))))
+          ((rxmatch #/^(--*) / line)
            => (lambda (m)
                 (list-item m (- (rxmatch-end m 1) (rxmatch-start m 1))
                            nestings "<ul>" "</ul>" id)))
@@ -324,18 +326,24 @@
            => (lambda (m)
                 `(,@(if (equal? nestings '("</dl>"))
                         '()
-                        `(,@nestings "<dl>"))
+                        `(,nestings "<dl>"))
                   "<dt>" ,(format-line (rxmatch-substring m 1))
                   "<dd>" ,(format-line (rxmatch-substring m 2))
-                  ,@(loop (read-line) '("</dl>") id))))
+                  ,(loop (read-line) '("</dl>") id))))
           (else
            (cons (format-line line) (loop (read-line) nestings id)))))
 
   (define (pre line id)
     (cond ((eof-object? line) '("</pre>"))
           ((string-prefix? " " line)
-           `(,@(format-line line) ,@(pre (read-line) id)))
+           (cons (format-line line) (pre (read-line) id)))
           (else (cons "</pre>\n" (loop line '() id)))))
+
+  (define (pre* line id)
+    (cond ((eof-object? line) '("</pre>"))
+          ((string=? line "}}}")
+           (cons "</pre>" (loop (read-line) '() id)))
+          (else (cons (format-line line) (pre* (read-line) id)))))
 
   (define (list-item match level nestings opentag closetag id)
     (let ((line  (rxmatch-after match))
@@ -348,8 +356,8 @@
                 ((> cur level)
                  (split-at nestings (- cur level)))
                 (else (values '() nestings)))
-        `(,@opener "<li>" ,(format-line line)
-          ,@(loop (read-line) closer id)))))
+        (list* opener "<li>" (format-line line)
+               (loop (read-line) closer id)))))
 
   (if (member page (page-format-history)
               (lambda (p1 p2) (string=? (key-of p1) (key-of p2))))
@@ -435,6 +443,22 @@
           )))
   )
 
+(define (redirect-page key)
+  (cons "Status: 302 Moved\n"
+        (cgi-header :location (url key))))
+
+(define (conflict-page page pagename content donttouch)
+  (format-page
+   ($$ "Wiliki: Update Conflict")
+   `(,($$ "<p>It seems that somebody has updated this page while you're editing.  The most recent content is shown below.</p>")
+     ,(html:hr)
+     ,(colored-box (html:pre (html-escape-string (content-of page))))
+     ,(html:hr)
+     ,($$ "<p>The following shows what you are about to submit.  Please re-edit the content and submit again.</p>")
+     ,(edit-form #t pagename content (mtime-of page) donttouch)
+     )
+   :show-edit? #f))
+
 (define (cmd-view pagename)
   (cond ((wdb-get (db) pagename) => (cut format-page pagename <>))
         ((equal? pagename (top-page-of (wiliki)))
@@ -448,8 +472,8 @@
     (if preview?
         `(,(html:input :type "submit" :name "preview" :value ($$ "Preview"))
           ,(html:input :type "submit" :name "commit" :value ($$ "Commit without preview")))
-        `(,(html:input :type "submit" :name "commit" :value ($$ "Commit"))
-          ,(html:input :type "submit" :name "preview" :value ($$ "Preview again")))))
+        `(,(html:input :type "submit" :name "preview" :value ($$ "Preview again"))
+          ,(html:input :type "submit" :name "commit" :value ($$ "Commit")))))
   (define (donttouch-checkbox)
     `(,(apply html:input :type "checkbox" :name "donttouch" :value "on"
               (if donttouch '(:checked #t) '()))
@@ -461,6 +485,7 @@
    (html:br)
    (html:input :type "hidden" :name "c" :value "c")
    (html:input :type "hidden" :name "p" :value pagename)
+   (html:input :type "hidden" :name "l" :value (lang))
    (html:input :type "hidden" :name "mtime" :value mtime)
    (html:textarea :name "content" :rows 40 :cols 80
                   (html-escape-string content))
@@ -478,7 +503,7 @@
          beginning of a line for an item of ordered list (&lt;ol&gt;)
          of level 1, 2 and 3, respectively.
          Put a space after dot(s).
-      <p>`<tt>----</tt>' at the beginning of a line is &lt;hr&gt;.
+      <p>A line with only `<tt>----</tt>' is &lt;hr&gt;.
       <p>`<tt>:item:description</tt>' at the beginning of a line is &lt;dl&gt;.
          The item includes all colons but the last one.  If you want to include
          a colon in the description, put it in the next line.
@@ -489,15 +514,17 @@
       <p>A URL-like string beginning with `<tt>http:</tt>' becomes
          a link.  `<tt>[URL name]</tt>' becomes a <tt>name</tt> that linked
          to <tt>URL</tt>.
-      <p>Words surrounded by two single quotes (<tt>''foo''</tt>)
+      <p>Surround words by two single quotes (<tt>''foo''</tt>)
          to emphasize.
-      <p>Words surrounded by three single quotes (<tt>'''foo'''</tt>)
+      <p>Surround words by three single quotes (<tt>'''foo'''</tt>)
          to emphasize more.
       <p>`<tt>*</tt>', `<tt>**</tt>' and `<tt>***</tt>'' at the beginning
          of a lineis a level 1, 2 and 3 header, respectively.  Put a space
          after the asterisk(s).
       <p>Whitespace(s) at the beginning of line for preformatted text.
-      <p>If you want to use characters of special meaning at the
+      <p>A line of \"{{{\" also starts a preformatted text, until
+         a line of \"}}}\".
+      <p>If you want to use special characters at the
          beginning of line, put six consecutive single quotes.
          It emphasizes a null string, so it's effectively nothing.")
    ))
@@ -522,6 +549,7 @@
            ,(html:hr)
            ,(edit-form #f pagename content mtime donttouch))
          :show-edit? #f)
+        (conflict-page page pagename content donttouch)
         )))
 
 (define (cmd-commit-edit pagename content mtime donttouch)
@@ -534,22 +562,15 @@
             (begin
               (set! (content-of p) "")
               (wdb-delete! (db) pagename)
-              (format-page pagename p))
+              (redirect-page (top-page-of (wiliki))))
             (begin
               (set! (mtime-of p) now)
               (set! (content-of p) (expand-writer-macros content))
               (wdb-put! (db) pagename p :donttouch donttouch)
-              (format-page pagename p)))
-        (format-page
-         ($$ "Wiliki: Update Conflict")
-         `(,($$ "<p>It seems that somebody has updated this page while you're editing.  The most recent content is shown below.</p>")
-           ,(html:hr)
-           ,(colored-box (html:pre (html-escape-string (content-of p))))
-           ,(html:hr)
-           ,($$ "<p>The following shows what you are about to submit.  Please re-edit the content and submit again.</p>")
-           ,(edit-form #t pagename content (mtime-of p) donttouch)
-           )
-         :show-edit? #f))))
+              (redirect-page pagename)))
+        (conflict-page p pagename content donttouch)
+        )
+    ))
 
 (define (cmd-all)
   (format-page
