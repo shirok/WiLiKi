@@ -1,0 +1,26 @@
+GAUCHE_CONFIG = @GAUCHE_CONFIG@
+INSTALL_TYPE = @INSTALL_TYPE@
+INSTALL = @INSTALL@
+
+TARGET = wiliki.scm wiliki/mcatalog.scm wiliki/msgs.jp
+SCM_INSTALL_DIR     = `$(GAUCHE_CONFIG) --$(INSTALL_TYPE)libdir`
+
+all:
+
+clean :
+	rm -rf core *~ wiliki/*~ wiliki/*.orig
+
+install:
+	if test ! -d $(SCM_INSTALL_DIR)/wiliki; then \
+	  $(INSTALL) -d $(SCM_INSTALL_DIR)/wiliki; \
+	fi
+	for f in $(TARGET); do \
+	  $(INSTALL) -m 444 $(SCM_INSTALL_DIR)/; \
+	done
+
+distclean : clean
+	rm -f Makefile
+
+realclean : clean
+	rm -f Makefile
+
