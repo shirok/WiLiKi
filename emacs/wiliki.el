@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2004 Tokuya Kameshima.  All rights reserved.
 
-;; $Id: wiliki.el,v 1.5 2004-03-07 09:05:58 tkame Exp $
+;; $Id: wiliki.el,v 1.6 2004-03-15 15:04:15 tkame Exp $
 
 ;;; Installation:
 
@@ -79,7 +79,7 @@ Each SITE consists of the following form:
 				     (string :tag ""))))))
 
 (defcustom wiliki-site-regexp "wiliki"
-  "Regexp with which a possible WiLiKi site's ULR matches."
+  "Regexp with which a possible WiLiKi site's URL matches."
   :group 'wiliki
   :type 'regexp)
 
@@ -455,6 +455,62 @@ This is supporsed to be called when server closed connection"
 	    (wiliki-update-interwikis base-url)))
       buf)))
 
+(defun wiliki-fetch-page-sentinel-html (base-url page session
+						 beg-regexp end-regexp
+						 regexp function)
+  "Sentinel for html meta pages, e.g., \"All Pages\" and \"Recent Changes\".
+Create the page buffer with converting a html response.
+
+SESSION is a session buffer of PAGE on BASE-URL and the buffer
+contains the response from the server in html form.  The contents must
+be a \"text/html\" data.  If BEG-REGEXP is non-nil, it searches for
+regular expression REGEXP from position of the html data matching with
+BEG-REGEXP.  If BEG-REGEXP is nil, it searches for REGEXP from the
+beginning of the html data.  END-REGEXP bounds the search.  The match
+found must not extend after the position matching END-REGEXP.  With
+each occurrence of the match, FUNCTION is called.  FUNCTION is a
+function returning a string which is inserted into the page buffer."
+  (with-wiliki-response session (date content-type)
+    (if (not (string-match "^text/html" content-type))
+	(error "Not a html"))
+    (let ((buf (get-buffer-create (wiliki-buffer-name base-url page)))
+	  pos-saved)
+      (with-current-buffer buf
+	(setq pos-saved (point))
+	(setq buffer-read-only nil)
+	(erase-buffer)
+	(wiliki-mode)
+	;;
+	(with-temp-buffer
+	  (insert body)
+	  (goto-char (point-min))
+	  (let* ((beg (progn
+			(if (and beg-regexp
+				 (not (re-search-forward beg-regexp nil t)))
+			    (goto-char (point-max)))
+			(point)))
+		 (end (progn
+			(if end-regexp
+			    (re-search-forward end-regexp nil t)
+			  (goto-char (point-max)))
+			(point))))
+	    (goto-char beg)
+	    (while (re-search-forward regexp end t)
+	      (let ((str (funcall function)))
+		(if str
+		    (with-current-buffer buf
+		      (insert str)))))))
+	(goto-char pos-saved)
+	;;
+	(set-buffer-modified-p nil)
+	(setq buffer-read-only t)
+	(setq wiliki-site-info (wiliki-site-info base-url))
+	(setq wiliki-base-url base-url)
+	(setq wiliki-title page)
+;; 	(setq wiliki-mtime mtime) ;; (time-to-seconds (date-to-time date))
+	(setq wiliki-editable nil))
+      buf)))
+   
 ;; [redirect] http header
 ;; - HTTP Status-Code: 302
 ;; - Location: wiliki.cgi?WiLiKi
@@ -777,12 +833,32 @@ Return the base URL as a string."
   ;; Use `wiliki-view-page', instead.
   (message "Retrieving %s from %s ..."
 	   (if (string= page "") "{top page}" page) base-url)
-  (let* ((fmt (if (string= page "")
-		  "%s?c=lv" ; workaround for the empty WikiName problem
-		"%s?%s&c=lv"))
+  (let* ((fmt (cond ((string= page "$all")
+		     "%s?c=a")
+		    ((string= page "$recent")
+		     "%s?c=r")
+		    ((string= page "")
+		     "%s?c=lv") ; workaround for the empty WikiName problem
+		    (t "%s?%s&c=lv")))
 	 (url (format fmt base-url (wiliki-url-hexify-string page)))
 	 (proc (wiliki-http-get url))
-	 (buf (wiliki-fetch-page-sentinel base-url (process-buffer proc))))
+	 (buf (cond
+	       ((string= page "$all")
+		(wiliki-fetch-page-sentinel-html
+		 base-url page (process-buffer proc)
+		 "<h1>" nil "<li><a href=\"[^\"]*\">\\(.*\\)</a"
+		 (lambda () (concat "- [[" (match-string 1) "]]\n"))))
+	       ((string= page "$recent")
+		(wiliki-fetch-page-sentinel-html
+		 base-url page (process-buffer proc)
+		 "<h1>" nil (concat "<tr><td>\\(.*\\)</td\n*>"
+				    "<td>\\(.*\\)</td\n*>"
+				    "<td><a href=\"[^\"]*\">\\(.*\\)</a")
+		 (lambda () (concat "||" (match-string 1)
+				    "||" (match-string 2)
+				    "||[[" (match-string 3) "]]||\n"))))
+	       (t
+		(wiliki-fetch-page-sentinel base-url (process-buffer proc))))))
     (if (string= page "")
 	(setf (wiliki-site-info-top-page (wiliki-site-info base-url))
 	      (with-current-buffer buf wiliki-title)))
@@ -886,7 +962,12 @@ If COUNT is a negative number, moving forward is performed."
 (defun wiliki-view-recent ()
   "View recent changes."
   (interactive)
-  (message "Not implemented yet"))
+  (wiliki-view-wikiname "$recent"))
+
+(defun wiliki-view-all ()
+  "View list of all the pages."
+  (interactive)
+  (wiliki-view-wikiname "$all"))
 
 (defun wiliki-view-top (&optional force-fetch)
   "View the top page."
@@ -1120,6 +1201,7 @@ If DONT-TOUCH is non-nil, the page does not update 'Recent Changes'."
   (define-key wiliki-mode-map "[delete]" 'scroll-down)
   (define-key wiliki-mode-map "[backspace]" 'scroll-down)
   (define-key wiliki-mode-map "\C-?" 'scroll-down)
+  (define-key wiliki-mode-map "a" 'wiliki-view-all)
   (define-key wiliki-mode-map "e" 'wiliki-edit-this-page)
   (define-key wiliki-mode-map "f" 'wiliki-view-wikiname)
   (define-key wiliki-mode-map "g" 'wiliki-view-page)
