@@ -23,11 +23,13 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: log.scm,v 1.4 2003-08-26 05:13:18 shirok Exp $
+;;; $Id: log.scm,v 1.5 2003-08-26 19:56:34 shirok Exp $
 
 (define-module wiliki.log
   (use srfi-1)
+  (use srfi-11)
   (use srfi-13)
+  (use util.lcs)
   (use text.diff)
   (export <wiliki-log-entry>
           wiliki-log-create
@@ -252,19 +254,101 @@
 ;;  If successfully merged, a merged page (list of lines) and #t.
 ;;  If conflict occurs, a partially merged page (list of lines, with
 ;;  a conflicting lines indicated by (a . line) and/or (b . line)), and #f.
+;;
+;; Strategy:
+;;  Basically, we try to apply two edit list _in_parallel_ to the
+;;  common ancestor.  For each step, we examine both heads of
+;;  the edit lists: If only one of them is applicable, we just apply it.
+;;  If both of them are applicable, there can be three cases:
+;;
+;;   - If both are delete commands : we just apply one delete.
+;;   - If both are add commands : we got conflict.
+;;   - Otherwise : we just apply the deletion, then apply the addition.
+;;
 
 (define (wiliki-log-merge c-page a-page b-page)
-  (let* ((c-lines (string->lines c-page))
-		 (a-lines (string->lines a-page))
-		 (b-lines (string->lines b-page)))
-	(let loop ((a-hunks (lcs-edit-list c-lines a-lines string=?))
-			   (b-hunks (lcs-edit-list c-lines b-lines string=?))
-			   (a-cnt   0)
-			   (b-cnt   0)
-			   (c-cnt   0)
-			   (r '())
-			   (success? #t))
-	  ...)))
+  (let* ((a-lines (string->lines a-page))
+         (b-lines (string->lines b-page))
+         (c-lines (string->lines c-page))
+         (a-cnt   0)
+         (b-cnt   0)
+         (c-cnt   0)
+         (success? #t)
+         (a-edits (apply append (lcs-edit-list c-lines a-lines string=?)))
+         (b-edits (apply append (lcs-edit-list c-lines b-lines string=?)))
+         )
+
+    (define (applicable? head post-cnt)
+      (and head
+           (cond ((and (eq? (car head) '-) (= (cadr head) c-cnt))
+                  '-)
+                 ((and (eq? (car head) '+) (= (cadr head) post-cnt))
+                  '+)
+                 (else #f))))
+
+    (define (snoc tail)
+      (if (pair? tail) (car+cdr tail) (values #f '())))
+
+    (define (apply-one head lines r post-cnt)
+      (if (eq? (car head) '-)
+        (begin (inc! c-cnt)
+               (values (cdr lines) r post-cnt))
+        (values lines (cons (caddr head) r) (+ post-cnt 1))))
+
+    (define (maybe-conflict a-head b-head r)
+      (let ((a-line (caddr a-head))
+            (b-line (caddr b-head)))
+        (if (string=? a-line b-line)
+          (cons a-line r)
+          (begin (set! success? #f)
+                 (list* (cons 'b b-line) (cons 'a a-line) r)))))
+
+    ;; main loop
+    (define (loop a-head a-tail a-cnt b-head b-tail b-cnt lines r)
+      (if (and (not a-head) (not b-head))
+        (values (append! (reverse! r) lines) success?) ;; finish
+        (let ((a-applicable (applicable? a-head a-cnt))
+              (b-applicable (applicable? b-head b-cnt)))
+          (cond
+           ((and a-applicable b-applicable)
+            (let-values (((a-headx a-tailx) (snoc a-tail))
+                         ((b-headx b-tailx) (snoc b-tail)))
+              (cond ((and (eq? a-applicable '-) (eq? b-applicable '-))
+                     (inc! c-cnt) 
+                     (loop a-headx a-tailx a-cnt b-headx b-tailx b-cnt
+                           (cdr lines) r))
+                    ((and (eq? a-applicable '+) (eq? b-applicable '+))
+                     (loop a-headx a-tailx (+ a-cnt 1)
+                           b-headx b-tailx (+ b-cnt 1)
+                           lines (maybe-conflict a-head b-head r)))
+                    ((eq? a-applicable '-)
+                     (inc! c-cnt) 
+                     (loop a-headx a-tailx a-cnt
+                           b-headx b-tailx (+ b-cnt 1)
+                           (cdr lines) (cons (caddr b-head) r)))
+                    ((eq? b-applicable '-)
+                     (inc! c-cnt) 
+                     (loop a-headx a-tailx (+ a-cnt 1)
+                           b-headx b-tailx b-cnt
+                           (cdr lines) (cons (caddr a-head) r))))))
+           (a-applicable
+            (let-values (((lines r a-cnt) (apply-one a-head lines r a-cnt))
+                         ((a-head a-tail) (snoc a-tail)))
+              (loop a-head a-tail a-cnt b-head b-tail b-cnt lines r)))
+           (b-applicable
+            (let-values (((lines r b-cnt) (apply-one b-head lines r b-cnt))
+                         ((b-head b-tail) (snoc b-tail)))
+              (loop a-head a-tail a-cnt b-head b-tail b-cnt lines r)))
+           (else
+            (inc! c-cnt)
+            (loop a-head a-tail (+ a-cnt 1) b-head b-tail (+ b-cnt 1)
+                  (cdr lines) (cons (car lines) r)))
+           ))))
+
+    (let-values (((a-head a-tail) (snoc a-edits))
+                 ((b-head b-tail) (snoc b-edits)))
+      (loop a-head a-tail 0 b-head b-tail 0 c-lines '()))
+    ))
 
 ;; Utility functions -----------------------------------
 
@@ -292,9 +376,9 @@
                lis))
 
 (define (string->lines string-or-list)
-  (if (pair? string-or-list)
-    string-or-list
-    (call-with-input-string string-or-list port->string-list)))
+  (if (string? string-or-list)
+    (call-with-input-string string-or-list port->string-list)
+    string-or-list))
 
 (provide "wiliki/log")
 

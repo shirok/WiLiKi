@@ -148,7 +148,7 @@ for user-defined classes.
               '(pagename timestamp remote-addr remote-user
                          log-message added-lines deleted-lines))))
 
-;; Scan log file -------------------------------------------
+;; Diff & revert -------------------------------------------
 
 (test-section "wiliki-log-diff & revert")
 
@@ -217,5 +217,101 @@ for user-defined classes.
          (string-join
           (wiliki-log-revert (wiliki-log-parse-entry (car picked)) page2-2)
           "\n" 'suffix)))
+
+;; Merge -------------------------------------------------
+
+(test-section "wiliki-log-merge")
+
+(define (mg a b c) (values-ref (wiliki-log-merge a b c) 0))
+
+;; trivial cases
+(test* "trivial merge 0" '()
+       (mg '() '() '()))
+(test* "trivial merge 1" '("a")
+       (mg '("a") '("a") '("a")))
+(test* "trivial merge 2" '("a" "b")
+       (mg '("a" "b") '("a" "b") '("a" "b")))
+(test* "trivial merge 3" '("a" "b" "c")
+       (mg '("a" "b" "c") '("a" "b" "c") '("a" "b" "c")))
+
+;; single edits
+(test* "single merge 0" '("a" "b" "c" "d")
+       (mg '("a" "b") '("a" "b") '("a" "b" "c" "d")))
+(test* "single merge 1" '("a" "b" "c" "d")
+       (mg '("a" "b") '("a" "b" "c" "d") '("a" "b")))
+(test* "single merge 2" '("a" "b" "c" "d")
+       (mg '("a") '("a") '("a" "b" "c" "d")))
+(test* "single merge 3" '("a" "b" "c" "d")
+       (mg '("a") '("a" "b" "c" "d") '("a")))
+(test* "single merge 4" '("a" "b" "c" "d")
+       (mg '("b") '("b") '("a" "b" "c" "d")))
+(test* "single merge 5" '("a" "b" "c" "d")
+       (mg '("b") '("a" "b" "c" "d") '("b")))
+(test* "single merge 6" '("a" "b" "c" "d")
+       (mg '("d") '("d") '("a" "b" "c" "d")))
+(test* "single merge 7" '("a" "b" "c" "d")
+       (mg '("d") '("a" "b" "c" "d") '("d")))
+(test* "single merge 8" '("a" "b" "c" "d")
+       (mg '() '() '("a" "b" "c" "d")))
+(test* "single merge 9" '("a" "b" "c")
+       (mg '() '("a" "b" "c" "d") '()))
+
+;; delete & delete
+(test* "delete&delete 0" '("a" "d")
+       (mg '("a" "b" "c" "d") '("a" "b" "d") '("a" "c" "d")))
+(test* "delete&delete 1" '("a" "d")
+       (mg '("a" "b" "c" "d") '("a" "c" "d") '("a" "b" "d")))
+(test* "delete&delete 2" '("b" "c")
+       (mg '("a" "b" "c" "d") '("a" "b" "c") '("b" "c" "d")))
+(test* "delete&delete 3" '("b" "c")
+       (mg '("a" "b" "c" "d") '("b" "c" "d") '("a" "b" "c")))
+(test* "delete&delete 4" '("a" "b")
+       (mg '("a" "b" "c" "d") '("a" "b" "d") '("a" "b" "c")))
+(test* "delete&delete 5" '("a" "b")
+       (mg '("a" "b" "c" "d") '("a" "b" "c") '("a" "b" "d")))
+(test* "delete&delete 6" '("b")
+       (mg '("a" "b" "c" "d") '("a" "b" "d") '("b" "c")))
+(test* "delete&delete 7" '("b")
+       (mg '("a" "b" "c" "d") '("b" "c" "d") '("a" "b")))
+(test* "delete&delete 8" '()
+       (mg '("a" "b" "c" "d") '("a" "b") '("c" "d")))
+(test* "delete&delete 9" '()
+       (mg '("a" "b" "c" "d") '("a" "c") '("b" "d")))
+(test* "delete&delete 10" '()
+       (mg '("a" "b" "c" "d") '("a" "d") '("b" "c")))
+
+(test* "delete&delete 11" '("a" "b")
+       (mg '("a" "b" "c" "d") '("a" "b") '("a" "b")))
+(test* "delete&delete 12" '("b" "c")
+       (mg '("a" "b" "c" "d") '("b" "c") '("b" "c" "d")))
+(test* "delete&delete 13" '("b" "c")
+       (mg '("a" "b" "c" "d") '("a" "b" "c") '("b" "c")))
+(test* "delete&delete 14" '()
+       (mg '("a" "b" "c" "d") '() '()))
+(test* "delete&delete 15" '()
+       (mg '("a" "b" "c" "d") '() '("a" "b" "c" "d")))
+(test* "delete&delete 16" '()
+       (mg '("a" "b" "c" "d") '("d") '("a")))
+(test* "delete&delete 17" '()
+       (mg '("a" "b" "c" "d") '("b") '("c")))
+
+;; add & add
+
+(test* "add&add (non conflict) 0" '("a" "b" "c" "d")
+       (mg '("b" "c") '("a" "b" "c") '("b" "c" "d")))
+(test* "add&add (non conflict) 1" '("a" "b" "c" "d" "e" "f")
+       (mg '("a" "c" "d" "f")
+           '("a" "b" "c" "d" "f")
+           '("a" "c" "d" "e" "f")))
+(test* "add&add (non conflict) 2" '("a" "b" "c" "d" "e" "f")
+       (mg '("c" "e")
+           '("a" "b" "c" "e")
+           '("c" "d" "e" "f")))
+(test* "add&add (non conflict) 3" '("a" "b" "c" "d" "e" "f")
+       (mg '("c" "e") '("a" "b" "c" "e") '("a" "c" "d" "e" "f")))
+
+;; add & delete
+(test* "add&delete 0" '("A" "b" "c" "C")
+       (mg '("a" "b" "c" "d") '("b" "c" "C" "d") '("A" "a" "b" "c")))
 
 (test-end)
