@@ -24,7 +24,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: rssmix.cgi,v 1.1 2003-02-17 10:10:37 shirok Exp $
+;;;  $Id: rssmix.cgi,v 1.2 2003-02-17 13:29:55 shirok Exp $
 ;;;
 
 ;; THIS IS AN EXPERIMENTAL SCRIPT.  Eventually this will be a part of
@@ -148,15 +148,15 @@
          )
     (sort (append-map
            (lambda (site rss)
-             (or (and-let* ((items (if (thread? rss)
-                                       (thread-join! rss timeout #f)
-                                       rss)))
+             (or (and-let* ((items (if (thread? (cdr rss))
+                                       (thread-join! (cdr rss) timeout (car rss))
+                                       (car rss))))
                    (map (lambda (item)
                           (make <rss-item>
                             :site-id (car site) :site-url (cadr site)
                             :title (car item) :link (cadr item)
                             :date (caddr item)
-                            :cached (not (thread? rss))))
+                            :cached (eq? (cdr rss) #t)))
                         items))
                  '()))
            sites rss-list)
@@ -164,16 +164,24 @@
     ))
 
 (define (get-rss self id rss-url)
-  (or (get-cache self id)
-      (thread-start! (make-thread (make-thunk self id rss-url) id))))
+  (let ((rss&valid? (get-cache self id))
+        (fetch-thread (lambda ()
+                        (thread-start!
+                         (make-thread (make-thunk self id rss-url) id))))
+        )
+    (if rss&valid?
+        (cons (car rss&valid?)
+              (or (cdr rss&valid?) (fetch-thread)))
+        (cons '() (fetch-thread)))))
 
 ;; get cached result if any
 (define (get-cache self id)
   (and-let* ((body  (dbm-get (ref self 'db) id #f))
              (sbody (read-from-string body))
-             (timestamp (get-keyword :timestamp sbody 0))
-             ((> timestamp (- (sys-time) (ref self 'cache-life)))))
-    (get-keyword :rss-cache sbody #f)))
+             (timestamp (get-keyword :timestamp sbody 0)))
+    (cons
+     (get-keyword :rss-cache sbody #f)
+     (> timestamp (- (sys-time) (ref self 'cache-life))))))
 
 (define (put-cache! self id rss)
   (dbm-put! (ref self 'db) id
@@ -273,6 +281,12 @@
               ("WikiLike"
                "http://ishinao.net/WikiLike/"
                "http://ishinao.net/WikiLike/rss.php")
+              ;("@pm"
+              ; "http://gnk.s15.xrea.com/"
+              ; "http://gnk.s15.xrea.com/index.rdf")
+              ;("Netry"
+              ; "http://netry.no-ip.com/"
+              ; "http://netry.no-ip.com/index.rdf")
               )
      :title "RSSMix: Recent Entries")))
 
