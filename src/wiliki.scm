@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.11 2001-11-28 08:29:52 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.12 2001-11-28 20:00:53 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -150,6 +150,11 @@
     ((jp) "<p>以下は、あなたが提出しようとした内容です。再編集してSubmitして下さい。</p>")
     (else "<p>The following shows what you are about to submit.
               Please re-edit the content and submit again.</p>")))
+
+(define (msg-preview wiliki)
+  (case (language-of wiliki)
+    ((jp) "~a のプレビュー")
+    (else "Preview of ~a")))
 
 (define (language-link wiliki pagename)
   (receive (target label)
@@ -361,10 +366,12 @@
 
       (define (finish nestings)
         `(,@nestings
-          ,(html:hr)
-          ,(html:div :align "right"
-                     "Last modified : "
-                     (format-time (mtime-of page)))))
+          ,(if (mtime-of page)
+               `(,(html:hr)
+                 ,(html:div :align "right"
+                            "Last modified : "
+                            (format-time (mtime-of page))))
+               '())))
 
       (cons "<p>" (loop (read-line) '())))))
 
@@ -429,24 +436,38 @@
            (format-page self (top-page-of self) toppage)))
         (else (error "No such page" pagename))))
 
+(define (edit-form self preview? pagename content mtime)
+  (html:form
+   :method "POST" :action (cgi-name-of self)
+   (html:input :type "hidden" :name "c" :value (if preview? "p" "c"))
+   (html:input :type "hidden" :name "p" :value pagename)
+   (html:input :type "hidden" :name "mtime" :value mtime)
+   (html:textarea :name "content" :rows 40 :cols 80 content)
+   (html:br)
+   (html:input :type "submit" :name "submit"
+               :value (if preview? "Preview" "Commit"))
+   (html:input :type "reset"  :name "reset"  :value "Reset")
+   (html:br)
+   (msg-edit-helper self)
+   ))
+
 (define (cmd-edit self pagename)
   (unless (editable? self)
     (errorf "Can't edit the page ~s: the database is read-only" pagename))
   (let ((page (wdb-get (db-of self) pagename #t)))
-    (format-page
-     self pagename
-     (html:form
-      :method "POST" :action (cgi-name-of self)
-      (html:input :type "hidden" :name "c" :value "c")
-      (html:input :type "hidden" :name "p" :value pagename)
-      (html:input :type "hidden" :name "mtime" :value (mtime-of page))
-      (html:textarea :name "content" :rows 40 :cols 80 (content-of page))
-      (html:br)
-      (html:input :type "submit" :name "submit" :value "Submit")
-      (html:input :type "reset"  :name "reset"  :value "Reset")
-      (html:br)
-      (msg-edit-helper self)
-      ))))
+    (format-page self pagename
+                 (edit-form self #t pagename
+                            (content-of page) (mtime-of page)))))
+
+(define (cmd-preview self pagename content mtime)
+  (let ((page (wdb-get (db-of self) pagename #t)))
+    (if (or (not (mtime-of page)) (eqv? (mtime-of page) mtime))
+        (format-page
+         self (format #f (msg-preview self) pagename)
+         `(,(colored-box (format-content self (make <page> :content content)))
+           ,(html:hr)
+           ,(edit-form self #f pagename content mtime))
+         ))))
 
 (define (cmd-commit-edit self pagename content mtime)
   (unless (editable? self)
@@ -466,18 +487,8 @@
            ,(colored-box (html:pre (html-escape-string (content-of page))))
            ,(html:hr)
            ,(msg-conflict-helper2 self)
-           ,(html:form
-             :method "POST" :action (cgi-name-of self)
-             (html:input :type "hidden" :name "c" :value "c")
-             (html:input :type "hidden" :name "p" :value pagename)
-             (html:input :type "hidden" :name "mtime" :value (mtime-of page))
-             (html:textarea :name "content" :rows 40 :cols 80 content)
-             (html:br)
-             (html:input :type "submit" :name "submit" :value "Submit")
-             (html:input :type "reset"  :name "reset"  :value "Reset")
-             (html:br)
-             (msg-edit-helper self))))
-        )))
+           ,(edit-form self #t pagename content (mtime-of page))
+           )))))
 
 (define (cmd-all self)
   (format-page
@@ -538,13 +549,13 @@
                       ((equal? command "s")
                        (cmd-search self (cgi-get-parameter "key" param
                                                            :convert ccv)))
-                      ((equal? command "c")
-                       (cmd-commit-edit self pagename
-                                        (cgi-get-parameter "content" param
-                                                           :convert ccv)
-                                        (cgi-get-parameter "mtime" param
-                                                           :convert x->integer
-                                                           :default 0)))
+                      ((member command '("p" "c"))
+                       ((if (equal? command "c") cmd-commit-edit cmd-preview)
+                        self pagename
+                        (cgi-get-parameter "content" param :convert ccv)
+                        (cgi-get-parameter "mtime" param
+                                           :convert x->integer
+                                           :default 0)))
                       (else (error "Unknown command" command))))))
        ))
    :merge-cookies #t
