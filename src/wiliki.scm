@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.12 2001-11-28 20:00:53 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.13 2001-12-06 09:10:08 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -291,7 +291,10 @@
      line
      (lambda (match)
        (let ((url (rxmatch-substring match)))
-         (tree->string (html:a :href url url))))))
+         ;; NB: url is already HTML-escaped.  we can't use
+         ;; (html:a :href url url) here, for it will escape the first URL
+         ;; again.
+         (format #f "<a href=\"~a\">~a</a>" url url)))))
   (define (bold line)
     (regexp-replace-all
      #/'''([^']*)'''/
