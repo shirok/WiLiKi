@@ -1,3 +1,8 @@
+2003-09-01  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/edit.scm (edit-form): added class attribute to
+	  textareas of edit screen.
+
 2003-08-31  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/db.scm (wdb-search-content): use case-insensitive search
