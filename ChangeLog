@@ -1,3 +1,11 @@
+2003-02-10  Shiro Kawai  <shiro@acm.org>
+
+	* src/extract.scm : improved format of multiline string.
+	* src/wiliki.scm : allow title to be set.
+	* src/wiliki/msgs.jp.euc : changed some messages.
+	* src/wiliki/macro.scm : fixed problem related to the change
+	  of return value of wdb-search.
+
 2003-02-08  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/pasttime.scm : a feature to display the time
