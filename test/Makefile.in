@@ -1,5 +1,6 @@
 GOSH = @GOSH@
-TEST_OUT = test.log test.dbm
+TEST_OUT = test.log logger.log test.dbm
+TESTS = format.scm log.scm
 
 all:
 
@@ -7,7 +8,9 @@ check : test
 
 test :
 	@rm -f $(TEST_OUT)
-	$(GOSH) -I. -I../src format.scm >> test.log
+	@for t in $(TESTS); do \
+	  $(GOSH) -I. -I../src $$t >> test.log; \
+	done
 
 clean :
 	rm -rf core $(TEST_OUT) *~
