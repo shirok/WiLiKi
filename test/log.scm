@@ -253,7 +253,7 @@ for user-defined classes.
        (mg '("d") '("a" "b" "c" "d") '("d")))
 (test* "single merge 8" '("a" "b" "c" "d")
        (mg '() '() '("a" "b" "c" "d")))
-(test* "single merge 9" '("a" "b" "c")
+(test* "single merge 9" '("a" "b" "c" "d")
        (mg '() '("a" "b" "c" "d") '()))
 
 ;; delete & delete
@@ -290,9 +290,10 @@ for user-defined classes.
        (mg '("a" "b" "c" "d") '() '()))
 (test* "delete&delete 15" '()
        (mg '("a" "b" "c" "d") '() '("a" "b" "c" "d")))
-(test* "delete&delete 16" '()
+
+(test* "delete&delete (conflict) 0" '((a "d") (b "a"))
        (mg '("a" "b" "c" "d") '("d") '("a")))
-(test* "delete&delete 17" '()
+(test* "delete&delete (conflict) 1" '((a "b") (b "c"))
        (mg '("a" "b" "c" "d") '("b") '("c")))
 
 ;; add & add
