@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.78 2003-05-03 23:20:24 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.79 2003-05-03 23:34:05 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -452,7 +452,8 @@
     (or (and-let* ((uri (sys-getenv "REQUEST_URI"))
                    (script (script-name-of wiki))
                    (path (string-scan uri #`",|script|/" 'after)))
-          (cv-in (uri-decode-string path)))
+          (cv-in (uri-decode-string
+                  (or (string-scan path "?" 'before) path))))
         (top-page-of wiki)))
 
   (cond ((null? param) (get-path))
