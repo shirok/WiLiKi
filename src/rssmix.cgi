@@ -24,7 +24,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: rssmix.cgi,v 1.6 2003-02-18 08:47:55 shirok Exp $
+;;;  $Id: rssmix.cgi,v 1.7 2003-02-18 10:21:27 shirok Exp $
 ;;;
 
 ;; THIS IS AN EXPERIMENTAL SCRIPT.  Eventually this will be a part of
@@ -87,7 +87,6 @@
    (title    :init-keyword :title)
    (link     :init-keyword :link)
    (date     :init-keyword :date)
-   (cached   :init-keyword :cached)
    ))
 
 (define-syntax with-rss-db
@@ -103,111 +102,177 @@
            (receive r (begin . body) (dbm-close db) (apply values r)))))
      )))
 
+(define (rss-format-date unix-time)
+  (sys-strftime "%Y/%m/%d %H:%M:%S %Z" (sys-localtime unix-time)))
+
+(define-method rss-page ((self <rssmix>) title body)
+  `("Content-Style-Type: text/css\n"
+    ,(cgi-header)
+    ,(html-doctype :type :transitional)
+    ,(html:html
+      (html:head
+       (html:title (html-escape-string title))
+       (html:link :rel "stylesheet" :href "wiliki-sample.css"
+                  :type "text/css"))
+      (html:body
+       (html:h1 (html-escape-string title))
+       (html:div :align "right"
+                 "[" (html:a :href "http://www.shiro.dreamhost.com/scheme/wiliki/wiliki.cgi?WiLiKi:RSSMix" "What's This?") "]")
+       (html:hr)
+       body))))
+
+(define-method rss-error-page ((self <rssmix>) e)
+  (rss-page
+   self
+   "Error"
+   (html:p (html-escape-string (ref e 'message)))))
+
+(define-method rss-recent-changes ((self <rssmix>))
+  (rss-page
+   self
+   (ref self 'title)
+   (html:table
+    (map (lambda (item)
+           (html:tr
+            (html:td (rss-format-date (ref item 'date)))
+            (html:td
+             (html:a :href (ref item 'site-url) (ref item 'site-id))
+             ": "
+             (html:a :href (ref item 'link)
+                     (html-escape-string (ref item 'title)))
+             )))
+         (take* (collect self) (ref self 'num-items)))
+    )))
+
+(define-method rss-site-info ((self <rssmix>))
+  (let* ((sites (ref self 'sites))
+         (infos (with-rss-db self
+                  (map (lambda (s)
+                         (read-from-string (dbm-get (ref self 'db) (car s) "#f")))
+                       sites)))
+         )
+    (rss-page
+     self
+     "RSSMix: Site Info"
+     (map (lambda (site info)
+            `(,(html:h3 (html-escape-string (car site)))
+              ,(html:table
+                (html:tr (html:td "Top")
+                         (html:td (html:a :href (cadr site)
+                                          (html-escape-string (cadr site)))))
+                (html:tr (html:td "RSS")
+                         (html:td (html:a :href (caddr site)
+                                          (html-escape-string (caddr site)))))
+                (html:tr (html:td "Last fetched")
+                         (html:td
+                          (or (and-let* ((info)
+                                         (ts (get-keyword :timestamp info #f)))
+                                (rss-format-date ts))
+                              "--")))
+                (html:tr (html:td "Time spent")
+                         (html:td
+                          (or (and-let* ((info)
+                                         (ts (get-keyword :elapsed info #f)))
+                                ts)
+                              "--")))
+                )))
+          sites infos)
+     )))
+
 (define-method rss-main ((self <rssmix>))
   (cgi-main
    (lambda (params)
-     `("Content-Style-Type: text/css\n"
-       ,(cgi-header)
-       ,(html-doctype :type :transitional)
-       ,(html:html
-         (html:head
-          (html:title (html-escape-string (ref self 'title)))
-          (html:link :rel "stylesheet" :href "wiliki-sample.css" :type "text/css"))
-         (html:body
-          (html:h1 (html-escape-string (ref self 'title)))
-          (html:div :align "right"
-                  "[" (html:a :href "http://www.shiro.dreamhost.com/scheme/wiliki/wiliki.cgi?WiLiKi:RSSMix" "What's This?") "]")
-          (html:hr)
-          (html:table
-           (let ((items (with-rss-db self (collect self))))
-             (map (lambda (item)
-                    (html:tr
-                     (html:td (sys-strftime "%Y/%m/%d %H:%M:%S %Z"
-                                            (sys-localtime
-                                             (ref item 'date))))
-                     (html:td
-                      (html:a :href (ref item 'site-url)
-                              (ref item 'site-id))
-                      ": "
-                      (html:a :href (ref item 'link)
-                                      (html-escape-string (ref item 'title)))
-                              ;; for testing
-                              ;;(if (ref item 'cached) "(cached)" "")
-                              )))
-                  (take* items
-                         (ref self 'num-items)))
-             )
-           ))))))
+     (let1 command (cgi-get-parameter "c" params :default "list")
+       (cond
+        ((equal? command "info") (rss-site-info self))
+        ((equal? command "list") (rss-recent-changes self))
+        (else (error "Unknown command" command)))))
+   :on-error (lambda (e) (rss-error-page self e)))
   0)
 
 ;; Collect RSS info from given sites.
 (define (collect self)
-  (let* ((db     (ref self 'db))
-         (sites  (ref self 'sites))
-         (rss-list (map (lambda (site) (get-rss self (car site) (caddr site)))
-                        sites))
+  (let* ((sites  (ref self 'sites))
+         (getters (with-rss-db self
+                    (map (lambda (site)
+                           (get-rss self (car site) (caddr site)))
+                         sites)))
          (timeout (add-duration
                    (current-time)
                    ;; NB: this requires fixed srfi-19.scm
                    (make-time 'time-duration 0 (ref self 'fetch-timeout))))
          )
     (sort (append-map
-           (lambda (site rss)
-             (or (and-let* ((items (if (thread? (cdr rss))
-                                       (thread-join! (cdr rss) timeout (car rss))
-                                       (car rss))))
+           (lambda (site getter)
+             (or (and-let* ((items (getter timeout)))
                    (map (lambda (item)
                           (make <rss-item>
                             :site-id (car site) :site-url (cadr site)
                             :title (car item) :link (cadr item)
-                            :date (caddr item)
-                            :cached (eq? (cdr rss) #t)))
+                            :date (caddr item)))
                         items))
                  '()))
-           sites rss-list)
+           sites getters)
           (lambda (a b) (> (ref a 'date) (ref b 'date))))
     ))
 
+;; Returns a procedure PROC, that takes a srfi-time and returns RSS data,
+;; which is a list of (TITLE LINK UNIX-TIME).
+;; The time passed to PROC specifies a limit when thread can wait to fetch
+;; the RSS.  If the RSS is cached and up to date, PROC promptly returns it.
+;; If there is no cache or the cache is obsolete, a thread is spawned to
+;; fetch RSS.   If something goes wrong, PROC returns #f.
+;; Cache is updated accodringly within PROC.
+;; NB: this is called from primordial thread, so we don't need to lock db.
 (define (get-rss self id rss-url)
-  (let ((rss&valid? (get-cache self id))
-        (fetch-thread (lambda ()
-                        (thread-start!
-                         (make-thread (make-thunk self id rss-url) id))))
-        )
-    (if rss&valid?
-        (cons (car rss&valid?)
-              (or (cdr rss&valid?) (fetch-thread)))
-        (cons '() (fetch-thread)))))
+  (let* ((cached (and-let* ((body  (dbm-get (ref self 'db) id #f)))
+                   (read-from-string body)))
+         (timestamp (and cached (get-keyword :timestamp cached 0)))
+         (rss    (and cached (get-keyword :rss-cache cached #f)))
+         (now    (sys-time))
+         )
+    (if (and rss (> timestamp (- now (ref self 'cache-life))))
+        (lambda (timeout) rss)  ;; active
+        (let1 t
+            (thread-start! (make-thread (make-thunk self id rss-url now) id))
+          (lambda (timeout)
+            (let1 r (thread-join! t timeout 'timeout)
+              (if (eq? r 'timeout)
+                  (begin (record-timeout self id) rss)
+                  r)))))
+    ))
 
-;; Get cached result if any.  This is called from primordial thread,
-;; so we don't need to lock db.
-(define (get-cache self id)
-  (and-let* ((body  (dbm-get (ref self 'db) id #f))
-             (sbody (read-from-string body))
-             (timestamp (get-keyword :timestamp sbody 0)))
-    (cons
-     (get-keyword :rss-cache sbody #f)
-     (> timestamp (- (sys-time) (ref self 'cache-life))))))
-
-;; Update cache.  This is called from each thread, so needs mutex.
-(define (put-cache! self id rss)
-  (dynamic-wind
-   (lambda () (mutex-lock! (ref self 'db-lock)))
-   (lambda ()
-     (dbm-put! (ref self 'db) id
-               (write-to-string (list :timestamp (sys-time) :rss-cache rss)))
-     )
-   (lambda () (mutex-unlock! (ref self 'db-lock)))))
-
-;; Creates a thunk for thread
-(define (make-thunk self id uri)
+;; Record the fact that timeout occurred.  Must be called from main thread.
+(define (record-timeout self id)
+  (with-rss-db self
+    (and-let* ((db (ref self 'db))
+               (cached (read-from-string (dbm-get db id "#f")))
+               (timestamp (get-keyword :timestamp cached #f))
+               (rss-cache (get-keyword :rss-cache cached #f))
+               (data (list :timestamp timestamp :rss-cache rss-cache
+                           :elapsed 'timeout)))
+      (dbm-put! db id (write-to-string data)))))
+                                
+;; Creates a thunk for thread.  Put-cache! requires database locking.
+(define (make-thunk self id uri start-time)
   (lambda ()
     (with-error-handler
-        (lambda (e) (display (ref e 'message) (current-error-port)) #f)
+        (lambda (e)
+          (display (ref e 'message) (current-error-port))
+          #f)
       (lambda ()
-        (let1 r (fetch uri)
-          (when r (put-cache! self id r))
-          r)))))
+        (let1 rss (fetch uri)
+          (when rss
+            (let* ((now (sys-time))
+                   (data (list :timestamp now :rss-cache rss
+                               :elapsed (- now start-time))))
+              (dynamic-wind
+               (lambda () (mutex-lock! (ref self 'db-lock)))
+               (lambda ()
+                 (with-rss-db self
+                   (dbm-put! (ref self 'db) id (write-to-string data))))
+               (lambda () (mutex-unlock! (ref self 'db-lock))))))
+          rss)))))
 
 ;; Fetch RSS from specified URI, parse it, and extract link information
 ;; with updated dates.  Returns list of items, in
