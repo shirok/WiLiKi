@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.110 2004-03-19 23:41:21 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.111 2004-03-22 05:38:41 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -44,6 +44,7 @@
   (use gauche.sequence)
   (use wiliki.mcatalog)
   (use wiliki.format)
+  (use wiliki.db)
   (export <wiliki> wiliki-main wiliki
           wiliki:language-link wiliki:self-url
           wiliki:top-link wiliki:edit-link wiliki:history-link
@@ -61,11 +62,6 @@
 
 ;; Load extra code only when needed.
 (autoload dbm.gdbm <gdbm>)
-(autoload wiliki.db      with-db
-                         wdb-exists? wdb-record->page wdb-get
-                         wdb-put! wdb-delete!
-                         wdb-recent-changes wdb-map
-                         wdb-search wdb-search-content)
 (autoload wiliki.macro   handle-reader-macro handle-writer-macro
                          handle-virtual-page virtual-page?)
 (autoload wiliki.rss     rss-page)
@@ -96,14 +92,13 @@
 
 ;; Some constants
 
-(define *recent-changes* " %recent-changes")
 (define *lwp-version* "1.0")            ;''lightweight protocol'' version
 (define $$ gettext)
 
 ;; Parameters
 (define wiliki (make-parameter #f))     ;current instance
 (define lang   (make-parameter #f))     ;current language
-(define db     (make-parameter #f))     ;current database
+(define (db)   #f)     ;for backward compatibility
 
 (define wiliki:lang lang) ;; alias to export
 (define wiliki:db db)     ;; alias to export
@@ -224,6 +219,41 @@
 
 ;; For export
 (define wiliki:self-url url)
+
+;; Convenient wrapper
+(define (with-db thunk . rwmode)
+  (wiliki-with-db (db-path-of (wiliki))
+                  (db-type-of (wiliki))
+                  thunk
+                  :rwmode (get-optional rwmode :read)))
+
+;; Backward compatibility
+(define (wdb-exists? db key)
+  (wiliki-db-exists? key))
+
+(define (wdb-record->page db key record)
+  (wiliki-db-record->page key record))
+
+(define (wdb-get db key . option)
+  (apply wiliki-db-get key option))
+
+(define (wdb-put! db key page . option)
+  (apply wiliki-db-put! key page option))
+
+(define (wdb-delete! db key)
+  (wiliki-db-delete! key))
+
+(define (wdb-recent-changes db)
+  (wiliki-db-recent-changes))
+
+(define (wdb-map db proc)
+  (wiliki-db-map proc))
+
+(define (wdb-search db pred . maybe-sorter)
+  (apply wiliki-db-search pred maybe-sorter))
+
+(define (wdb-search-content db key . maybe-sorter)
+  (apply wiliki-db-search-content key maybe-sorter))
 
 ;; Creates a link to switch language
 (define (wiliki:language-link page)

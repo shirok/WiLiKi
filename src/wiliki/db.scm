@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: db.scm,v 1.10 2004-01-10 11:07:33 shirok Exp $
+;;; $Id: db.scm,v 1.11 2004-03-22 05:38:41 shirok Exp $
 
 (define-module wiliki.db
   (use srfi-1)
@@ -32,72 +32,72 @@
   (use util.list)
   (use dbm)
   (use wiliki.format)
-  (extend wiliki)
-  (export with-db
-          wdb-exists? wdb-record->page wdb-get wdb-put! wdb-delete!
-          wdb-recent-changes wdb-map wdb-search wdb-search-content)
+  (export wiliki-with-db
+          wiliki-db-exists? wiliki-db-record->page
+          wiliki-db-get wiliki-db-put! wiliki-db-delete!
+          wiliki-db-recent-changes
+          wiliki-db-map wiliki-db-search wiliki-db-search-content)
   )
-
 (select-module wiliki.db)
 
-;; Database access ------------------------------------------
-
+;; some constants
 (define-constant *retry-limit* 5)
 (define-constant *EAVAIL-message* "resource temporarily unavailable")
+(define-constant *recent-changes* " %recent-changes")
 
-(define (db-try-open rwmode)
-  (let ((dbtype (db-type-of (wiliki)))
-        (dbpath (db-path-of (wiliki))))
-    ;; NB: a kludge to check if the db already exists.
-    ;; Eventually, each dbm.xdbm module should provide the method
-    ;; to do it.
-    (define (db-file-exists?)
-      (file-exists?
-       (if (memq (class-name dbtype) '(<odbm> <ndbm>))
-         #`",|dbpath|.dir"
-         dbpath)))
+;; private parameter
+(define the-db (make-parameter #f))
 
-    ;; Try to open the database.  If it receives EAVAIL error, wait for
-    ;; one second and try again, up to *retry-limit* times.
-    (define (try retry mode)
-      (with-error-handler
-          (lambda (e)
-            (cond ((>= retry *retry-limit*) (raise e))
-                  ((string-contains-ci (ref e 'message) *EAVAIL-message*)
-                   (sys-sleep 1) (try (+ retry 1) mode))
-                  (else
-                   ;; we don't want to show the path of db to unknown
-                   ;; visitors
-                   (raise
-                    (make <error> :message #`"Couldn't open database file to ,|rwmode|.")))))
-        (lambda ()
-          (dbm-open dbtype :path dbpath :rw-mode mode))))
+;; private procedures
+(define (db-try-open dbpath dbtype rwmode)
+  ;; Try to open the database.  If it receives EAVAIL error, wait for
+  ;; one second and try again, up to *retry-limit* times.
+  (define (try retry mode)
+    (with-error-handler
+        (lambda (e)
+          (cond ((>= retry *retry-limit*) (raise e))
+                ((string-contains-ci (ref e 'message) *EAVAIL-message*)
+                 (sys-sleep 1) (try (+ retry 1) mode))
+                (else
+                 ;; we don't want to show the path of db to unknown
+                 ;; visitors
+                 (raise
+                  (make <error> :message #`"Couldn't open database file to ,|rwmode|.")))))
+      (lambda ()
+        (dbm-open dbtype :path dbpath :rw-mode mode))))
 
-    ;; If db file does not exist, we open it with :write mode,
-    ;; regardless of rwmode arg, so that the empty DB is created.
-    ;; Note that race condition will not happen here.  If there's no
-    ;; DB and two process simultaneously came to this code, only
-    ;; one can grab the write access of DB, and another will
-    ;; be kept waiting until the initial content is committed.
-    (try 0 (if (db-file-exists?) rwmode :write))
-    ))
+  ;; If db file does not exist, we open it with :write mode,
+  ;; regardless of rwmode arg, so that the empty DB is created.
+  ;; Note that race condition will not happen here.  If there's no
+  ;; DB and two process simultaneously came to this code, only
+  ;; one can grab the write access of DB, and another will
+  ;; be kept waiting until the initial content is committed.
+  (try 0 (if (dbm-db-exists? dbtype dbpath) rwmode :write))
+  )
 
-(define (with-db thunk . rwmode)
-  (if (db)
-    (thunk)
-    (parameterize
-        ((db (db-try-open (get-optional rwmode :read))))
-      (dynamic-wind
-       (lambda () #f)
-       thunk
-       (lambda ()
-         (unless (dbm-closed? (db))
-           (dbm-close (db))))))))
+(define (check-db)
+  (or (the-db)
+      (error "WiLiKi: database is not open")))
 
-(define-method wdb-exists? ((db <dbm>) key)
-  (dbm-exists? db key))
+;;;==========================================================
+;;; External API
+;;;
 
-(define-method wdb-record->page ((db <dbm>) key record)
+(define (wiliki-with-db path type thunk . opts)
+  (let-keywords* opts ((rwmode :read))
+    (if (the-db)
+      (thunk)
+      (parameterize ((the-db (db-try-open path type rwmode)))
+        (dynamic-wind
+         (lambda () #f)
+         thunk
+         (lambda ()
+           (unless (dbm-closed? (the-db))
+             (dbm-close (the-db)))))))))
+
+;; All other wiliki-db APIs implicitly uses the-db.
+
+(define (wiliki-db-record->page key record)
   (call-with-input-string record
     (lambda (p)
       (let* ((params  (read p))
@@ -105,16 +105,22 @@
         (apply make <wiliki-page>
                :title key :key key :content content params)))))
 
-;; WDB-GET db key &optional create-new
-(define-method wdb-get ((db <dbm>) key . option)
-  (cond ((dbm-get db key #f) => (cut wdb-record->page db key <>))
-        ((and (pair? option) (car option))
-         (make <wiliki-page> :title key :key key))
-        (else #f)))
+;; WILIKI-DB-EXISTS? key
+(define (wiliki-db-exists? key)
+  (dbm-exists? (check-db) key))
 
-;; WDB-PUT! db key page
-(define-method wdb-put! ((db <dbm>) key (page <wiliki-page>) . option)
-  (let ((s (with-output-to-string
+;; WILIKI-DB-GET key &optional create-new
+(define (wiliki-db-get key . option)
+  (let1 db (check-db)
+    (cond ((dbm-get db key #f) => (cut wiliki-db-record->page key <>))
+          ((and (pair? option) (car option))
+           (make <wiliki-page> :title key :key key))
+          (else #f))))
+
+;; WILIKI-DB-PUT! key page
+(define (wiliki-db-put! key page . option)
+  (let ((db (check-db))
+        (s (with-output-to-string
              (lambda ()
                (write (list :ctime (ref page 'ctime)
                             :cuser (ref page 'cuser)
@@ -132,27 +138,31 @@
                    (acons key (ref page 'mtime) (take* r 49))))))
     ))
 
-;; WDB-DELETE! db key
-(define-method wdb-delete! ((db <dbm>) key)
-  (let ((r (alist-delete key
-                         (read-from-string (dbm-get db *recent-changes* "()")))))
+;; WILIKI-DB-DELETE! key
+(define (wiliki-db-delete! key)
+  (let* ((db (check-db))
+         (r (alist-delete key
+                          (read-from-string
+                           (dbm-get db *recent-changes* "()")))))
     (dbm-delete! db key)
     (dbm-put! db *recent-changes* (write-to-string r))))
 
-(define-method wdb-recent-changes ((db <dbm>))
-  (read-from-string (dbm-get db *recent-changes* "()")))
+;; WILIKI-DB-RECENT-CHANGES
+(define (wiliki-db-recent-changes)
+  (read-from-string (dbm-get (check-db) *recent-changes* "()"))  )
 
-(define-method wdb-map ((db <dbm>) proc)
-  (reverse! (dbm-fold db
+;; higher-order ops
+(define (wiliki-db-map proc)
+  (reverse! (dbm-fold (check-db)
                       (lambda (k v r)
                         (if (string-prefix? " " k)
                             r
                             (cons (proc k v) r)))
                       '())))
 
-(define-method wdb-search ((db <dbm>) pred . maybe-sorter)
+(define (wiliki-db-search pred . maybe-sorter)
   (sort
-   (dbm-fold db
+   (dbm-fold (check-db)
              (lambda (k v r)
                (if (pred k v) (acons k (read-from-string v) r) r))
              '())
@@ -161,14 +171,13 @@
                    (> (get-keyword :mtime (cdr a) 0)
                       (get-keyword :mtime (cdr b) 0))))))
 
-(define-method wdb-search-content ((db <dbm>) key . maybe-sorter)
-  (apply wdb-search db
+(define (wiliki-db-search-content key . maybe-sorter)
+  (apply wiliki-db-search
          (lambda (k v)
            (and (not (string-prefix? " " k))
-                (string-contains-ci (ref (wdb-record->page db key v) 'content)
-                                    key)))
+                (string-contains-ci
+                 (ref (wiliki-db-record->page key v) 'content)
+                 key)))
          maybe-sorter))
-
-
 
 (provide "wiliki/db")
