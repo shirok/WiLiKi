@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: db.scm,v 1.3 2003-07-04 10:30:57 shirok Exp $
+;;; $Id: db.scm,v 1.4 2003-07-10 08:57:59 shirok Exp $
 
 (define-module wiliki.db
   (use srfi-13)
@@ -43,20 +43,42 @@
 (define-constant *retry-limit* 5)
 (define-constant *EAVAIL-message* "resource temporarily unavailable")
 
-(define (db-try-open retry rwmode)
-  (with-error-handler
-      (lambda (e)
-        (cond ((>= retry *retry-limit*) (raise e))
-              ((string-contains-ci (ref e 'message) *EAVAIL-message*)
-               (sys-sleep 1) (db-try-open (+ retry 1) rwmode))
-              (else (raise e))))
-    (lambda ()
-      (dbm-open (db-type-of (wiliki))
-                :path (db-path-of (wiliki)) :rw-mode rwmode))))
+(define (db-try-open rwmode)
+  (let ((dbtype (db-type-of (wiliki)))
+        (dbpath (db-path-of (wiliki))))
+    ;; NB: a kludge to check if the db already exists.
+    ;; Eventually, each dbm.xdbm module should provide the method
+    ;; to do it.
+    (define (db-file-exists?)
+      (file-exists?
+       (if (memq (class-name dbtype) '(<odbm> <ndbm>))
+         #`",|dbpath|.dir"
+         dbpath)))
+
+    ;; Try to open the database.  If it receives EAVAIL error, wait for
+    ;; one second and try again, up to *retry-limit* times.
+    (define (try retry mode)
+      (with-error-handler
+          (lambda (e)
+            (cond ((>= retry *retry-limit*) (raise e))
+                  ((string-contains-ci (ref e 'message) *EAVAIL-message*)
+                   (sys-sleep 1) (try (+ retry 1) mode))
+                  (else (raise e))))
+        (lambda ()
+          (dbm-open dbtype :path dbpath :rw-mode mode))))
+
+    ;; If db file does not exist, we open it with :write mode,
+    ;; regardless of rwmode arg, so that the empty DB is created.
+    ;; Note that race condition will not happen here.  If there's no
+    ;; DB and two process simultaneously came to this code, only
+    ;; one can grab the write access of DB, and another will
+    ;; be kept waiting until the initial content is committed.
+    (try 0 (if (db-file-exists?) rwmode :write))
+    ))
 
 (define (with-db thunk . rwmode)
   (parameterize
-   ((db (db-try-open 0 (get-optional rwmode :read))))
+   ((db (db-try-open (get-optional rwmode :read))))
    (dynamic-wind
     (lambda () #f)
     thunk

@@ -1,3 +1,8 @@
+2003-07-09  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/db.scm (db-try-open): fixed the bug that wiliki didn't
+	  create intitial database.
+
 2003-07-04  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/db.scm (db-try-open): fixed a typo of keyword parameter
