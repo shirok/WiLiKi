@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.24 2002-03-01 19:58:36 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.25 2002-03-01 20:24:06 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -122,17 +122,20 @@
                             (cons (proc k v) r)))
                       '())))
 
-(define-method wdb-search ((db <dbm>) key)
+(define-method wdb-search ((db <dbm>) pred)
   (sort
    (dbm-fold db
              (lambda (k v r)
-               (if (and (not (string-prefix? " " k))
-                        (string-contains (content-of (wdb-record->page db v))
-                                         key))
-                   (cons k r)
-                   r))
+               (if (pred k v) (cons k r) r))
              '())
    string<?))
+
+(define-method wdb-search-content ((db <dbm>) key)
+  (wdb-search db
+              (lambda (k v)
+                (and (not (string-prefix? " " k))
+                     (string-contains (content-of (wdb-record->page db v))
+                                      key)))))
 
 ;; Macros -----------------------------------------
 
@@ -181,8 +184,23 @@
             ((rxmatch rx line) (#f prefix) prefix)
             (else (loop (read-line p)))))))))
 
-(define (invalid-wiki-name? self name)
-  (string-index name #[\s%$]))
+(define (expand-$$index self prefix)
+  (html:ul
+   (map (lambda (key)
+          (html:li (html:a :href (url self "~a" key) key)))
+        (wdb-search (db-of self)
+                    (lambda (k v) (string-prefix? prefix k))))))
+
+(define (reader-macro-wiki-name? self name)
+  (cond ((string-prefix? "$$" name)
+         (let ((args (string-tokenize name)))
+           (cond ((and (string=? (car args) "$$index")
+                       (not (null? (cadr args))))
+                  (expand-$$index self (cadr args)))
+                 (else (format #f "[[~a]]" (html-escape-string name))))))
+        ((string-index name #[\s%$]) ;;invalid wiki name
+         (format #f "[[~a]]" (html-escape-string name)))
+        (else #f)))
 
 (define (inter-wiki-name? self name)
   (receive (head after) (string-scan name ":" 'both)
@@ -193,8 +211,7 @@
 
 (define (format-wiki-name self name)
   (receive (prefix inner) (inter-wiki-name? self name)
-    (cond ((invalid-wiki-name? self name)
-           (format #f "[[~a]]" (html-escape-string name)))
+    (cond ((reader-macro-wiki-name? self name))
           (prefix
            (tree->string (html:a :href (format #f "http://~a~a" prefix
                                                (uri-encode-string inner))
@@ -551,7 +568,7 @@
    self ($$ "Wiliki: Search results")
    (html:ul
     (map (lambda (k) (html:li (html:a :href (url self "~a" k) k)))
-         (wdb-search (db-of self) key)))
+         (wdb-search-content (db-of self) key)))
    :page-id (format #f "c=s&key=~a" (html-escape-string key))
    :show-edit? #f))
 
