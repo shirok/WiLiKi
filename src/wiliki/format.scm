@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.6 2003-08-19 11:22:28 shirok Exp $
+;;; $Id: format.scm,v 1.7 2003-08-24 06:47:21 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -35,6 +35,7 @@
   (use text.tr)
   (use rfc.uri)
   (use util.list)
+  (use util.queue)
   (use gauche.parameter)
   (use gauche.charconv)
   (use gauche.sequence)
@@ -138,16 +139,16 @@
        (let loop ((s line))
          (receive (pre post) (string-scan s "[[" 'both)
            (if pre
-               (cons (format-parts pre)
-                     (receive (wikiname rest) (find-closer post 0 '())
-                       (if wikiname
-                           (cons (format-wiki-name wikiname) (loop rest))
-                           (list rest))))
-               (format-parts s))))
+             (cons (format-parts pre)
+                   (receive (wikiname rest) (find-closer post 0 '())
+                     (if wikiname
+                       (cons (format-wiki-name wikiname) (loop rest))
+                       (list rest))))
+             (format-parts s))))
        "\n")
     (if (get-optional expand-tabs? #f)
-        (expand-tab (tree->string formatted))
-        formatted))
+      (expand-tab (tree->string formatted))
+      formatted))
   )
 
 ;; Expands tabs in a line.
@@ -207,169 +208,258 @@
   (define (italic line)
     (regexp-replace-all #/''([^']*)''/ line "<em>\\1</em>"))
   (define (nl line)
-    (regexp-replace-all #/~%/ line "<br>"))
+    (regexp-replace-all #/~%/ line "<br />"))
   (mailto (uri (nl (italic (bold (html-escape-string line)))))))
 
-;; Read lines from generator and format them.
+;; Read lines from generator and format them.  This is the main
+;; parser/transformer of WiLiKi format.
 (define (format-lines generator)
-  ;; Common states:
-  ;;  ctx  - context (stack of tags to be closed)
-  ;;  id   - counter for heading anchors
-  ;;  r    - reverse list of results
-  (define (loop line ctx id r)
-    (cond ((eof-object? line) (finish (ctag ctx) r))
+  ;; Common loop states:
+  ;;  ctx  - context; a list of symbols that represents the current stack
+  ;;         of elements.  Using this, this procedure is effectively a
+  ;          push-down automaton.
+
+  ;; Stateful closures:
+  ;;  (>> ctx item ...) accumulate item ... to output.  if ctx is not null,
+  ;;                  closing tags in ctx before adding items.
+  ;;  (get-id)        returns new integer incremented by one each time.
+
+  (define %acc (make-queue))
+  (define (>> ctx . args) (apply enqueue! %acc (ctag ctx) args))
+
+  (define gen-id (let ((n 0)) (lambda () (begin0 n (inc! n)))))
+
+  ;; Main loop
+  (define (loop line ctx)
+    (cond ((eof-object? line) (>> ctx))
           ((string-null? line)
-           (loop (generator) '(p) id (list* "\n<p>" (ctag ctx) r)))
+           (let1 ctx (flush-block ctx)
+             (>> '() "<p>")
+             (loop (generator) (cons 'p ctx))))
           ((string=? "----" line)
-           (loop (generator) '() id (list* "<hr>" (ctag ctx) r)))
+           (>> ctx "<hr />") (loop (generator) '()))
           ((string=? "{{{" line)
-           (pre* (generator) id (list* "<pre>" (ctag ctx) r)))
+           (let1 ctx (ensure-block ctx)
+             (>> '() "<pre>")
+             (verb (generator) ctx)))
+          ((string=? "<<<" line)
+           (begin-quote ctx))
+          ((string=? ">>>" line)
+           (end-quote ctx))
           ((and (string-prefix? " " line)
-                (or (null? ctx) (equal? ctx '(p))))
-           (pre line id (list* "<pre>" (ctag ctx) r)))
-          ((rxmatch #/^(\*\**) / line)
+                (or (null? ctx) (memq (car ctx) '(p))))
+           (let1 ctx (ensure-block ctx)
+             (>> '() "<pre>") (pre line (cons 'pre ctx))))
+          ((rxmatch #/^(\*{1,}) / line)
            => (lambda (m)
-                (let* ((hfn (ref `(,html:h2 ,html:h3 ,html:h4 ,html:h5)
-                                 (- (h-level m) 1)
-                                 html:h6))
-                       (anchor (cut html:a :name <> <>)))
-                  (loop (generator) '() (+ id 1)
-                        (list* (hfn (anchor id (format-line (m 'after))))
-                               (ctag ctx) r)))))
+                (headings m (h-level m) ctx)))
           ((rxmatch #/^(--*) / line)
            => (lambda (m)
-                (list-item m (h-level m) 'ul ctx id r)))
+                (list-item m (h-level m) 'ul ctx)))
           ((rxmatch #/^(##*) / line)
            => (lambda (m)
-                (list-item m (h-level m) 'ol ctx id r)))
+                (list-item m (h-level m) 'ol ctx)))
           ((rxmatch #/^:(.*):([^:]*)$/ line)
-           => (lambda (m)
-                (loop (generator) '(dl) id
-                      (cons `(,@(if (equal? ctx '(dl))
-                                    '()
-                                    `(,(ctag ctx) "<dl>"))
-                              "<dt>" ,(format-line (m 1))
-                              "<dd>" ,(format-line (m 2)))
-                            r))))
+           => (cut def-item <> ctx))
           ((rxmatch #/^\|\|(.*)\|\|$/ line)
            => (lambda (m)
-                (table (m 1) id
-                       (list* "<table class=\"inbody\" border=1 cellspacing=0>"
-                              (ctag ctx) r))))
-          ((null? ctx)
-           (loop (generator) '(p) id
-                 (list* (format-line line) "<p>" r)))
+                (let1 ctx (ensure-block ctx)
+                  (>> '()
+                      "<table class=\"inbody\" border=\"1\" cellspacing=\"0\">\n")
+                  (table (m 1) ctx))))
+          ((block-bottom? ctx)
+           (>> '() "<p>" (format-line line))
+           (loop (generator) (cons 'p ctx)))
           (else
-           (loop (generator) ctx id (cons (format-line line) r)))
+           (>> '() (format-line line))
+           (loop (generator) ctx))
           ))
 
-  (define (finish ctx r) (cons (reverse! r) ctx))
+  (define (symbol->tag p l)
+    (if (list? l) (map p l) (p l)))
+  (define (otag ctx)
+    (symbol->tag (lambda (t) #`"<,|t|>") ctx))
+  (define (ctag ctx)
+    (symbol->tag (lambda (t) #`"</,|t|>") ctx))
+  (define (h-level m)
+    (- (rxmatch-end m 1) (rxmatch-start m 1)))
 
-  (define (otag ctx) (map (lambda (t) #`"<,|t|>") ctx))
-  (define (ctag ctx) (map (lambda (t) #`"</,|t|>") ctx))
+  ;; flush pending <p> and/or <pre>
+  (define (ensure-block ctx)
+    (if (and (pair? ctx) (memq (car ctx) '(p pre)))
+      (begin (>> (car ctx)) (cdr ctx))
+      ctx))
 
-  (define (h-level matcher) ;; level of headings
-    (- (rxmatch-end matcher 1) (rxmatch-start matcher 1)))
+  ;; like ensure-block, but flush up to the most inner blockquote.
+  (define (flush-block ctx)
+    (receive (pre rest) (break (cut memq <> '(blockquote)) ctx)
+      (>> pre)
+      rest))
 
-  (define (pre line id r)
-    (cond ((eof-object? line) (finish '("</pre>") r))
+  ;; See if current context is the "bottom" of the block---i.e.
+  ;; from where you can start a block element.  List elements within
+  ;; which you always want to contain block elements.
+  (define (block-bottom? ctx)
+    (or (null? ctx) (memq (car ctx) '(dd blockquote))))
+
+  ;; Headings
+  (define (headings m level ctx)
+    (let* ((hfn (ref `(,html:h2 ,html:h3 ,html:h4 ,html:h5)
+                     (- level 1)
+                     html:h6)))
+      (>> ctx (hfn (html:a :name (gen-id) (format-line (m 'after)))))
+      (loop (generator) '())))
+
+  ;; Non-verbatime pre
+  (define (pre line ctx)
+    (cond ((eof-object? line) (>> ctx))
           ((string-prefix? " " line)
-           (pre (generator) id
-                (list* "\n"
-                       (string-tr (tree->string (format-line line #t)) "\n" " ")
-                       r)))
-          (else (loop line '() id (cons "</pre>" r)))))
+           (>> '()
+               (string-delete (tree->string (format-line line #t))
+                              #\newline)
+               "\n")
+           (pre (generator) ctx))
+          (else
+           (>> '(pre))
+           (loop line (cdr ctx)))))
 
-  (define (pre* line id r)
-    (cond ((eof-object? line) (finish '("</pre>") r))
+  ;; Verbatim pre
+  ;; NB: within this loop, ctx does not include the current <pre> block.
+  (define (verb line ctx)
+    (cond ((eof-object? line) (>> (cons 'pre ctx)))
           ((string=? line "}}}")
-           (loop (generator) '() id (cons "</pre>" r)))
-          (else (pre* (generator) id
-                      (list* "\n"
-                             (html-escape-string
-                              (tree->string (expand-tab line)))
-                             r)))))
+           (>> '(pre))
+           (loop (generator) ctx))
+          (else
+           (>> '()
+               (html-escape-string (tree->string (expand-tab line)))
+               "\n")
+           (verb (generator) ctx))))
 
-  (define (table body id r)
-    (let1 r
-        (cons (html:tr :class "inbody"
-                       (map (lambda (seg)
-                              (html:td :class "inbody" (format-line seg)))
-                            (string-split body  "||")))
-              r)
-      (let1 next (generator)
-        (cond ((eof-object? next) (finish '("</table>") r))
-              ((rxmatch #/^\|\|(.*)\|\|$/ next)
-               => (lambda (m) (table (m 1) id r)))
-              (else (loop next '() id (cons "</table>\n" r)))))))
-
-  (define (list-item match level ltag ctx id r)
-    (let*-values (((line)  (rxmatch-after match))
-                  ((pre ctx) (if (equal? ctx '(p))
-                                 (values ctx '())
-                                 (values '() ctx)))
-                  ((cur) (length ctx)))
-      (cond ((< cur level)
-             (loop (generator)
-                   `(,@(make-list (- level cur) ltag) ,@ctx)
-                   id
-                   (list* (format-line line) "<li>"
-                          (otag (make-list (- level cur) ltag)) (ctag pre) r)))
-            ((> cur level)
-             (loop (generator)
-                   (drop ctx (- cur level))
-                   id
-                   (list* (format-line line) "<li>"
-                          (ctag (take ctx (- cur level)))  r)))
+  ;; Table
+  (define (table body ctx)
+    (>> '() (html:tr :class "inbody"
+                     (map (lambda (seg)
+                            (html:td :class "inbody" (format-line seg)))
+                          (string-split body  "||"))))
+    (let1 next (generator)
+      (cond ((eof-object? next) (>> '(table)))
+            ((rxmatch #/^\|\|(.*)\|\|$/ next)
+             => (lambda (m) (table (m 1) ctx)))
             (else
-             (loop (generator) ctx id
-                   (list* (format-line line) "<li>"  r))))))
+             (>> '(table) "\n")
+             (loop next ctx)))))
 
-  (loop (generator) '() 0 '()))
+  ;; Blockquote
+  (define (begin-quote ctx)
+    (let1 ctx (ensure-block ctx)
+      (>> '() "<blockquote><p>")
+      (loop (generator) (list* 'p 'blockquote ctx))))
 
-;; Create a generator method.
-;; NB: it's kind of ugly that the generator should switch the verbatim mode
-;; looking at "{{{", but it makes the parser (format-lines) much simpler.
-(define (make-line-fetcher port)
-  (let ((buf (read-line port))
-        (verbatim #f)
-        (finish (lambda (r)
-                  (if (null? (cdr r)) (car r) (string-concatenate-reverse r))))
-        )
-    (lambda ()
-      (if (eof-object? buf)
-          buf
-          (let loop ((next (read-line port))
-                     (r    (list buf)))
-               (set! buf next)
-               (cond ((eof-object? next) (finish r))
-                     (verbatim
-                      (when (string=? "}}}" next) (set! verbatim #f))
-                      (finish r))
-                     ((string=? "{{{" next)
-                      (set! verbatim #t)
-                      (finish r))
-                     ((string-prefix? "~" next)
-                      (loop (read-line port) (cons (string-drop next 1) r)))
-                     ((string-prefix? ";;" next)
-                      (loop (read-line port) r))
-                     (else (finish r)))
-               )))
-    ))
+  (define (end-quote ctx)
+    (receive (inner outer) (break (cut eq? <> 'blockquote) ctx)
+      (if (null? outer)
+        ;; stray closing blockquote.  display it literally.
+        (begin (>> '() ">>>")
+               (loop (generator) ctx))
+        ;; close inner blocks before closing blockquote.
+        (begin
+          (>> inner (ctag 'blockquote))
+          (loop (generator) (cdr outer))))))
+
+  ;; UL and OL
+  (define (list-item match level ltag ctx)
+    (let* ((line (rxmatch-after match))
+           (ctx  (adjust-list-level (ensure-block ctx) level ltag)))
+      (>> '() (format-line line))
+      (loop (generator) ctx)))
+
+  (define (adjust-list-level ctx list-level ltag)
+    (let1 current (count (cut memq <> '(ul ol)) ctx)
+      (if (< current list-level)
+        (let rec ((ctx ctx) (current current))
+          (if (< current list-level)
+            (begin (>> '() (otag ltag) "<li>")
+                   (rec (list* 'li ltag ctx) (+ current 1)))
+            ctx))
+        (let rec ((ctx ctx) (current current))
+          (receive (pre rest) (break (cut memq <> '(ul ol)) ctx)
+            (cond ((> current list-level)
+                   (>> pre (ctag (car rest)))
+                   (rec (cdr rest) (- current 1)))
+                  ((eq? ltag (car rest))
+                   (>> pre "<li>")
+                   (cons 'li rest))
+                  (else  ;; list type is switched
+                   (>> pre (ctag (car rest)))
+                   (adjust-list-level (cdr rest) list-level ltag))))))))
+
+  ;; DL
+  (define (def-item match ctx)
+    (let ((dt (format-line (match 1)))
+          (dd (format-line (match 2))))
+      (receive (pre rest) (break (cut eq? <> 'dl) ctx)
+        (if (null? rest)
+          (let1 ctx (ensure-block pre)  ; begin new dl
+            (>> '() "<dl>" "<dt>" dt "</dt>" "<dd><p>" dd)
+            (loop (generator) (list* 'p 'dd 'dl ctx)))
+          (begin                        ; continue the current dl
+            (>> pre "<dt>" dt "</dt>" "<dd><p>" dd)
+            (loop (generator) (list* 'p 'dd rest)))))))
+
+  ;; Main body
+  (loop (generator) '())
+  (dequeue-all! %acc))
+
+;; Create a line scanner method
+(define (make-line-scanner port)
+  (define buf #f)       ;; buffer for a lookahead line
+  (define verbatim #f)  ;; flag
+
+  ;; Get a physical line
+  (define (getline)
+    (if buf (begin0 buf (set! buf #f)) (read-line port)))
+  (define (ungetline line) (set! buf line))
+
+  ;; Lexer body
+  (lambda ()
+    (let rec ((line (getline))
+              (r    '()))
+      (cond ((eof-object? line)
+             (if (null? r) line (string-concatenate-reverse r)))
+            (verbatim
+             (when (string=? "}}}" line) (set! verbatim #f))
+             line)
+            ((string-prefix? ";;" line)
+             (rec (getline) r))
+            ((string=? "{{{" line)
+             (if (null? r)
+               (begin (set! verbatim #t) line)
+               (begin (ungetline line) (string-concatenate-reverse r))))
+            ((string-prefix? "~" line)
+             (rec (getline) (cons (string-drop line 1) r)))
+            (else
+             (if (null? r)
+               (rec (getline) (cons line r))
+               (begin (ungetline line) (string-concatenate-reverse r))))
+            )))
+  )
   
-(define (format-content page)
+(define-method format-content ((page <page>))
   (if (member page (page-format-history)
               (lambda (p1 p2) (string=? (key-of p1) (key-of p2))))
       ;; loop in $$include chain detected
       ">>>$$include loop detected<<<"
       (parameterize
        ((page-format-history (cons page (page-format-history))))
-       (call-with-input-string (content-of page)
-         (lambda (p)
-           (with-port-locking p
-             (lambda ()
-               (format-lines (make-line-fetcher p))))))))
-  )
+       (format-content (content-of page)))))
+
+(define-method format-content ((content <string>))
+  (call-with-input-string content
+    (lambda (p)
+      (with-port-locking p
+        (lambda ()
+          (format-lines (make-line-scanner p)))))))
 
 (define (format-footer page)
   (if (mtime-of page)

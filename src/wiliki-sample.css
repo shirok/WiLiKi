@@ -31,6 +31,10 @@ pre.macroerror {
     background-color: #ee5555;
 }
 
+blockquote {
+    border-left: solid thick #ddbbaa;
+}
+
 dt { font-weight: bold }
 
 td.inbody { background: #dddddd }   /* used in formatted body */

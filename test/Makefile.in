@@ -7,7 +7,7 @@ check : test
 
 test :
 	@rm -f $(TEST_OUT)
-	$(GOSH) -I. test.scm > test.log
+	$(GOSH) -I. -I../src format.scm >> test.log
 
 clean :
 	rm -rf core $(TEST_OUT) *~

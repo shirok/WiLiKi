@@ -1,3 +1,10 @@
+2003-08-23  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/format.scm : rewrote formatting engine to produce
+	  more "correct" html (not quite, but almost correct).
+	* test/format.scm : added lots of patholocigal cases.
+	* src/wiliki-sample.css : added blockquote style.
+
 2003-08-19  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm, src/wiliki/format.scm : Oops.  Changing the default

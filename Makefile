@@ -12,7 +12,7 @@ clean:
 check: test
 
 test:
-	cd test; $(MAKE) clean
+	cd test; $(MAKE) check
 
 install: all
 	cd src; $(MAKE) install

@@ -9,7 +9,8 @@ TARGET = wiliki.scm \
          wiliki/mcatalog.scm \
          wiliki/macro.scm \
          wiliki/rss.scm \
-         wiliki/pasttime.scm 
+         wiliki/pasttime.scm \
+	 wiliki/msgs.jp
 
 SCM_INSTALL_DIR = $(DESTDIR)`$(GAUCHE_CONFIG) --$(INSTALL_TYPE)libdir`
 
