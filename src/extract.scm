@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: extract.scm,v 1.5 2003-02-12 10:41:54 shirok Exp $
+;;; $Id: extract.scm,v 1.6 2003-08-31 11:17:30 shirok Exp $
 
 (define (scan-src file)
   (define msgs '())
@@ -54,13 +54,13 @@
    "\""))
 
 (define (main args)
-  (unless (= (length args) 3)
-    (error "usage: gosh extract.scm file.scm msg-file"))
-  (let* ((src-file (cadr args))
-         (dst-file (caddr args))
-         (dst-tmp  (string-append dst-file ".t"))
-         (src-msgs (scan-src src-file))
-         (dst-msgs (scan-msgfile dst-file)))
+  (unless (>= (length args) 3)
+    (error "usage: gosh extract.scm msg-file file.scm ..."))
+  (let* ((src-files (cddr args))
+         (dst-file  (cadr args))
+         (dst-tmp   (string-append dst-file ".t"))
+         (src-msgs  (apply append! (map scan-src src-files)))
+         (dst-msgs  (scan-msgfile dst-file)))
     (for-each (lambda (dst-msg)
                 (cond ((assoc (car dst-msg) src-msgs)
                        => (lambda (p)

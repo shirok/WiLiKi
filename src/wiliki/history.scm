@@ -23,11 +23,12 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: history.scm,v 1.1 2003-08-31 10:37:40 shirok Exp $
+;;;  $Id: history.scm,v 1.2 2003-08-31 11:17:30 shirok Exp $
 ;;;
 
 (select-module wiliki)
 
+;; Display "Edit History" page.
 (define (cmd-history pagename)
   
   (define (td . c)
@@ -35,37 +36,45 @@
            :class "history_td"
            :style "background-color:#ffffff; color:#000000"
            c))
-  (define (th n . c)
+  (define (th . c)
     (apply html:th
            :class "history_th"
-           :colspan n
            :style "background-color:#ccccff; color:#000000"
            c))
 
   (define (history-table-row entry rev)
-    (html:tr (td rev)
-             (td (format-time (ref entry 'timestamp)))
-             (td (format "+~a -~a line(s)"
-                         (length (ref entry 'added-lines))
-                         (length (ref entry 'deleted-lines))))
-             (td (ref entry 'log-message))
-             (td (html:a :href (url "p=~a&c=hv&t=~a"
-                                    (cv-out pagename)
-                                    (ref entry 'timestamp))
-                         "View")
-                 " this version")
-             (td "Diff to "
-                 (html:a :href (url "p=~a&c=hd&t=~a"
-                                    (cv-out pagename)
-                                    (ref entry 'timestamp))
-                         "current"))
-             ))
+    (list
+     (html:tr (td :rowspan 2 rev)
+              (td (format-time (ref entry 'timestamp)))
+              (td (format "+~a -~a line(s)"
+                          (length (ref entry 'added-lines))
+                          (length (ref entry 'deleted-lines))))
+              (td (html:div
+                   :style "text-align:right"
+                   "[" (html:a :href (url "p=~a&c=hv&t=~a"
+                                          (cv-out pagename)
+                                          (ref entry 'timestamp))
+                               "View")
+                   " this version] "
+                   "[Diff to "
+                   (html:a :href (url "p=~a&c=hd&t=~a"
+                                      (cv-out pagename)
+                                      (ref entry 'timestamp))
+                           "current")
+                   "]")))
+     (html:tr (td :colspan 3
+                  (let1 l (ref entry 'log-message)
+                    (if (or (not l) (equal? l ""))
+                      "*** no log message ***"
+                      l)))
+              )))
 
   (define (history-table entries)
     (html:table
-     (html:tr (map th
-                   '(1   1    1       1   2)
-                   '(Rev Time Changes Log Operations)))
+     :width "90%"
+     (html:tr (th :rowspan 2 "Rev")
+              (th "Time") (th "Changes") (th "Operations"))
+     (html:tr (th :colspan 3 "Log"))
      (map history-table-row
           entries
           (iota (length entries) (length entries) -1))))
@@ -80,9 +89,7 @@
                              (tree->string
                               (format-wikiname-anchor pagename))))
            ,(history-table (map wiliki-log-parse-entry picked))))
-       (html:p (format ($$ "No edit history available for page ~a")
-                       (tree->string
-                        (format-wikiname-anchor pagename)))))
+       (no-history-info pagename))
    :show-lang? #f :show-edit? #f :show-history? #f)
   )
 
@@ -112,22 +119,52 @@
          (let* ((entries  (wiliki-log-entries-after picked old-time))
                 (diffpage (wiliki-log-diff* entries (content-of page))))
            (list
-            (html:p (format ($$ "Changes of ~a since ~a")
-                            (tree->string
-                             (format-wikiname-anchor pagename))
-                            (format-time old-time)))
+            (html:h2 (format ($$ "Changes of ~a since ~a")
+                             (tree->string
+                              (format-wikiname-anchor pagename))
+                             (format-time old-time)))
             (html:ul (html:li (aline "+ added lines"))
                      (html:li (dline "- deleted lines")))
             (html:p :style "text-align:right"
                     (html:a :href (url "~a&c=h" (cv-out pagename))
-                            "Return to the edit history"))
+                            ($$ "Return to the edit history")))
             (html:pre :class "history_diff"
                       :style "background-color:#ffffff; color:#000000; margin:0"
                       (map diffline diffpage)))))
-       (html:p (format ($$ "No diff info for page ~a")
-                       (tree->string
-                        (format-wikiname-anchor pagename)))))
+       (no-history-info pagename))
    :show-lang? #f :show-edit? #f :show-histroy? #f)
   )
+
+(define (cmd-viewold pagename old-time)
+  (format-page
+   ($$ "Edit History:View")
+   (or (and-let* ((logfile (log-file-path (wiliki)))
+                  (page    (wdb-get (db) pagename))
+                  (picked  (wiliki-log-pick-from-file pagename logfile)))
+         (let* ((entries  (wiliki-log-entries-after picked old-time))
+                (reverted (wiliki-log-revert* entries (content-of page))))
+           (list
+            (html:h2 (format ($$ "Content of ~a at ~a")
+                             (tree->string
+                              (format-wikiname-anchor pagename))
+                             (format-time old-time)))
+            (html:p :style "text-align:right"
+                    (html:a :href (url "~a&c=hd&t=~a"
+                                       (cv-out pagename) old-time)
+                            ($$ "View diff from current version")))
+            (html:p :style "text-align:right"
+                    (html:a :href (url "~a&c=h" (cv-out pagename))
+                            ($$ "Return to the edit history")))
+            (html:pre :class "history_diff"
+                      :style "background-color:#ffffff; color:#000000; margin:0"
+                      (map (cut string-append <> "\n") reverted)))))
+       (no-history-info pagename))
+   :show-lang? #f :show-edit? #f :show-histroy? #f)
+  )
+
+(define (no-history-info pagename)
+  (html:p (format ($$ "No edit history available for page ~a")
+                  (tree->string
+                   (format-wikiname-anchor pagename)))))
 
 (provide "wiliki/history")

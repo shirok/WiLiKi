@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.88 2003-08-31 10:37:40 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.89 2003-08-31 11:17:30 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -66,7 +66,7 @@
                          wiliki-log-diff wiliki-log-diff*
                          wiliki-log-revert wiliki-log-revert*
                          wiliki-log-merge)
-(autoload "wiliki/history" cmd-history cmd-diff)
+(autoload "wiliki/history" cmd-history cmd-diff cmd-viewold)
 
 
 ;; Version check.
@@ -570,7 +570,12 @@
           (with-db (cut cmd-history pagename)))
          ((equal? command "hd")
           (with-db (cut cmd-diff pagename
-                        (cgi-get-parameter "t" param :convert x->integer))))
+                        (cgi-get-parameter "t" param :convert x->integer
+                                           :default 0))))
+         ((equal? command "hv")
+          (with-db (cut cmd-viewold pagename
+                        (cgi-get-parameter "t" param :convert x->integer
+                                           :default 0))))
          ((equal? command "s")
           (with-db
            (cut cmd-search (cgi-get-parameter "key" param :convert cv-in))))

@@ -14,6 +14,8 @@ TARGET = wiliki.scm \
          wiliki/pasttime.scm \
 	 wiliki/msgs.jp
 
+MSG_SRCS = wiliki.scm wiliki/history.scm wiliki/format.scm
+
 SCM_INSTALL_DIR = $(DESTDIR)`$(GAUCHE_CONFIG) --$(INSTALL_TYPE)libdir`
 
 all : wiliki/msgs.jp
@@ -22,7 +24,7 @@ wiliki/msgs.jp: wiliki/msgs.jp.euc
 	$(GOSH) -ugauche.charconv -e '(call-with-input-file "wiliki/msgs.jp.euc" (lambda (in) (call-with-output-file "wiliki/msgs.jp" (cut copy-port in <> :unit (quote char)))) :encoding "euc-jp")' -Eexit
 
 extract :
-	$(GOSH) ./extract.scm wiliki.scm wiliki/msgs.jp.euc
+	$(GOSH) ./extract.scm wiliki/msgs.jp.euc $(MSG_SRCS)
 
 install :
 	if test ! -d $(SCM_INSTALL_DIR)/wiliki; then \
