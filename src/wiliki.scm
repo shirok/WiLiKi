@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.52 2003-02-07 22:01:53 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.53 2003-02-09 00:25:59 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -77,8 +77,6 @@
              :init-value "wikidata.dbm")
    (top-page :accessor top-page-of :init-keyword :top-page
              :init-value "TopPage")
-   (cgi-name :accessor cgi-name-of :init-keyword :cgi-name
-             :init-value "wiliki.cgi")
    (language :accessor language-of :init-keyword :language
              :init-value 'jp)
    (charsets :accessor charsets-of :init-keyword :charsets
@@ -89,7 +87,16 @@
                 :init-value #f)
    (image-urls :accessor image-urls-of :init-keyword :image-urls
                :init-value ())
+   (server-name :accessor server-name-of :init-keyword :server-name
+                :init-form (or (sys-getenv "SERVER_NAME")
+                               "localhost"))
+   (script-name :accessor script-name-of :init-keyword :script-name
+                :init-form (or (sys-getenv "SCRIPT_NAME")
+                               "wiliki.cgi"))
    ))
+
+(define (cgi-name-of wiliki)
+  (sys-basename (script-name-of wiliki)))
 
 (define (url fmt . args)
   (let ((fstr #`",(cgi-name-of (wiliki))?,|fmt|&l=,(lang)"))

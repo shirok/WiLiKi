@@ -1,3 +1,8 @@
+2003-02-08  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm : removed cgi-name slot from <wiliki>.  It is
+	  now derived from CGI metavariables SCRIPT_NAME.
+
 2003-02-06  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm : completed charset support, using new features

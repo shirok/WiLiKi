@@ -37,7 +37,6 @@
      :top-page "WiLiKi"
      :style-sheet "wiliki-sample.css"
      :charsets '((jp . euc-jp) (en . utf-8))
-     :cgi-name (sys-basename *program-name*)
      )))
 
 ;; Local variables:
