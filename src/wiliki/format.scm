@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.27 2004-01-21 15:45:44 shirok Exp $
+;;; $Id: format.scm,v 1.28 2004-02-04 21:01:46 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -201,7 +201,7 @@
   (with-error-handler
       (lambda (e) (values #f #f))
     (lambda ()
-      (let* ((s (open-input-string/private str))
+      (let* ((s (open-input-string str))
              (x (read-list #\) s)))
         (values x (get-remaining-input-string s))))))
 
