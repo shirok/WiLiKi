@@ -2,7 +2,7 @@
 ;;; wiliki/macro.scm - macro handling (to be autoloaded)
 ;;;
 
-;; $Id: macro.scm,v 1.3 2002-09-30 09:03:10 shirok Exp $
+;; $Id: macro.scm,v 1.4 2002-12-02 07:09:18 shirok Exp $
 
 (select-module wiliki)
 
@@ -112,6 +112,12 @@
           (cond
            ((eof-object? line)
             (reverse (append (make-list depth "</ul>") r)))
+           ((string=? line "{{{")
+            ;; need to skip <pre> section
+            (let skip ((line (read-line)))
+              (cond ((eof-object? line) (loop line depth r id))
+                    ((string=? line "}}}") (loop (read-line) depth r id))
+                    (else (skip (read-line))))))
            ((rxmatch #/^\*+ / line) =>
             (lambda (m)
               (let1 newdepth (- (string-length (m)) 1)
