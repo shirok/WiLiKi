@@ -1,4 +1,4 @@
-CONFIG_GENERATED = config.log config.status
+CONFIG_GENERATED = config.log config.status autom4te*.cache
 
 all:
 	(cd src; $(MAKE))
