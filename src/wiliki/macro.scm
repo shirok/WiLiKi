@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.20 2004-01-11 11:13:57 shirok Exp $
+;;; $Id: macro.scm,v 1.21 2004-01-11 12:03:31 shirok Exp $
 
 (select-module wiliki)
 (use srfi-19)
@@ -146,7 +146,8 @@
 ;; Writer macro definitions
 ;;
 
-(define-writer-macro (date) (wiliki:format-time (sys-time)))
+(define-writer-macro (date)
+  (list (wiliki:format-time (sys-time))))
 
 ;; sample
 (define-writer-macro (srfi n)
