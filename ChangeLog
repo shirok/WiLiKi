@@ -1,3 +1,7 @@
+2002-12-18  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm: added style-sheet support.
+
 2002-12-09  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm (redirect-page) : fixed a problem of redirecting
