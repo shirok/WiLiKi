@@ -1,5 +1,7 @@
 2003-10-07  Shiro Kawai  <shiro@acm.org>
 
+	* release 0.4
+	
 	* src/wiliki/format.scm : allow the InterWikiName list to
 	  have protocol scheme (http, https, ftp, mailto).
 	  Patch by Yaegashi Takeshi.
