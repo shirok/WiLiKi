@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.13 2003-09-01 06:06:20 shirok Exp $
+;;; $Id: format.scm,v 1.14 2003-09-01 09:00:09 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -80,11 +80,11 @@
 (define (format-diff-line line)
   (define (aline . c)
     (html:span :class "diff_added"
-               :style "background-color:#ffffff; color: #ff4444"
+               :style "background-color:#ffffff; color: #4444ff"
                c))
   (define (dline . c)
     (html:span :class "diff_deleted"
-               :style "background-color:#ffffff; color: #4444ff"
+               :style "background-color:#ffffff; color: #ff4444"
                c))
   (cond ((string? line) (list "  " (html-escape-string line) "\n"))
         ((eq? (car line) '+)
