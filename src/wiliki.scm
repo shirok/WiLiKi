@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.83 2003-08-18 08:20:37 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.84 2003-08-18 08:32:42 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -119,6 +119,11 @@
                                "wiliki.cgi"))
    (debug-level :accessor debug-level :init-keyword :debug-level
                 :init-value 0)
+   ;; customize edit text area size
+   (textarea-rows :accessor textarea-rows-of :init-keyword :textarea-rows
+                  :init-value 40)
+   (textarea-cols :accessor textarea-cols-of :init-keyword :textarea-cols
+                  :init-value 80)
    ))
 
 (define (cgi-name-of wiliki)
@@ -300,7 +305,9 @@
    (html:input :type "hidden" :name "p" :value pagename)
    (html:input :type "hidden" :name "l" :value (lang))
    (html:input :type "hidden" :name "mtime" :value mtime)
-   (html:textarea :name "content" :rows 40 :cols 80
+   (html:textarea :name "content"
+                  :rows (textarea-rows-of (wiliki))
+                  :cols (textarea-cols-of (wiliki))
                   (html-escape-string content))
    (html:br)
    (buttons)

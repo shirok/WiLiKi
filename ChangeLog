@@ -1,5 +1,8 @@
 2003-08-17  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki.scm (<wiliki>) : added customization parameter
+	  textarea-rows and textarea-cols (Patch from knok).
+	
 	* src/wiliki.scm (expand-writer-macros) : bug fix: not to expand
 	  writer macros in verbatim block.
 
