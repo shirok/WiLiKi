@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: history.scm,v 1.3 2003-08-31 12:03:06 shirok Exp $
+;;;  $Id: history.scm,v 1.4 2003-08-31 23:11:16 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -94,23 +94,6 @@
   )
 
 (define (cmd-diff pagename old-time)
-  (define (aline . c)
-    (html:span :class "history_diff_added"
-               :style "background-color:#ffffff; color: #ff4444"
-               c))
-  (define (dline . c)
-    (html:span :class "history_diff_deleted"
-               :style "background-color:#ffffff; color: #4444ff"
-               c))
-  
-  (define (diffline line)
-    (cond ((string? line) (string-append "  " line "\n"))
-          ((eq? (car line) '+)
-           (aline (string-append "+ " (cdr line) "\n")))
-          ((eq? (car line) '-)
-           (dline (string-append "- " (cdr line) "\n")))
-          (else "???")))
-
   (format-page
    ($$ "Edit History:Diff")
    (or (and-let* ((logfile (log-file-path (wiliki)))
@@ -123,14 +106,12 @@
                              (tree->string
                               (format-wikiname-anchor pagename))
                              (format-time old-time)))
-            (html:ul (html:li (aline "+ added lines"))
-                     (html:li (dline "- deleted lines")))
+            (html:ul (html:li (format-diff-line `(+ . ,($$ "added lines"))))
+                     (html:li (format-diff-line `(- . ,($$ "deleted lines")))))
             (html:p :style "text-align:right"
                     (html:a :href (url "~a&c=h" (cv-out pagename))
                             ($$ "Return to the edit history")))
-            (html:pre :class "history_diff"
-                      :style "background-color:#ffffff; color:#000000; margin:0"
-                      (map diffline diffpage)))))
+            (format-diff-pre diffpage))))
        (no-history-info pagename))
    :show-lang? #f :show-edit? #f :show-history? #f)
   )
@@ -155,9 +136,7 @@
             (html:p :style "text-align:right"
                     (html:a :href (url "~a&c=h" (cv-out pagename))
                             ($$ "Return to the edit history")))
-            (html:pre :class "history_diff"
-                      :style "background-color:#ffffff; color:#000000; margin:0"
-                      (map (cut string-append <> "\n") reverted)))))
+            (format-diff-pre reverted))))
        (no-history-info pagename))
    :show-lang? #f :show-edit? #f :show-history? #f)
   )

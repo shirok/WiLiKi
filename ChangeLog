@@ -1,3 +1,11 @@
+2003-08-31  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/edit.scm, src/wiliki/format.scm, src/wiliki/history.scm:
+	  Incorporated auto-merge feature to conflict handling.  If logging
+	  feature is on, wiliki tries to merge both edits.  Even if logging
+	  feature is not on, it shows diff, so it's much easier to find out
+	  what is edited.
+
 2003-08-30  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm, src/wiliki/history.scm, src/wiliki/log.scm,

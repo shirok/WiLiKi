@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.9 2003-08-31 10:37:40 shirok Exp $
+;;; $Id: format.scm,v 1.10 2003-08-31 23:11:16 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -46,7 +46,9 @@
           format-time
           format-colored-box
           format-wikiname-anchor
-          format-wiki-name)
+          format-wiki-name
+          format-diff-pre
+          format-diff-line)
   )
 (select-module wiliki.format)
 
@@ -64,6 +66,27 @@
 (define (format-wikiname-anchor wikiname)
   ;; assumes wikiname already exist in the db.
   (html:a :href (url "~a" (cv-out wikiname)) (html-escape-string wikiname)))
+
+(define (format-diff-pre difflines)
+  (html:pre :class "diff"
+            :style "background-color:#ffffff; color:#000000; margin:0"
+            (map format-diff-line difflines)))
+
+(define (format-diff-line line)
+  (define (aline . c)
+    (html:span :class "diff_added"
+               :style "background-color:#ffffff; color: #ff4444"
+               c))
+  (define (dline . c)
+    (html:span :class "diff_deleted"
+               :style "background-color:#ffffff; color: #4444ff"
+               c))
+  (cond ((string? line) (list "  " (html-escape-string line) "\n"))
+        ((eq? (car line) '+)
+         (aline "+ " (html-escape-string (cdr line)) "\n"))
+        ((eq? (car line) '-)
+         (dline "- " (html-escape-string (cdr line)) "\n"))
+        (else "???")))
 
 ;;=================================================
 ;; Formatting: Wiki -> HTML

@@ -203,16 +203,34 @@ for user-defined classes.
         (wiliki-log-revert (wiliki-log-parse-entry (car picked1)) page1-3)
         "\n" 'suffix))
 
-(test* "revert 1-3 to 1-1" page1-1
+(test* "revert 1-3 to 1-1 (use after)" page1-1
        (string-join
-        (fold wiliki-log-revert page1-3
-              (wiliki-log-entries-after picked1 1234567891))
+        (wiliki-log-revert* (wiliki-log-entries-after picked1 1234567890)
+                            page1-3)
+        "\n" 'suffix))
+
+(test* "revert 1-3 to 1-2 (use after)" page1-2
+       (string-join
+        (wiliki-log-revert* (wiliki-log-entries-after picked1 1234567891)
+                            page1-3)
+        "\n" 'suffix))
+
+(test* "revert 1-3 to 1-3 (use after)" page1-3
+       (string-join
+        (wiliki-log-revert* (wiliki-log-entries-after picked1 1234567892)
+                            page1-3)
+        "\n" 'suffix))
+
+(test* "revert 1-3 to 1-3 (use after)" page1-3
+       (string-join
+        (wiliki-log-revert* (wiliki-log-entries-after picked1 1234567893)
+                            page1-3)
         "\n" 'suffix))
 
 (test* "revert 1-3 to none" ""
        (string-join
-        (fold wiliki-log-revert page1-3
-              (wiliki-log-entries-after picked1 0))
+        (wiliki-log-revert* (wiliki-log-entries-after picked1 0)
+                            page1-3)
         "\n" 'suffix))
 
 (test* "revert 2-2 to 2-1" page2-1

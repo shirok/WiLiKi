@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: log.scm,v 1.8 2003-08-31 10:37:40 shirok Exp $
+;;; $Id: log.scm,v 1.9 2003-08-31 23:11:16 shirok Exp $
 
 (define-module wiliki.log
   (use srfi-1)
@@ -207,7 +207,7 @@
     (if (null? picked)
       (reverse! r)
       (let1 e (wiliki-log-parse-entry (car picked))
-        (if (< (ref e 'timestamp) time)
+        (if (<= (ref e 'timestamp) time)
           (reverse! r)
           (loop (cdr picked) (cons e r)))))))
 
@@ -276,7 +276,7 @@
   (let loop ((entries entries)
              (page    newpage))
     (if (null? entries)
-      page
+      (string->lines page) ;; ensure returning a list of lines
       (loop (cdr entries) (wiliki-log-revert (car entries) page)))))
 
 ;; Merge branches  ----------------------------------------
