@@ -1,6 +1,7 @@
 2001-11-27  Shiro Kawai  <shiro@acm.org>
 
-	* src/wiliki.scm : added back-link search feature
+	* src/wiliki.scm : added back-link search feature and update conflict
+	  detection.
 	
 2001-11-22  Shiro Kawai  <shiro@acm.org>
 
