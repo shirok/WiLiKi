@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.96 2003-12-17 20:11:55 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.97 2003-12-18 07:18:18 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -101,38 +101,54 @@
 ;;   almost all locations.
 
 (define-class <wiliki> ()
-  ((db-path  :accessor db-path-of :init-keyword :db-path
-             :init-value "wikidata.dbm")
-   (db-type  :accessor db-type-of :init-keyword :db-type
-             :initform <gdbm>)
-   (title    :accessor title-of   :init-keyword :title
-             :init-value "WiLiKi")
-   (top-page :accessor top-page-of :init-keyword :top-page
-             :init-value "TopPage")
-   (language :accessor language-of :init-keyword :language
-             :init-value 'jp)
-   (charsets :accessor charsets-of :init-keyword :charsets
-             :init-value ())
-   (editable? :accessor editable?  :init-keyword :editable?
-              :init-value #t)
+  (;; Customization parameters -----------------------
+
+   ;; path to the database file
+   (db-path     :accessor db-path-of     :init-keyword :db-path
+                :init-value "wikidata.dbm")
+   ;; database class
+   (db-type     :accessor db-type-of     :init-keyword :db-type
+                :initform <gdbm>)
+   ;; wiliki title
+   (title       :accessor title-of       :init-keyword :title
+                :init-value "WiLiKi")
+   ;; top page
+   (top-page    :accessor top-page-of    :init-keyword :top-page
+                :init-value "TopPage")
+   ;; default language
+   (language    :accessor language-of    :init-keyword :language
+                :init-value 'jp)
+   ;; charset map ((<lang> . <encoding>) ...)
+   (charsets    :accessor charsets-of    :init-keyword :charsets
+                :init-value ())
+   ;; editable?
+   (editable?   :accessor editable?      :init-keyword :editable?
+                :init-value #t)
+   ;; style-sheet path
    (style-sheet :accessor style-sheet-of :init-keyword :style-sheet
                 :init-value #f)
-   (image-urls :accessor image-urls-of :init-keyword :image-urls
-               :init-value ())
+   ;; allowed image path patterns
+   (image-urls  :accessor image-urls-of  :init-keyword :image-urls
+                :init-value ())
+   ;; description
    (description :accessor description-of :init-keyword :description
                 :init-value "WiLiKi, a Wiki engine written in Scheme")
+   ;; information for server
+   (protocol    :accessor protocol-of    :init-keyword :protocol
+                :initform (if (sys-getenv "HTTPS") "https" "http"))
    (server-name :accessor server-name-of :init-keyword :server-name
-                :init-form (or (sys-getenv "SERVER_NAME")
-                               "localhost"))
+                :init-form (or (sys-getenv "SERVER_NAME") "localhost"))
+   (server-port :accessor server-port-of :init-keyword :server-port
+                :init-form (or (x->integer (sys-getenv "SERVER_PORT")) 80))
    (script-name :accessor script-name-of :init-keyword :script-name
-                :init-form (or (sys-getenv "SCRIPT_NAME")
-                               "/wiliki.cgi"))
-   (debug-level :accessor debug-level :init-keyword :debug-level
+                :init-form (or (sys-getenv "SCRIPT_NAME") "/wiliki.cgi"))
+   ;; debug level
+   (debug-level :accessor debug-level    :init-keyword :debug-level
                 :init-value 0)
    ;; log file path.  if specified, logging & history feature becomes
    ;; available.  If the name given doesn't hvae directory component,
    ;; it is regarded in the same directory as db-path.
-   (log-file    :accessor log-file    :init-keyword :log-file
+   (log-file    :accessor log-file       :init-keyword :log-file
                 :init-value #f)
    ;; customize edit text area size
    (textarea-rows :accessor textarea-rows-of :init-keyword :textarea-rows
@@ -141,23 +157,47 @@
                   :init-value 80)
    ))
 
+;; Various gadgets -----------------------------------------
+
 (define (cgi-name-of wiliki)
   (sys-basename (script-name-of wiliki)))
 
-(define (%url-format full? fmt args)
-  (let ((self (wiliki))
-        (fstr (if fmt #`"?,|fmt|&l=,(lang)" #`"?l=,(lang)")))
-    (string-append
-     (if full?
-         #`"http://,(server-name-of self),(script-name-of self)"
-         (cgi-name-of self))
-     (if (null? args)
-         fstr
-         (apply format fstr
-                (map (compose uri-encode-string x->string) args))))))
+(define (full-script-path-of wiliki)
+  (format "~a://~a~a~a"
+          (protocol-of wiliki)
+          (server-name-of wiliki)
+          (if (or (and (= (server-port-of wiliki) 80)
+                       (string=? (protocol-of wiliki) "http"))
+                  (and (= (server-port-of wiliki) 443)
+                       (string=? (protocol-of wiliki) "https")))
+            ""
+            #`":,(server-port-of wiliki)")
+          (script-name-of wiliki)))
 
-(define (url fmt . args) (%url-format #f fmt args))
-(define (url-full fmt . args) (%url-format #t fmt args))
+(define (lang-spec language prefix)
+  (if (equal? language (language-of (wiliki)))
+    ""
+    #`",|prefix|l=,|language|"))
+
+(define-values (url url-full)
+  (let ()
+    (define (url-format full? fmt args)
+      (let* ((self (wiliki))
+             (fstr (if fmt
+                     #`"?,|fmt|,(lang-spec (lang) '&)"
+                     (lang-spec (lang) '?))))
+        (string-append
+         (if full?
+           (full-script-path-of self)
+           (cgi-name-of self))
+         (if (null? args)
+           fstr
+           (apply format fstr
+                  (map (compose uri-encode-string x->string) args))))))
+    (values
+     (lambda (fmt . args) (url-format #f fmt args)) ;; url
+     (lambda (fmt . args) (url-format #t fmt args)) ;; url-full
+     )))
 
 ;; Creates a link to switch language
 (define (language-link pagename)
@@ -165,7 +205,7 @@
       (case (lang)
         ((jp) (values 'en "->English"))
         (else (values 'jp "->Japanese")))
-    (html:a :href #`",(cgi-name-of (wiliki))?,|pagename|&l=,|target|"
+    (html:a :href #`",(cgi-name-of (wiliki))?,|pagename|,(lang-spec target '&)"
             "[" (html-escape-string label) "]")))
 
 ;; fallback
@@ -271,7 +311,7 @@
        (or (and-let* ((w (wiliki))
                       (sv (server-name-of w))
                       (sc (script-name-of w)))
-             (html:base :href #`"http://,|sv|,|sc|"))
+             (html:base :href (full-script-path-of w)))
            '())
        (or (and-let* ((w (wiliki)) (ss (style-sheet-of w)))
              (html:link :rel "stylesheet" :href ss :type "text/css"))

@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: rss.scm,v 1.5 2003-08-30 12:28:00 shirok Exp $
+;;;  $Id: rss.scm,v 1.6 2003-12-18 07:18:18 shirok Exp $
 ;;;
 
 ;; In future, this might be rewritten to use proper XML framework.
@@ -43,7 +43,7 @@
 
 (define (rss-format entries)
   (let* ((self (wiliki))
-         (full-url #`"http://,(server-name-of self),(script-name-of self)"))
+         (full-url (full-script-path-of self)))
     `("Content-type: text/xml\n\n"
       "<?xml version=\"1.0\" encoding=\"" ,(output-charset) "\" ?>\n"
       "<rdf:RDF

@@ -1,7 +1,18 @@
 2003-12-17  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki/wiliki.scm (<wiliki>): added 'protocol' and
+	'server-port' slot.
+	(full-script-path-of) : calculate full URL of script, with
+	consideration of protocol scheme and server port.
+	(url, url-full) : use full-script-path-of.  also omit l=lang
+	parameter if lang matches the wiliki's default language.
+	(html-page) : use full-script-path-of to emit base path.
+
+	* src/wiliki/rss.scm (rss-format): use full-script-path-of to
+	generate page URL.
+
 	* src/wiliki/edit.scm (cmd-commit-edit) : avoid writing log and db
-	  if the content isn't changed.
+	if the content isn't changed.
 
 	* src/wiliki/macro.scm
 	(define-reader-macro) : generates anchor URL without "p=", so that
