@@ -1,19 +1,22 @@
 GOSH = @GOSH@
-TEST_OUT = test.log logger.log test.dbm
-TESTS = format.scm log.scm
+TEST_OUT = test.log logger.log test.dbm _test
+TESTS = format.scm log.scm test-wiliki.scm
 
-all:
+all: gosh-path
 
 check : test
 
-test :
+gosh-path :
+	echo "$(GOSH)" > gosh-path
+
+test : all
 	@rm -f $(TEST_OUT)
 	@for t in $(TESTS); do \
 	  $(GOSH) -I. -I../src $$t >> test.log; \
 	done
 
 clean :
-	rm -rf core $(TEST_OUT) *~
+	rm -rf core gosh-path $(TEST_OUT) *~
 
 distclean : clean
 	rm -f Makefile

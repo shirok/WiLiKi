@@ -2,6 +2,8 @@
 
 	* aux/*, test/test-wiliki.scm : creating a scaffold for solid testing.
 
+	* src/wiliki/db.scm : fix behavior of nested with-db form.
+
 2003-12-17  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/wiliki.scm (<wiliki>): added 'protocol' and

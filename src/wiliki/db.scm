@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: db.scm,v 1.6 2003-09-01 04:57:49 shirok Exp $
+;;; $Id: db.scm,v 1.7 2003-12-19 03:42:09 shirok Exp $
 
 (define-module wiliki.db
   (use srfi-13)
@@ -81,14 +81,16 @@
     ))
 
 (define (with-db thunk . rwmode)
-  (parameterize
-   ((db (db-try-open (get-optional rwmode :read))))
-   (dynamic-wind
-    (lambda () #f)
-    thunk
-    (lambda ()
-      (unless (dbm-closed? (db))
-        (dbm-close (db)))))))
+  (if (db)
+    (thunk)
+    (parameterize
+        ((db (db-try-open (get-optional rwmode :read))))
+      (dynamic-wind
+       (lambda () #f)
+       thunk
+       (lambda ()
+         (unless (dbm-closed? (db))
+           (dbm-close (db))))))))
 
 (define-method wdb-exists? ((db <dbm>) key)
   (dbm-exists? db key))
