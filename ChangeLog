@@ -1,5 +1,6 @@
 2002-03-30  Shiro Kawai  <shiro@acm.org>
 
+	* emacs/wiliki.el : finish header parsing.
 	* src/extract.scm : adapted to Gauche-0.5.1 and later
 	* src/wiliki/msgs.jp : added messages
 
