@@ -1,7 +1,7 @@
 ;;
 ;; test for wiliki
 ;;
-;; $Id: test-wiliki.scm,v 1.9 2004-01-20 02:20:51 shirok Exp $
+;; $Id: test-wiliki.scm,v 1.10 2004-03-20 04:53:05 shirok Exp $
 
 (use srfi-1)
 (use srfi-13)
@@ -16,7 +16,7 @@
 
 (when (version<=? (gauche-version) "0.7.3")
   ;; need some modules that aren't available until later.
-  (add-load-path "../aux"))
+  (add-load-path "../util"))
 (use sxml.xml-test)
 (use www.cgi-test)
 
