@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.70 2003-02-21 23:07:16 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.71 2003-02-26 11:18:49 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -348,12 +348,12 @@
 (define (format-parts line)
   (define (uri line)
     (regexp-replace-all
-     #/(\[)?(http:(\/\/[^\/?#\s]*)?[^?#\s]*(\?[^#\s]*)?(#\S*)?)(\s([^\]]+)\])?/
+     #/(\[)?((http|https|ftp):(\/\/[^\/?#\s]*)?[^?#\s]*(\?[^#\s]*)?(#\S*)?)(\s([^\]]+)\])?/
      line
      (lambda (match)
        (let ((url    (match 2))
              (openp  (match 1))
-             (name   (match 7)))
+             (name   (match 8)))
          ;; NB: url is already HTML-escaped.  we can't use
          ;; (html:a :href url url) here, for it will escape the first URL
          ;; again.
