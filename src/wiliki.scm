@@ -1,14 +1,14 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.33 2002-03-03 21:16:48 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.34 2002-05-06 05:23:21 shirok Exp $
 ;;;
 
 (define-module wiliki
   (use srfi-1)
   (use srfi-2)                          ;and-let*
   (use srfi-13)
-  (use gauche.regexp)
+  (use gauche.parameter)
   (use text.html-lite)
   (use text.tree)
   (use www.cgi)
@@ -26,33 +26,11 @@
 (define *lwp-version* "1.0")            ;''lightweight protocol'' version
 (define $$ gettext)
 
-;; simple parameter interface
-(define-syntax define-parameter
-  (syntax-rules ()
-    ((_ name default)
-     (define name
-       (let ((var default))
-         (lambda arg
-           (cond ((null? arg) var)
-                 (else (set! var (car arg)) var))))))
-    ((_ name) (define-parameter name #f))))
-
-(define-syntax parameterize*
-  (syntax-rules ()
-    ((_ () . body) (begin . body))
-    ((_ ((param val) rest ...) . body)
-     (let ((temp (param)))
-       (dynamic-wind
-        (lambda () (param val))
-        (lambda () (parameterize* (rest ...) . body))
-        (lambda () (param temp)))))))
-
 ;; Parameters
-
-(define-parameter page-format-history '())
-(define-parameter wiliki #f)
-(define-parameter lang   #f)
-(define-parameter db     #f)
+(define page-format-history (make-parameter '()))
+(define wiliki (make-parameter #f))     ;current instance
+(define lang   (make-parameter #f))     ;current language
+(define db     (make-parameter #f))     ;current database
 
 ;; Class <wiliki> ------------------------------------------
 
@@ -86,7 +64,7 @@
 ;; Database access ------------------------------------------
 
 (define (with-db thunk)
-  (parameterize*
+  (parameterize
    ((db (dbm-open <gdbm> :path (db-path-of (wiliki)) :rwmode :write)))
    (dynamic-wind
     (lambda () #f)
@@ -403,7 +381,7 @@
               (lambda (p1 p2) (string=? (key-of p1) (key-of p2))))
       ;; loop in $$include chain detected
       ">>>$$include loop detected<<<"
-      (parameterize*
+      (parameterize
        ((page-format-history (cons page (page-format-history))))
        (with-input-from-string (content-of page)
          (lambda ()
@@ -657,7 +635,7 @@
                                                :convert ccv))))
            (command  (cgi-get-parameter "c" param))
            (language (cgi-get-parameter "l" param :convert string->symbol)))
-       (parameterize*
+       (parameterize
         ((wiliki self)
          (lang   (or language (language-of self))))
         (textdomain (lang))
