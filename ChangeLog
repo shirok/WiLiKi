@@ -1,3 +1,8 @@
+2003-02-26  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm (format-parts) : recognize https and ftp as
+	  valid protocols to make a link.
+
 2003-02-21  Shiro Kawai  <shiro@acm.org>
 
 	* Makefile.in : added extract target.
