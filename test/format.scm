@@ -36,17 +36,42 @@
 ;; start from basics
 (tp "paragraph" '(result (p "hoge\n"))
     (page "hoge"))
-
 (tp "paragraph" '(result (p "hoge\n") (p "huge\n"))
     (page "hoge" "" "huge"))
-
 (tp "paragraph" '(result (p "hoge\nmoge\n") (p "huge\n"))
     (page "hoge" "moge" "" "huge"))
-
 (tp "paragraph" '(result (p "hoge\n") (p) (p) (p "huge\n") (p) (p))
     (page "" "hoge" "" "" "" "huge" "" ""))
 
 (tp "em" '(result (p "foo" (em "bar") "baz\n"))
     (page "foo''bar''baz"))
+(tp "em" '(result (p (em "foo") "bar" (em "baz")))
+    (page "''foo''bar''baz''"))
+(tp "em" '(result (p (em "foo") (em "bar") "baz''\n"))
+    (page "''foo''''bar''baz''"))
+(tp "em" '(result (p "''foo\nbar''\n"))
+    (page "''foo" "bar''"))
+
+(tp "strong" '(result (p "foo" (strong "bar") "baz\n"))
+    (page "foo'''bar'''baz"))
+(tp "strong" '(result (p (em "foo" (strong "bar") "baz") "'\n"))
+    (page "''foo'''bar'''baz'''"))
+(tp "strong" '(result (p "'" (strong "foo") "'\n"))
+    (page "''''foo''''"))
+(tp "strong" '(result (p "'" (strong "foo") "'\n"))
+    (page "''''foo''''"))
+
+(tp "url" '(result (p (a (@ (href "http://foo")) "http://foo")))
+    (page "http://foo"))
+(tp "url" '(result (p (a (@ (href "http://foo?abc")) "http://foo?abc")))
+    (page "http://foo?abc"))
+(tp "url" '(result (p (a (@ (href "http://foo#abc")) "http://foo#abc")))
+    (page "http://foo#abc"))
+(tp "url" '(result (p (a (@ (href "http://foo/?bar#abc")) "http://foo/?bar#abc")))
+    (page "http://foo/?bar#abc"))
+(tp "url" '(result (p "("
+                      (a (@ (href "http://foo/?bar")) "http://foo/?bar")
+                      " )\n"))
+    (page "(http://foo/?bar )"))
 
 (test-end)
