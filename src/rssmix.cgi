@@ -24,7 +24,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: rssmix.cgi,v 1.7 2003-02-18 10:21:27 shirok Exp $
+;;;  $Id: rssmix.cgi,v 1.8 2003-02-18 10:56:01 shirok Exp $
 ;;;
 
 ;; THIS IS AN EXPERIMENTAL SCRIPT.  Eventually this will be a part of
@@ -93,13 +93,20 @@
   (syntax-rules ()
     ((_ self . body)
      (let* ((s  self)
-            (db (dbm-open (ref s 'db-type)
-                          :path (ref s 'db-name) :rwmode :write)))
-       (set! (ref s 'db) db)
-       (with-error-handler
-           (lambda (e) (dbm-close db) (raise e))
-         (lambda ()
-           (receive r (begin . body) (dbm-close db) (apply values r)))))
+            (lock (ref s 'db-lock)))
+       (dynamic-wind
+        (lambda () (mutex-lock! lock))
+        (lambda ()
+          (let1 db (dbm-open (ref s 'db-type)
+                             :path (ref s 'db-name) :rwmode :write)
+            (set! (ref s 'db) db)
+            (with-error-handler
+                (lambda (e) (dbm-close db) (raise e))
+              (lambda ()
+                (receive r (begin . body)
+                  (dbm-close db)
+                  (apply values r))))))
+        (lambda () (mutex-unlock! lock))))
      )))
 
 (define (rss-format-date unix-time)
@@ -253,7 +260,7 @@
                            :elapsed 'timeout)))
       (dbm-put! db id (write-to-string data)))))
                                 
-;; Creates a thunk for thread.  Put-cache! requires database locking.
+;; Creates a thunk for thread.
 (define (make-thunk self id uri start-time)
   (lambda ()
     (with-error-handler
@@ -266,12 +273,8 @@
             (let* ((now (sys-time))
                    (data (list :timestamp now :rss-cache rss
                                :elapsed (- now start-time))))
-              (dynamic-wind
-               (lambda () (mutex-lock! (ref self 'db-lock)))
-               (lambda ()
-                 (with-rss-db self
-                   (dbm-put! (ref self 'db) id (write-to-string data))))
-               (lambda () (mutex-unlock! (ref self 'db-lock))))))
+              (with-rss-db self
+                 (dbm-put! (ref self 'db) id (write-to-string data)))))
           rss)))))
 
 ;; Fetch RSS from specified URI, parse it, and extract link information
