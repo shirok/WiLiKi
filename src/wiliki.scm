@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.69 2003-02-19 22:54:46 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.70 2003-02-21 23:07:16 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -624,7 +624,17 @@
          (let ((toppage (make <page> :key pagename :mtime (sys-time))))
            (wdb-put! (db) (top-page-of (wiliki)) toppage)
            (format-page (top-page-of (wiliki)) toppage)))
-        (else (error "No such page" pagename))))
+        ((or (string-index pagename #[\s\[\]])
+             (string-prefix? "$" pagename))
+         (error "Invalid page name" pagename))
+        (else
+         (format-page
+          (string-append ($$ "Nonexistent page: ") pagename)
+          `(,(html:p
+              ($$ "Create a new page: ")
+              (format-wiki-name pagename)))
+          :show-edit? #f))
+        ))
 
 (define (edit-form preview? pagename content mtime donttouch)
   (define (buttons)

@@ -12,6 +12,9 @@ all: wiliki/msgs.jp
 wiliki/msgs.jp: wiliki/msgs.jp.euc
 	$(GOSH) -ugauche.charconv -e '(call-with-input-file "wiliki/msgs.jp.euc" (lambda (in) (call-with-output-file "wiliki/msgs.jp" (cut copy-port in <> :unit (quote char)))) :encoding "euc-jp")' -Eexit
 
+extract :
+	$(GOSH) ./extract.scm wiliki.scm wiliki/msgs.jp.euc
+
 clean :
 	rm -rf core *~ wiliki/*~ wiliki/*.orig wiliki/msgs.jp
 

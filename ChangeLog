@@ -1,3 +1,14 @@
+2003-02-21  Shiro Kawai  <shiro@acm.org>
+
+	* Makefile.in : added extract target.
+	* src/wiliki.scm (cmd-view): show "create new page" link when
+	  nonexitent page is specified.
+
+2003-02-14  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm (cmd-recent-changes): experimentally added
+	  how-long-since display in "Recent Changes" page.
+
 2003-02-13  Shiro Kawai  <shiro@acm.org>
 
 	* release 0.3
