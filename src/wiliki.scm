@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.107 2004-01-20 02:32:55 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.108 2004-02-01 07:28:31 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -108,6 +108,14 @@
 (define wiliki:lang lang) ;; alias to export
 (define wiliki:db db)     ;; alias to export
 
+;; getting cgi meta-variables; first we try cgi-metavariables parameter,
+;; then use getenv for fallback.
+(define (get-meta name)
+  (or (and-let* ((mv (cgi-metavariables))
+                 (p  (assoc name mv)))
+        (cadr p))
+      (sys-getenv name)))
+
 ;; Class <wiliki> ------------------------------------------
 ;;   A main data structure that holds run-time information.
 ;;   Available as the value of the parameter wiliki in
@@ -148,13 +156,13 @@
                 :init-value "WiLiKi, a Wiki engine written in Scheme")
    ;; information for server
    (protocol    :accessor protocol-of    :init-keyword :protocol
-                :initform (if (sys-getenv "HTTPS") "https" "http"))
+                :initform (if (get-meta "HTTPS") "https" "http"))
    (server-name :accessor server-name-of :init-keyword :server-name
-                :init-form (or (sys-getenv "SERVER_NAME") "localhost"))
+                :init-form (or (get-meta "SERVER_NAME") "localhost"))
    (server-port :accessor server-port-of :init-keyword :server-port
-                :init-form (or (x->integer (sys-getenv "SERVER_PORT")) 80))
+                :init-form (or (x->integer (get-meta "SERVER_PORT")) 80))
    (script-name :accessor script-name-of :init-keyword :script-name
-                :init-form (or (sys-getenv "SCRIPT_NAME") "/wiliki.cgi"))
+                :init-form (or (get-meta "SCRIPT_NAME") "/wiliki.cgi"))
    ;; debug level
    (debug-level :accessor debug-level    :init-keyword :debug-level
                 :init-value 0)
@@ -454,8 +462,8 @@
     (let ((content (wiliki-log-create
                     pagename new old
                     :timestamp timestamp
-                    :remote-addr (or (sys-getenv "REMOTE_ADDR") "")
-                    :remote-user (or (sys-getenv "REMOTE_USER") "")
+                    :remote-addr (or (get-meta "REMOTE_ADDR") "")
+                    :remote-user (or (get-meta "REMOTE_USER") "")
                     :message logmsg)))
       (call-with-output-file logfile
         (lambda (p) (display content p) (flush p))
@@ -594,7 +602,7 @@
 
   ;; Extract the extra components of PATH_INFO
   (define (get-path-info)
-    (and-let* ((path (sys-getenv "PATH_INFO"))
+    (and-let* ((path (get-meta "PATH_INFO"))
                ((string-prefix? "/" path))
                (conv (cv-in (uri-decode-string (string-drop path 1)))))
       (if (equal? conv "")
