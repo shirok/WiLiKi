@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.26 2002-03-01 20:52:56 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.27 2002-03-02 10:48:51 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -25,6 +25,31 @@
 (define *recent-changes* " %recent-changes")
 
 (define $$ gettext)
+
+;; simple parameter interface
+(define-syntax define-parameter
+  (syntax-rules ()
+    ((_ name default)
+     (define name
+       (let ((var default))
+         (lambda arg
+           (cond ((null? arg) var)
+                 (else (set! var (car arg)) var))))))
+    ((_ name) (define-parameter name #f))))
+
+(define-syntax parameterize*
+  (syntax-rules ()
+    ((_ () . body) (begin . body))
+    ((_ ((param val) rest ...) . body)
+     (let ((temp (param)))
+       (dynamic-wind
+        (lambda () (param val))
+        (lambda () (parameterize* (rest ...) . body))
+        (lambda () (param temp)))))))
+
+;; Parameters
+
+(define-parameter page-format-history '())
 
 ;; Class <wiliki> ------------------------------------------
 
@@ -61,7 +86,8 @@
      (lambda () (set! (db-of self) #f) (dbm-close db)))))
 
 (define-class <page> ()
-  ((ctime :initform (sys-time) :init-keyword :ctime :accessor ctime-of)
+  ((key   :init-keyword :key :accessor key-of)
+   (ctime :initform (sys-time) :init-keyword :ctime :accessor ctime-of)
    (cuser :initform #f :init-keyword :cuser :accessor cuser-of)
    (mtime :initform #f :init-keyword :mtime :accessor mtime-of)
    (muser :initform #f :init-keyword :muser :accessor muser-of)
@@ -71,19 +97,19 @@
 (define-method wdb-exists? ((db <dbm>) key)
   (dbm-exists? db key))
 
-(define-method wdb-record->page ((db <dbm>) record)
+(define-method wdb-record->page ((db <dbm>) key record)
   (call-with-input-string record
     (lambda (p)
       (let* ((params  (read p))
              (content (port->string p)))
-        (apply make <page> :content content params)))))
+        (apply make <page> :key key :content content params)))))
 
 ;; WDB-GET db key &optional create-new
 (define-method wdb-get ((db <dbm>) key . option)
   (cond ((dbm-get db key #f)
-         => (lambda (s) (wdb-record->page db s)))
+         => (lambda (s) (wdb-record->page db key s)))
         ((and (pair? option) (car option))
-         (make <page>))
+         (make <page> :key key))
         (else #f)))
 
 ;; WDB-PUT! db key page
@@ -134,7 +160,7 @@
   (wdb-search db
               (lambda (k v)
                 (and (not (string-prefix? " " k))
-                     (string-contains (content-of (wdb-record->page db v))
+                     (string-contains (content-of (wdb-record->page db key v))
                                       key)))))
 
 ;; Macros -----------------------------------------
@@ -191,15 +217,23 @@
         (wdb-search (db-of self)
                     (lambda (k v) (string-prefix? prefix k))))))
 
+(define (expand-$$include self page)
+  (cond ((wdb-get (db-of self) page) =>
+         (lambda (page) (format-content self page)))
+        (else #`"[[$$include ,|page|]]")))
+
 (define (reader-macro-wiki-name? self name)
   (cond ((string-prefix? "$$" name)
          (let ((args (string-tokenize name)))
            (cond ((and (string=? (car args) "$$index")
                        (not (null? (cadr args))))
                   (expand-$$index self (cadr args)))
-                 (else (format #f "[[~a]]" (html-escape-string name))))))
+                 ((and (string=? (car args) "$$include")
+                       (not (null? (cadr args))))
+                  (expand-$$include self (cadr args)))
+                 (else #`"[[,(html-escape-string name)]]"))))
         ((string-index name #[\s%$]) ;;invalid wiki name
-         (format #f "[[~a]]" (html-escape-string name)))
+         #`"[[,(html-escape-string name)]]")
         (else #f)))
 
 (define (inter-wiki-name? self name)
@@ -259,12 +293,6 @@
   )
 
 (define (format-parts self line)
-  ;(define (wiki-name line)
-  ;  (regexp-replace-all
-  ;   #/\[\[(([^\]\s]|\][^\]\s])+)\]\]/
-  ;   line
-  ;   (lambda (match)
-  ;     (format-wiki-name self (rxmatch-substring match 1)))))
   (define (uri line)
     (regexp-replace-all
      #/(\[)?(http:(\/\/[^\/?#\s]*)?[^?#\s]*(\?[^#\s]*)?(#\S*)?)(\s([^\]]+)\])?/
@@ -295,73 +323,79 @@
   (uri (italic (bold (html-escape-string line)))))
 
 (define (format-content self page)
-  (with-input-from-string (content-of page)
-    (lambda ()
-      (define (loop line nestings)
-        (cond ((eof-object? line) (finish nestings))
-              ((string-null? line)
-               `(,@nestings "</p>\n<p>" ,@(loop (read-line) '())))
-              ((string-prefix? "----" line)
-               `(,@nestings "</p><hr><p>" ,@(loop (read-line) '())))
-              ((and (string-prefix? " " line) (null? nestings))
-               `(,@nestings "<pre>" ,@(pre line)))
-              ((rxmatch #/^(\*\*?\*?) / line)
-               => (lambda (m)
-                    (let* ((lev (- (rxmatch-end m 1) (rxmatch-start m 1)))
-                           (hfn (list-ref (list html:h2 html:h3 html:h4)
-                                          (- lev 1))))
-                      `(,@nestings
-                        ,(hfn (format-line self (rxmatch-after m)))
-                        ,@(loop (read-line) '())))))
-              ((rxmatch #/^(--?-?) / line)
-               => (lambda (m)
-                    (list-item m (- (rxmatch-end m 1) (rxmatch-start m 1))
-                               nestings "<ul>" "</ul>")))
-              ((rxmatch #/^1(\.\.?\.?) / line)
-               => (lambda (m)
-                    (list-item m (- (rxmatch-end m 1) (rxmatch-start m 1))
-                               nestings "<ol>" "</ol>")))
-              ((rxmatch #/^:(.*):([^:]*)$/ line)
-               => (lambda (m)
-                    `(,@(if (equal? nestings '("</dl>"))
-                            '()
-                            `(,@nestings "<dl>"))
-                      "<dt>" ,(format-line self (rxmatch-substring m 1))
-                      "<dd>" ,(format-line self (rxmatch-substring m 2))
-                      ,@(loop (read-line) '("</dl>")))))
-              (else
-               (cons (format-line self line) (loop (read-line) nestings)))))
+  (define (loop line nestings)
+    (cond ((eof-object? line) nestings)
+          ((string-null? line)
+           `(,@nestings "</p>\n<p>" ,@(loop (read-line) '())))
+          ((string-prefix? "----" line)
+           `(,@nestings "</p><hr><p>" ,@(loop (read-line) '())))
+          ((and (string-prefix? " " line) (null? nestings))
+           `(,@nestings "<pre>" ,@(pre line)))
+          ((rxmatch #/^(\*\*?\*?) / line)
+           => (lambda (m)
+                (let* ((lev (- (rxmatch-end m 1) (rxmatch-start m 1)))
+                       (hfn (list-ref (list html:h2 html:h3 html:h4)
+                                      (- lev 1))))
+                  `(,@nestings
+                    ,(hfn (format-line self (rxmatch-after m)))
+                    ,@(loop (read-line) '())))))
+          ((rxmatch #/^(--?-?) / line)
+           => (lambda (m)
+                (list-item m (- (rxmatch-end m 1) (rxmatch-start m 1))
+                           nestings "<ul>" "</ul>")))
+          ((rxmatch #/^1(\.\.?\.?) / line)
+           => (lambda (m)
+                (list-item m (- (rxmatch-end m 1) (rxmatch-start m 1))
+                           nestings "<ol>" "</ol>")))
+          ((rxmatch #/^:(.*):([^:]*)$/ line)
+           => (lambda (m)
+                `(,@(if (equal? nestings '("</dl>"))
+                        '()
+                        `(,@nestings "<dl>"))
+                  "<dt>" ,(format-line self (rxmatch-substring m 1))
+                  "<dd>" ,(format-line self (rxmatch-substring m 2))
+                  ,@(loop (read-line) '("</dl>")))))
+          (else
+           (cons (format-line self line) (loop (read-line) nestings)))))
 
-      (define (pre line)
-        (cond ((eof-object? line) (finish '("</pre>")))
-              ((string-prefix? " " line)
-               `(,@(format-line self line) ,@(pre (read-line))))
-              (else (cons "</pre>\n" (loop line '())))))
+  (define (pre line)
+    (cond ((eof-object? line) '("</pre>"))
+          ((string-prefix? " " line)
+           `(,@(format-line self line) ,@(pre (read-line))))
+          (else (cons "</pre>\n" (loop line '())))))
 
-      (define (list-item match level nestings opentag closetag)
-        (let ((line  (rxmatch-after match))
-              (cur (length nestings)))
-          (receive (opener closer)
-              (cond ((< cur level)
-                     (values (make-list (- level cur) opentag)
-                             (append (make-list (- level cur) closetag)
-                                     nestings)))
-                    ((> cur level)
-                     (split-at nestings (- cur level)))
-                    (else (values '() nestings)))
-            `(,@opener "<li>" ,(format-line self line)
-              ,@(loop (read-line) closer)))))
+  (define (list-item match level nestings opentag closetag)
+    (let ((line  (rxmatch-after match))
+          (cur (length nestings)))
+      (receive (opener closer)
+          (cond ((< cur level)
+                 (values (make-list (- level cur) opentag)
+                         (append (make-list (- level cur) closetag)
+                                 nestings)))
+                ((> cur level)
+                 (split-at nestings (- cur level)))
+                (else (values '() nestings)))
+        `(,@opener "<li>" ,(format-line self line)
+          ,@(loop (read-line) closer)))))
 
-      (define (finish nestings)
-        `(,@nestings
-          ,(if (mtime-of page)
-               `(,(html:hr)
-                 ,(html:div :align "right"
-                            "Last modified : "
-                            (format-time (mtime-of page))))
-               '())))
+  (if (member page (page-format-history)
+              (lambda (p1 p2) (string=? (key-of p1) (key-of p2))))
+      ;; loop in $$include chain detected
+      ">>>$$include loop detected<<<"
+      (parameterize*
+       ((page-format-history (cons page (page-format-history))))
+       (with-input-from-string (content-of page)
+         (lambda ()
+           (cons "<p>" (loop (read-line) '()))))))
+  )
 
-      (cons "<p>" (loop (read-line) '())))))
+(define (format-footer self page)
+  (if (mtime-of page)
+      `(,(html:hr)
+        ,(html:div :align "right"
+                   ($$ "Last modified : ")
+                   (format-time (mtime-of page))))
+      '()))
 
 (define (format-page self title page . args)
   (let ((show-edit? (and (editable? self) (get-keyword :show-edit? args #t)))
@@ -369,15 +403,19 @@
         (show-recent-changes? (get-keyword :show-recent-changes? args #t))
         (show-search-box? (get-keyword :show-search-box? args #t))
         (page-id (get-keyword :page-id args title))
-        (content (if (is-a? page <page>) (format-content self page) page)))
+        (content (if (is-a? page <page>)
+                     (list (format-content self page)
+                           (format-footer self page))
+                     page)))
     `(,(html-doctype :type :transitional)
       ,(html:html
-        (html:head (html:title title))
+        (html:head (html:title (html-escape-string title)))
         (html:body
          :bgcolor "#eeeedd"
          (html:h1 (if (is-a? page <page>)
-                      (html:a :href (url self "c=s&key=[[~a]]" title) title)
-                      title))
+                      (html:a :href (url self "c=s&key=[[~a]]" title)
+                              (html-escape-string title))
+                      (html-escape-string title)))
          (html:div
           :align "right"
           (html:form
@@ -429,7 +467,7 @@
          => (lambda (page)
               (format-page self pagename page)))
         ((equal? pagename (top-page-of self))
-         (let ((toppage (make <page> :mtime (sys-time))))
+         (let ((toppage (make <page> :key pagename :mtime (sys-time))))
            (wdb-put! (db-of self) (top-page-of self) toppage)
            (format-page self (top-page-of self) toppage)))
         (else (error "No such page" pagename))))
@@ -508,7 +546,9 @@
     (if (or (not (mtime-of page)) (eqv? (mtime-of page) mtime))
         (format-page
          self (format #f ($$ "Preview of ~a") pagename)
-         `(,(colored-box (format-content self (make <page> :content content)))
+         `(,(colored-box (format-content self (make <page>
+                                                :key pagename
+                                                :content content)))
            ,(html:hr)
            ,(edit-form self #f pagename content mtime))
          ))))
