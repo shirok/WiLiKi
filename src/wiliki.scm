@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.66 2003-02-13 06:23:06 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.67 2003-02-13 11:28:53 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -372,20 +372,20 @@
 ;; Read lines from generator and format them.
 (define (format-lines generator)
   ;; Common states:
-  ;;  tags - stack of tags to be closed
+  ;;  ctx  - context (stack of tags to be closed)
   ;;  id   - counter for heading anchors
   ;;  r    - reverse list of results
-  (define (loop line tags id r)
-    (cond ((eof-object? line) (finish tags r))
+  (define (loop line ctx id r)
+    (cond ((eof-object? line) (finish (ctag ctx) r))
           ((string-null? line)
-           (loop (generator) '("</p>") id (list* "\n<p>" tags r)))
+           (loop (generator) '(p) id (list* "\n<p>" (ctag ctx) r)))
           ((string=? "----" line)
-           (loop (generator) '() id (list* "<hr>" tags r)))
-          ((and (string-prefix? " " line)
-                (or (null? tags) (equal? tags '("</p>"))))
-           (pre line id (list* "<pre>" tags r)))
+           (loop (generator) '() id (list* "<hr>" (ctag ctx) r)))
           ((string=? "{{{" line)
-           (pre* (generator) id (list* "<pre>" tags r)))
+           (pre* (generator) id (list* "<pre>" (ctag ctx) r)))
+          ((and (string-prefix? " " line)
+                (or (null? ctx) (equal? ctx '(p))))
+           (pre line id (list* "<pre>" (ctag ctx) r)))
           ((rxmatch #/^(\*\**) / line)
            => (lambda (m)
                 (let* ((hfn (ref `(,html:h2 ,html:h3 ,html:h4 ,html:h5)
@@ -394,19 +394,19 @@
                        (anchor (cut html:a :name <> <>)))
                   (loop (generator) '() (+ id 1)
                         (list* (hfn (anchor id (format-line (m 'after))))
-                               tags r)))))
+                               (ctag ctx) r)))))
           ((rxmatch #/^(--*) / line)
            => (lambda (m)
-                (list-item m (h-level m) tags "<ul>" "</ul>" id r)))
+                (list-item m (h-level m) 'ul ctx id r)))
           ((rxmatch #/^(##*) / line)
            => (lambda (m)
-                (list-item m (h-level m) tags "<ol>" "</ol>" id r)))
+                (list-item m (h-level m) 'ol ctx id r)))
           ((rxmatch #/^:(.*):([^:]*)$/ line)
            => (lambda (m)
-                (loop (generator) '("</dl>") id
-                      (cons `(,@(if (equal? tags '("</dl>"))
+                (loop (generator) '(dl) id
+                      (cons `(,@(if (equal? ctx '(dl))
                                     '()
-                                    `(,tags "<dl>"))
+                                    `(,(ctag ctx) "<dl>"))
                               "<dt>" ,(format-line (m 1))
                               "<dd>" ,(format-line (m 2)))
                             r))))
@@ -414,16 +414,18 @@
            => (lambda (m)
                 (table (m 1) id
                        (list* "<table class=\"inbody\" border=1 cellspacing=0>"
-                              tags r))))
-          ((null? tags)
-           (loop (generator) '("</p>") id
+                              (ctag ctx) r))))
+          ((null? ctx)
+           (loop (generator) '(p) id
                  (list* (format-line line) "<p>" r)))
           (else
-           (loop (generator) tags id (cons (format-line line) r)))
+           (loop (generator) ctx id (cons (format-line line) r)))
           ))
 
-  (define (finish tags r)
-    (cons (reverse! r) tags))
+  (define (finish ctx r) (cons (reverse! r) ctx))
+
+  (define (otag ctx) (map (lambda (t) #`"<,|t|>") ctx))
+  (define (ctag ctx) (map (lambda (t) #`"</,|t|>") ctx))
 
   (define (h-level matcher) ;; level of headings
     (- (rxmatch-end matcher 1) (rxmatch-start matcher 1)))
@@ -457,21 +459,27 @@
                => (lambda (m) (table (m 1) id r)))
               (else (loop next '() id (cons "</table>\n" r)))))))
 
-  (define (list-item match level tags opentag closetag id r)
+  (define (list-item match level ltag ctx id r)
     (let*-values (((line)  (rxmatch-after match))
-                  ((pre tags) (if (equal? tags '("</p>"))
-                                  (values tags '())
-                                  (values '() tags)))
-                  ((cur) (length tags)))
-      (receive (opener closer)
-          (cond ((< cur level)
-                 (values (make-list (- level cur) opentag)
-                         `(,@(make-list (- level cur) closetag) ,@tags)))
-                ((> cur level)
-                 (split-at tags (- cur level)))
-                (else (values '() tags)))
-        (loop (generator) closer id
-              (list* (format-line line) "<li>" opener pre r)))))
+                  ((pre ctx) (if (equal? ctx '(p))
+                                 (values ctx '())
+                                 (values '() ctx)))
+                  ((cur) (length ctx)))
+      (cond ((< cur level)
+             (loop (generator)
+                   `(,@(make-list (- level cur) ltag) ,@ctx)
+                   id
+                   (list* (format-line line) "<li>"
+                          (otag (make-list (- level cur) ltag)) (ctag pre) r)))
+            ((> cur level)
+             (loop (generator)
+                   (drop ctx (- cur level))
+                   id
+                   (list* (format-line line) "<li>"
+                          (ctag (take ctx (- cur level)))  r)))
+            (else
+             (loop (generator) ctx id
+                   (list* (format-line line) "<li>"  r))))))
 
   (loop (generator) '() 0 '()))
 
