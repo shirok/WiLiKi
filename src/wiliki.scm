@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.36 2002-05-22 04:38:05 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.37 2002-05-22 04:38:55 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -622,9 +622,6 @@
 
 ;; Entry ------------------------------------------
 
-(use gauche.logger)
-(log-open "/tmp/foo.log")
-
 (define-method wiliki-main ((self <wiliki>))
   (cgi-main
    (lambda (param)
@@ -637,7 +634,6 @@
                                                :convert ccv))))
            (command  (cgi-get-parameter "c" param))
            (language (cgi-get-parameter "l" param :convert string->symbol)))
-       (log-format "~s" param)
        (parameterize
         ((wiliki self)
          (lang   (or language (language-of self))))
