@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.19 2002-01-14 11:30:02 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.20 2002-01-14 19:26:52 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -187,7 +187,9 @@
     (cond ((invalid-wiki-name? self name)
            (format #f "[[~a]]" (html-escape-string name)))
           (prefix
-           (format #f "<a href=\"http://~a~a\">~a</a>" prefix inner name))
+           (tree->string (html:a :href (format #f "http://~a~a" prefix
+                                               (uri-encode-string inner))
+                                 (html-escape-string name))))
           ((wdb-exists? (db-of self) name)
            (tree->string (html:a :href (url self "~a" name) name)))
           (else
