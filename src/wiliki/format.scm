@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.21 2004-01-11 11:13:57 shirok Exp $
+;;; $Id: format.scm,v 1.22 2004-01-11 20:57:58 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -58,6 +58,7 @@
           wiliki:sxml->stree
           wiliki:format-diff-pre
           wiliki:format-diff-line
+          wiliki:page->heading-tree
           )
   )
 (select-module wiliki.format)
@@ -580,6 +581,16 @@
   `(,@(wiliki:format-page-header  page opts)
     ,@(wiliki:format-page-content page opts)
     ,@(wiliki:format-page-footer  page opts)))
+
+;; utility procedure to extract document heading structure from the page.
+;; this works on page (not content), since it handles $$include and
+;; needs to detect loop.
+
+(define (wiliki:page->heading-tree page)
+;  (define (pick context)
+;    (
+  #f
+  )
 
 ;;;
 ;;; Exported functions
