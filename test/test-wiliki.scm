@@ -1,7 +1,7 @@
 ;;
 ;; test for wiliki
 ;;
-;; $Id: test-wiliki.scm,v 1.4 2003-12-29 12:43:48 shirok Exp $
+;; $Id: test-wiliki.scm,v 1.5 2003-12-30 09:07:19 shirok Exp $
 
 (use gauche.test)
 (use gauche.parameter)
@@ -89,7 +89,7 @@
                    1)
        (test-sxml-select-matcher '(html head base)))
 
- ;;--------------------------------------------------------
+;;--------------------------------------------------------
 (test-section "viewing (1)")
 
 (test* "via QUERY_STRING"
@@ -222,50 +222,125 @@
 ;;--------------------------------------------------------
 (test-section "creating a new page")
 
-(test* "see if committing orphan page is an error"
-       '(title "WiLiKi: Error")
+(test* "edit screen"
+       '(title "LINK")
        (values-ref (run-cgi-script->sxml
                     *cgi-path*
-                    :environemnt '((REQUEST_METHOD . "GET"))
-                    :parameters '((c . c) (p . "FOO") (commit . "Commit")
-                                  (mtime . 0)
-                                  (content . "Nonexistent page")))
+                    :environment '((REQUEST_METHOD . "GET"))
+                    :parameters '((c . e) (p . "LINK")))
                    1)
-       (test-sxml-select-matcher '(html head title)))
+       (test-sxml-select-matcher
+        '(html head title)))
+
+(test* "commiting"
+       '(("status" "302 Moved")
+         ("location" "wiliki.cgi?LINK"))
+       (values-ref (run-cgi-script->string
+                    *cgi-path*
+                    :environment '((REQUEST_METHOD . "GET"))
+                    :parameters `((c . c) (p . "LINK") (commit . "Commit")
+                                  (mtime . "")
+                                  (content . "New page.\r\n[[TEST]]\r\n")))
+                   0))
+
+(test* "check commit"
+       '(!contain (p "New page.\n"
+                     (a (@ (href "wiliki.cgi?TEST")) "TEST")))
+       (values-ref (run-cgi-script->sxml
+                    *cgi-path*
+                    :environment '((REQUEST_METHOD . "GET"))
+                    :parameters '((p . "LINK")))
+                   1)
+       (test-sxml-select-matcher
+        '(html body p)))
+
+(test* "viewing check (PATH_INFO and QUERY_STRING mixed)"
+       '(head (!contain (title "LINK")))
+       (values-ref (run-cgi-script->sxml
+                    *cgi-path*
+                    :environment '((REQUEST_METHOD . "GET")
+                                   (PATH_INFO . "/LINK")
+                                   (QUERY_STRING . "TEST&p=FOO")))
+                   1)
+       (test-sxml-select-matcher '(html head)))
+
+;;--------------------------------------------------------
+(test-section "deleting a page")
 
 (let ((mtime-save #f))
 
-  (test* "edit screen"
-         '(title "LINK")
+  (test* "edit screen (to delete)"
+         '(!contain (input (@ (name "mtime") (value ?mtime) ?*)))
          (values-ref (run-cgi-script->sxml
                       *cgi-path*
                       :environment '((REQUEST_METHOD . "GET"))
                       :parameters '((c . e) (p . "LINK")))
                      1)
          (test-sxml-select-matcher
-          '(html head title))
+          '(html body form input)
           (lambda (alist)
             (set! mtime-save (x->integer (assq-ref alist '?mtime)))
-            alist))
+            alist)))
 
-  (test* "commiting"
+  (test* "commit delete"
          '(("status" "302 Moved")
-           ("location" "wiliki.cgi?LINK"))
+           ("location" "wiliki.cgi?TEST")) ;; redirected to the top page
          (values-ref (run-cgi-script->string
                       *cgi-path*
                       :environment '((REQUEST_METHOD . "GET"))
                       :parameters `((c . c) (p . "LINK") (commit . "Commit")
                                     (mtime . ,mtime-save)
-                                    (content . "New page.\r\n[[TEST]]\r\n")))
+                                    (content . "")))
                      0))
-
-  (test* "check commit"
-         '(!contain (p "New page.\n"
-                       (a (@ (href "wiliki.cgi?TEST")) "TEST")))
+  (test* "check deletion"
+         '(title "Nonexistent page: LINK")
          (values-ref (run-cgi-script->sxml
                       *cgi-path*
-                      :environment '((REQUEST_METHOD . "GET"))
-                      :parameters '((p . "LINK")))
+                      :environment '((REQUEST_METHOD . "GET")
+                                     (PATH_INFO . "/LINK")))
+                     1)
+         (test-sxml-select-matcher '(html head title)))
+  )
+
+;;--------------------------------------------------------
+(test-section "InterWikiName")
+
+(let ((mtime-save #f))
+  ;; preparation
+  (run-cgi-script->string
+   *cgi-path*
+   :environment '((REQUEST_METHOD . "GET"))
+   :parameters `((c . c) (p . "InterWikiName") (commit . "Commit")
+                 (mtime . "")
+                 (content . ":WiLiKi:shiro.dreamhost.com/scheme/wiliki/wiliki.cgi?")))
+
+  ((test-sxml-select-matcher
+    '(html body form input)
+    (lambda (alist)
+      (set! mtime-save (x->integer (assq-ref alist '?mtime)))
+      alist))
+   '(!contain (input (@ (name "mtime") (value ?mtime) ?*)))
+   (values-ref (run-cgi-script->sxml
+                *cgi-path*
+                :environment '((REQUEST_METHOD . "GET"))
+                :parameters '((c . e) (p . "TEST")))
+               1))
+
+  (run-cgi-script->string
+   *cgi-path*
+   :environment '((REQUEST_METHOD . "GET"))
+   :parameters `((c . c) (p . "TEST") (commit . "Commit")
+                 (mtime . ,mtime-save)
+                 (content . "[[WiLiKi:Shiro]]\r\n")))
+
+  (test* "InterWikiName reference"
+         '(!contain
+           (p (a (@ (href "http://shiro.dreamhost.com/scheme/wiliki/wiliki.cgi?Shiro"))
+                "WiLiKi:Shiro")))
+         (values-ref (run-cgi-script->sxml
+                      *cgi-path*
+                      :environment '((REQUEST_METHOD . "GET")
+                                     (PATH_INFO . "TEST")))
                      1)
          (test-sxml-select-matcher
           '(html body p)))
