@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.50 2002-12-27 00:34:10 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.51 2003-02-07 08:39:56 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -25,11 +25,11 @@
 (autoload "wiliki/macro" handle-reader-macro handle-writer-macro)
 
 ;; Version check.
-(when (version<? (gauche-version) "0.6.3")
+(when (version<? (gauche-version) "0.6.7_pre1")
   (print (tree->string
           `(,(cgi-header)
             ,(html:html (html:head (html:title "Error")))
-            ,(html:body "Gauche 0.6.3 or later is required."))))
+            ,(html:body "Gauche 0.6.7 or later is required."))))
   (exit 0))
 
 ;; Some constants
@@ -197,11 +197,11 @@
                (output-charset)))
 
 (define (output-charset)
-  (cond ((assoc (lang) (charsets-of (wiliki)))
-         => (lambda (p) (symbol->string (cdr p))))
-        ;; fallback
-        ((eq? (lang) 'jp) "EUC-JP")
-        (else "ISO8859-1")))
+  (or (and-let* (((wiliki))
+                 (p (assoc (lang) (charsets-of (wiliki))))
+                 ((symbol? (cdr p))))
+        (cdr p))
+      "EUC-JP")) ;; this is a fallback.
 
 ;; Formatting html --------------------------------
 
@@ -413,7 +413,7 @@
                             (format-footer page))
                       page)))
     (html-page
-     (html:title (cv-out (html-escape-string title)))
+     (html:title (html-escape-string title))
      (html:h1 (if (is-a? page <page>)
                   (html:a :href (url "c=s&key=[[~a]]" title)
                           (html-escape-string title))
@@ -635,7 +635,7 @@
 (define (cmd-lwp-view key)
   (let ((page (wdb-get (db) key #f)))
     `(,(cgi-header
-        :content-type #`"text/plain; charset=,(if (eq? (lang) 'jp) 'euc-jp 'iso8859-1)")
+        :content-type #`"text/plain; charset=,(output-charset)")
       ,#`"title: ,|key|\n"
       ,#`"wiliki-lwp-version: ,|*lwp-version*|\n"
       ,(if page
@@ -652,7 +652,7 @@
    (lambda (param)
      (let ((pagename (cond ((null? param) (top-page-of self))
                            ((eq? (cadar param) #t)
-                            (cv-in (uri-decode-string (caar param))))
+                            (cv-in (caar param)))
                            (else
                             (cgi-get-parameter "p" param
                                                :default (top-page-of self)
@@ -660,8 +660,9 @@
            (command  (cgi-get-parameter "c" param))
            (language (cgi-get-parameter "l" param :convert string->symbol)))
        (parameterize
-        ((wiliki self)
-         (lang   (or language (language-of self))))
+           ((wiliki self)
+            (lang   (or language (language-of self))))
+        (cgi-output-character-encoding (output-charset))
         (textdomain (lang))
         (with-db
          (lambda ()
