@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: edit.scm,v 1.2 2003-09-01 00:30:54 shirok Exp $
+;;;  $Id: edit.scm,v 1.3 2003-09-02 10:40:47 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -51,12 +51,14 @@
    (html:input :type "hidden" :name "l" :value (lang))
    (html:input :type "hidden" :name "mtime" :value mtime)
    (html:textarea :name "content"
+                  :class "content"
                   :rows (textarea-rows-of (wiliki))
                   :cols (textarea-cols-of (wiliki))
                   (html-escape-string content))
    (html:br)
    (html:p ($$ "ChangeLog (brief summary of your edit for later reference):"))
    (html:textarea :name "logmsg"
+                  :class "logmsg"
                   :rows 2
                   :cols (textarea-cols-of (wiliki))
                   (html-escape-string logmsg))
