@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  $Id: wiliki.scm,v 1.35 2002-05-22 04:33:38 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.36 2002-05-22 04:38:05 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -475,14 +475,14 @@
 (define (edit-form preview? pagename content mtime donttouch)
   (define (buttons)
     (if preview?
-        `(,(html:input :type "submit" :name "preview" :value "Preview")
-          ,(html:input :type "submit" :name "commit" :value "Commit without preview"))
-        `(,(html:input :type "submit" :name "commit" :value "Commit")
-          ,(html:input :type "submit" :name "preview" :value "Preview again"))))
+        `(,(html:input :type "submit" :name "preview" :value ($$ "Preview"))
+          ,(html:input :type "submit" :name "commit" :value ($$ "Commit without preview")))
+        `(,(html:input :type "submit" :name "commit" :value ($$ "Commit"))
+          ,(html:input :type "submit" :name "preview" :value ($$ "Preview again")))))
   (define (donttouch-checkbox)
     `(,(apply html:input :type "checkbox" :name "donttouch" :value "on"
               (if donttouch '(:checked #t) '()))
-      "Don't update 'Recent Changes'"))
+      ,($$ "Don't update 'Recent Changes'")))
   
   (html:form
    :method "POST" :action (cgi-name-of (wiliki))
