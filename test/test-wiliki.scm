@@ -1,8 +1,9 @@
 ;;
 ;; test for wiliki
 ;;
-;; $Id: test-wiliki.scm,v 1.8 2004-01-12 12:11:47 shirok Exp $
+;; $Id: test-wiliki.scm,v 1.9 2004-01-20 02:20:51 shirok Exp $
 
+(use srfi-1)
 (use srfi-13)
 (use gauche.test)
 (use gauche.parameter)
