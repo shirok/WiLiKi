@@ -1,5 +1,6 @@
 2002-02-27  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki.scm : sort search result.
 	* src/wiliki.scm : enabled deletion of page.  allow '<' and '>' in
 	  WikiName.
 
