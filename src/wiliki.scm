@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.82 2003-08-18 07:05:33 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.83 2003-08-18 08:20:37 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -165,14 +165,26 @@
   (with-string-io
    content
    (lambda ()
-     (port-for-each
-      (lambda (line)
-        (display
-         (regexp-replace-all
-          #/\[\[($\w+)\]\]/ line
-          (lambda (m) (tree->string (handle-writer-macro (m 1))))))
-        (newline))
-      read-line))))
+     (define (normal line)
+       (cond ((eof-object? line))
+             ((string=? line "{{{")
+              (print line)
+              (verbatim (read-line)))
+             (else
+              (display
+               (regexp-replace-all
+                #/\[\[($\w+)\]\]/ line
+                (lambda (m) (tree->string (handle-writer-macro (m 1))))))
+              (newline)
+              (normal (read-line)))))
+     (define (verbatim line)
+       (cond ((eof-object? line) (print "}}}")) ;; close verbatim block
+             ((string=? line "}}}")
+              (print line) (normal (read-line)))
+             (else
+              (print line) (verbatim (read-line)))))
+
+     (normal (read-line)))))
 
 ;; Character conv ---------------------------------
 

@@ -1,5 +1,8 @@
 2003-08-17  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki.scm (expand-writer-macros) : bug fix: not to expand
+	  writer macros in verbatim block.
+
 	* src/wiliki/format.scm (format-page): changed not to show language
 	  links (->Japanese/->English) at edit and preview pages, for it
 	  causes problems in state tracking.
