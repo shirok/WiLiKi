@@ -12,10 +12,10 @@ install:
 
 distclean: clean
 	(cd src; $(MAKE) distclean)
-	rm -f $(CONFIG_GENERATED)
+	rm -rf $(CONFIG_GENERATED)
 
 realclean: clean
 	(cd src; $(MAKE) realclean)
-	rm -f $(CONFIG_GENERATED) configure
+	rm -rf $(CONFIG_GENERATED) configure
 
 
