@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.108 2004-02-01 07:28:31 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.109 2004-03-08 05:42:24 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -605,15 +605,17 @@
     (and-let* ((path (get-meta "PATH_INFO"))
                ((string-prefix? "/" path))
                (conv (cv-in (uri-decode-string (string-drop path 1)))))
-      (if (equal? conv "")
-        (top-page-of wiki)
-        conv)))
+      conv))
 
-  (cond ((get-path-info))
-        ((cgi-get-parameter "p" param :default #f :convert cv-in))
-        ((and (pair? param) (pair? (car param)) (eq? (cadar param) #t))
-         (cv-in (caar param)))
-        (else (top-page-of wiki)))
+  (let1 pg
+      (cond ((get-path-info))
+            ((cgi-get-parameter "p" param :default #f :convert cv-in))
+            ((and (pair? param) (pair? (car param)) (eq? (cadar param) #t))
+             (cv-in (caar param)))
+            (else ""))
+    (if (equal? pg "")
+      (top-page-of wiki)
+      pg))
   )
 
 ;; Entry ------------------------------------------

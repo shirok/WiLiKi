@@ -1,3 +1,9 @@
+2004-03-07  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm (get-page-name): display toppage when null string
+	  is given to the 'p' parameter in QUERY_STRING (Patch from Tokuya
+	  Kameshima).
+
 2004-02-10  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/format.scm (fmt-line): fixed a bug that caused infinite
