@@ -24,7 +24,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: rssmix.cgi,v 1.8 2003-02-18 10:56:01 shirok Exp $
+;;;  $Id: rssmix.cgi,v 1.9 2003-02-19 11:41:45 shirok Exp $
 ;;;
 
 ;; THIS IS AN EXPERIMENTAL SCRIPT.  Eventually this will be a part of
@@ -72,7 +72,7 @@
    (db-type :init-keyword :db-type :init-form <gdbm>)
    (cache-life :init-keyword :cache-life :init-value 1800)
    ;; - lifetime of cache, in seconds.
-   (fetch-timeout :init-keyword :fetch-timeout :init-value 30)
+   (fetch-timeout :init-keyword :fetch-timeout :init-value 15)
    ;; - timeout value to fetch RSS
    (db      :init-value #f)
    ;; - opened dbm instance
@@ -114,7 +114,7 @@
 
 (define-method rss-page ((self <rssmix>) title body)
   `("Content-Style-Type: text/css\n"
-    ,(cgi-header)
+    ,(cgi-header :content-type #`"text/html; charset=\"EUC-JP\"")
     ,(html-doctype :type :transitional)
     ,(html:html
       (html:head
@@ -124,7 +124,8 @@
       (html:body
        (html:h1 (html-escape-string title))
        (html:div :align "right"
-                 "[" (html:a :href "http://www.shiro.dreamhost.com/scheme/wiliki/wiliki.cgi?WiLiKi:RSSMix" "What's This?") "]")
+                 "[" (html:a :href "http://www.shiro.dreamhost.com/scheme/wiliki/wiliki.cgi?WiLiKi:RSSMix" "What's This?") "]"
+                 "[" (html:a :href "?c=info" "Sources") "]")
        (html:hr)
        body))))
 
@@ -164,6 +165,8 @@
      (map (lambda (site info)
             `(,(html:h3 (html-escape-string (car site)))
               ,(html:table
+                (html:tr (html:td "Title")
+                         (html:td (get-keyword :channel-title info "--")))
                 (html:tr (html:td "Top")
                          (html:td (html:a :href (cadr site)
                                           (html-escape-string (cadr site)))))
@@ -254,9 +257,11 @@
   (with-rss-db self
     (and-let* ((db (ref self 'db))
                (cached (read-from-string (dbm-get db id "#f")))
+               (channel-title (get-keyword :channel-title cached #f))
                (timestamp (get-keyword :timestamp cached #f))
                (rss-cache (get-keyword :rss-cache cached #f))
                (data (list :timestamp timestamp :rss-cache rss-cache
+                           :channel-title channel-title
                            :elapsed 'timeout)))
       (dbm-put! db id (write-to-string data)))))
                                 
@@ -269,13 +274,16 @@
           #f)
       (lambda ()
         (let1 rss (fetch uri)
-          (when rss
-            (let* ((now (sys-time))
-                   (data (list :timestamp now :rss-cache rss
-                               :elapsed (- now start-time))))
-              (with-rss-db self
-                 (dbm-put! (ref self 'db) id (write-to-string data)))))
-          rss)))))
+          (and rss
+               (let* ((now (sys-time))
+                      (data (list :timestamp now :rss-cache (cdr rss)
+                                  :channel-title (car rss)
+                                  :elapsed (- now start-time))))
+                 (with-rss-db self
+                   (dbm-put! (ref self 'db) id (write-to-string data)))
+                 (cdr rss)))
+          ))
+      )))
 
 ;; Fetch RSS from specified URI, parse it, and extract link information
 ;; with updated dates.  Returns list of items, in
@@ -312,10 +320,12 @@
 (define (extract-from-rdf sxml)
 
   (define (find-node tag parent)
-    (find (lambda (n) (eq? (car n) tag)) (cdr parent)))
+    (and (pair? parent)
+         (find (lambda (n) (eq? (car n) tag)) (cdr parent))))
 
   (define (filter-node tag parent)
-    (filter (lambda (n) (eq? (car n) tag)) (cdr parent)))
+    (and (pair? parent)
+         (filter (lambda (n) (eq? (car n) tag)) (cdr parent))))
 
   ;; NB: srfi-19's string->date fails to recognize time zone offset
   ;; with ':' between hours and minutes.  I need to parse it manually.
@@ -331,16 +341,24 @@
         )))
   
   (let* ((rdf   (find-node 'rdf:RDF sxml))
+         (chan  (find-node 'rss:channel rdf))
+         (chan-title (find-node 'rss:title chan))
          (items (filter-node 'rss:item rdf)))
-    (filter-map (lambda (item)
-                  (let ((title (and-let* ((n (find-node 'rss:title item)))
-                                 (cadr n)))
-                        (link  (and-let* ((n (find-node 'rss:link item)))
-                                 (cadr n)))
-                        (date  (and-let* ((n (find-node 'dc:date item)))
-                                 (parse-date (cadr n)))))
-                    (and title link date (list title link date))))
-                items)))
+    (cons
+     (and (pair? chan-title)
+          (if (and (pair? (cadr chan-title)) (eq? (caadr chan-title) '@))
+              (caddr chan-title)
+              (cadr chan-title)))
+     (filter-map (lambda (item)
+                   (let ((title (and-let* ((n (find-node 'rss:title item)))
+                                  (cadr n)))
+                         (link  (and-let* ((n (find-node 'rss:link item)))
+                                  (cadr n)))
+                         (date  (and-let* ((n (find-node 'dc:date item)))
+                                  (parse-date (cadr n)))))
+                     (and title link date (list title link date))))
+                 items)))
+  )
 
 ;; Entry-point
 (define (main args)
@@ -361,10 +379,10 @@
               ("WikiLike"
                "http://ishinao.net/WikiLike/"
                "http://ishinao.net/WikiLike/rss.php")
-              ;("@pm"
-              ; "http://gnk.s15.xrea.com/"
-              ; "http://gnk.s15.xrea.com/index.rdf")
-              ("Ishinao's Pukiwiki"
+              ("@pm"
+               "http://gnk.s15.xrea.com/"
+               "http://gnk.s15.xrea.com/index.rdf")
+              ("wiki on ishinao.net"
                "http://ishinao.net/pukiwiki/"
                "http://ishinao.net/pukiwiki/?cmd=rss")
               )
