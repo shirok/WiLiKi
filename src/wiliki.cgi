@@ -26,7 +26,7 @@
 ;;               style sheet.  #f to use the default style.
 ;;
 ;;    :charsets - specify assoc list of character encodings to be
-;;                used to generate webpage.
+;;               used to generate webpage.
 ;;
 ;;    :image-urls - specify which URL is allowed as an in-line image.
 

@@ -1,60 +1,112 @@
-;; wiliki.scm : line 377
+;; wiliki.scm : line 467
 ("Last modified : "
  "最終更新 : "
 )
 
-;; wiliki.scm : line 414
+;; wiliki.scm : line 497
 ("[Top Page]"
  "[トップ]"
 )
 
-;; wiliki.scm : line 416
+;; wiliki.scm : line 499
 ("[Edit]"
  "[編集]"
 )
 
-;; wiliki.scm : line 419
+;; wiliki.scm : line 501
 ("[All Pages]"
  "[一覧]"
 )
 
-;; wiliki.scm : line 422
+;; wiliki.scm : line 503
 ("[Recent Changes]"
  "[最近の更新]"
 )
 
-;; wiliki.scm : line 425
+;; wiliki.scm : line 505
 ("Search:"
  "検索:"
 )
 
-;; wiliki.scm : line 457
+;; wiliki.scm : line 544
+("Update Conflict"
+ "更新の衝突"
+)
+
+;; wiliki.scm : line 545
+("<p>It seems that somebody has updated this page while you're editing.  The most recent content is shown below.</p>"
+ "<p>あなたが編集している間に、他の人がこのページを更新したようです。最新の内容を以下に表示します。</p>"
+)
+
+;; wiliki.scm : line 549
+("<p>The following shows what you are about to submit.  Please re-edit the content and submit again.</p>"
+ "<p>以下に示すのがあなたが更新しようとした内容です。最新の内容をもとに再編集して再び更新して下さい。</p>"
+)
+
+;; wiliki.scm : line 565
 ("Preview"
  "プレビュー"
 )
 
-;; wiliki.scm : line 458
+;; wiliki.scm : line 566
 ("Commit without preview"
  "コミット(プレビュー無し)"
 )
 
-;; wiliki.scm : line 459
+;; wiliki.scm : line 567
 ("Preview again"
  "もう一度プレビュー"
 )
 
-;; wiliki.scm : line 460
+;; wiliki.scm : line 568
 ("Commit"
  "コミット"
 )
 
-;; wiliki.scm : line 464
+;; wiliki.scm : line 572
 ("Don't update 'Recent Changes'"
  "「最近の更新」に登録しない"
 )
 
-;; wiliki.scm : line 478
-("<h2>Text Formatting Rules</h2>\n      <p>No HTML.</p>\n      <p>Empty line to separating paragraphs (&lt;p&gt;)\n      <p>`<tt>- </tt>', `<tt>-- </tt>' and `<tt>--- </tt>' at the\n         beginning of a line for an item of unordered list (&lt;ul&gt;)\n         of level 1, 2 and 3, respectively.\n         Put a space after dash(es).\n      <p>`<tt>1. </tt>', `<tt>1.. </tt>', `<tt>1... </tt>' at the\n         beginning of a line for an item of ordered list (&lt;ol&gt;)\n         of level 1, 2 and 3, respectively.\n         Put a space after dot(s).\n      <p>A line with only `<tt>----</tt>' is &lt;hr&gt;.\n      <p>`<tt>:item:description</tt>' at the beginning of a line is &lt;dl&gt;.\n         The item includes all colons but the last one.  If you want to include\n         a colon in the description, put it in the next line.\n      <p><tt>[[Name]]</tt> to make `Name' a WikiName.  Note that\n         a simple mixed-case word doesn't become a WikiName.\n         `Name' beginning with `$' has special meanings (e.g. \n         `[[$date]]' is replaced for the time at the editing.)\n      <p>A URL-like string beginning with `<tt>http:</tt>' becomes\n         a link.  `<tt>[URL name]</tt>' becomes a <tt>name</tt> that linked\n         to <tt>URL</tt>.\n      <p>Surround words by two single quotes (<tt>''foo''</tt>)\n         to emphasize.\n      <p>Surround words by three single quotes (<tt>'''foo'''</tt>)\n         to emphasize more.\n      <p>`<tt>*</tt>', `<tt>**</tt>' and `<tt>***</tt>'' at the beginning\n         of a lineis a level 1, 2 and 3 header, respectively.  Put a space\n         after the asterisk(s).\n      <p>Whitespace(s) at the beginning of line for preformatted text.\n      <p>A line of \"{{{\" also starts a preformatted text, until\n         a line of \"}}}\".\n      <p>If you want to use special characters at the\n         beginning of line, put six consecutive single quotes.\n         It emphasizes a null string, so it's effectively nothing."
+;; wiliki.scm : line 587
+("<h2>Text Formatting Rules</h2>
+      <p>No HTML.</p>
+      <p>Empty line to separating paragraphs (&lt;p&gt;)
+      <p>`<tt>- </tt>', `<tt>-- </tt>' and `<tt>--- </tt>' at the
+         beginning of a line for an item of unordered list (&lt;ul&gt;)
+         of level 1, 2 and 3, respectively.
+         Put a space after dash(es).
+      <p>`<tt>1. </tt>', `<tt>1.. </tt>', `<tt>1... </tt>' at the
+         beginning of a line for an item of ordered list (&lt;ol&gt;)
+         of level 1, 2 and 3, respectively.
+         Put a space after dot(s).
+      <p>A line with only `<tt>----</tt>' is &lt;hr&gt;.
+      <p>`<tt>:item:description</tt>' at the beginning of a line is &lt;dl&gt;.
+         The item includes all colons but the last one.  If you want to include
+         a colon in the description, put it in the next line.
+      <p><tt>[[Name]]</tt> to make `Name' a WikiName.  Note that
+         a simple mixed-case word doesn't become a WikiName.
+         `Name' beginning with `$' has special meanings (e.g. 
+         `[[$date]]' is replaced for the time at the editing.)
+      <p>A URL-like string beginning with `<tt>http:</tt>' becomes
+         a link.  `<tt>[URL name]</tt>' becomes a <tt>name</tt> that linked
+         to <tt>URL</tt>.
+      <p>Surround words by two single quotes (<tt>''foo''</tt>)
+         to emphasize.
+      <p>Surround words by three single quotes (<tt>'''foo'''</tt>)
+         to emphasize more.
+      <p>`<tt>*</tt>', `<tt>**</tt>' and `<tt>***</tt>'' at the beginning
+         of a lineis a level 1, 2 and 3 header, respectively.  Put a space
+         after the asterisk(s).
+      <p>Whitespace(s) at the beginning of line for preformatted text.
+      <p>A line of \"{{{\" also starts a preformatted text, until
+         a line of \"}}}\".
+      <p>A line begins with `|' and also ends with `|' becomes a
+         row of a table.  Consecutive rows forms a table.  Inside a row,
+         `|' delimits columns.
+      <p>If you want to use special characters at the
+         beginning of line, put six consecutive single quotes.
+         It emphasizes a null string, so it's effectively nothing."
  "<h2>テキスト整形ルール</h2>
    <p>HTMLは使えない。
    <p>空行は段落の区切り (&lt;p&gt;)
@@ -81,43 +133,29 @@
       それぞれ見出し、小見出し。もっと小見出し。アスタリスクの後に空白が必要。
    <p>行頭に空白があると &lt;pre&gt;。
    <p>\"{{{\"だけの行も &lt;pre&gt;。これは\"}}}\"だけの行で終わる。
+   <p>`|' で始まり `|' で終る行はテーブルの一行となる。
+      連続する行でテーブルが構成される。行の中では `|' でカラムが区切られる。
    <p>行頭に上記の特殊な文字をそのまま入れたい場合は、ダミーの強調項目
        (6つの連続するシングルクオート)を行頭に入れると良い。"
 )
 
-;; wiliki.scm : line 528
+;; wiliki.scm : line 640
 ("Preview of ~a"
  "~a のプレビュー"
 )
 
-;; wiliki.scm : line 554
-("Wiliki: Update Conflict"
- "Wiliki: 更新の衝突"
+;; wiliki.scm : line 672
+("All Pages"
+ "一覧"
 )
 
-;; wiliki.scm : line 555
-("<p>It seems that somebody has updated this page while you're editing.  The most recent content is shown below.</p>"
- "<p>あなたが編集している間に、他の人がこのページを更新したようです。最新の内容を以下に表示します。</p>"
+;; wiliki.scm : line 682
+("Recent Changes"
+ "最近の更新"
 )
 
-;; wiliki.scm : line 559
-("<p>The following shows what you are about to submit.  Please re-edit the content and submit again.</p>"
- "<p>以下に示すのがあなたが更新しようとした内容です。最新の内容をもとに再編集して再び更新して下さい。</p>"
+;; wiliki.scm : line 695
+("Search results"
+ "検索結果"
 )
-
-;; wiliki.scm : line 566
-("Wiliki: All Pages"
- "Wiliki: 一覧"
-)
-
-;; wiliki.scm : line 576
-("Wiliki: Recent Changes"
- "Wiliki: 最近の更新"
-)
-
-;; wiliki.scm : line 589
-("Wiliki: Search results"
- "Wiliki: 検索結果"
-)
-
 
