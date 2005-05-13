@@ -2,8 +2,8 @@ dnl
 dnl Configuring wiliki
 dnl Process this file with autoconf to generate 'configure'.
 dnl
-dnl $Id: configure.in,v 1.10 2004-05-23 23:03:20 shirok Exp $
-AC_INIT(WiLiKi, 0.5, shiro@acm.org)
+dnl $Id: configure.in,v 1.11 2005-05-13 02:03:59 shirok Exp $
+AC_INIT(WiLiKi, 0.5.1, shiro@acm.org)
 AC_GAUCHE_INIT_EXT
 
 dnl Sets the default value of INSTALL_TYPE macro.

@@ -1,3 +1,8 @@
+2005-05-12  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/macro.scm (toc): fixed a bug in arranging headers
+	  into a tree.
+
 2005-03-26  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/format.scm (fmt-lines): fixed a call to a local function

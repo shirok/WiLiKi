@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.27 2004-03-22 11:44:35 shirok Exp $
+;;; $Id: macro.scm,v 1.28 2005-05-13 02:04:01 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
@@ -215,22 +215,28 @@
         (list "[[$$toc]]"))
       (let1 pagename (and page (ref page 'key))
 
+        ;; MAKE-UL takes one heading entry (level . text) and tries to fit
+        ;; it in a tree.  If the entry is the same level, we accumulate
+        ;; the heading entries to ITEMS.  If the entry is deeper than the
+        ;; current, we recurse into the deeper level but uses CPS to continue
+        ;; the current level after the lower levels are collected.
         ;; NB: hs is a _reverse_ ordered list of all headings (level . text).
         ;; Since it's reversed, we can scan forward to find the heading
         ;; nesting.
         (define (make-ul hs cur items cont)
           (cond ((null? hs)
                  (cont '() `(ul ,@items)))
-                ((= (caar hs) cur)
+                ((= (caar hs) cur) ;; same level
                  (make-ul (cdr hs) cur
                           (cons (make-anchor (nestings hs)) items)
                           cont))
-                ((< (caar hs) cur)
-                 (cont hs `(ul ,@items)))
-                (else
-                 (make-ul hs (caar hs)'()
+                ((> (caar hs) cur) ;; deeper level
+                 (make-ul hs (+ cur 1) '()
                           (lambda (hs ul)
-                            (make-ul hs cur (cons ul items) cont))))))
+                            (make-ul hs cur (cons ul items) cont))))
+                (else ;; we finished the current level and under.  pass
+                      ;; the result to the continuation proc.
+                 (cont hs `(ul ,@items)))))
 
         (define (nestings hs)
           (reverse!
