@@ -1,5 +1,7 @@
 2005-05-12  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki/format.scm (mailto): prevent creating empty anchor tag
+	  for mailto.
 	* src/wiliki/macro.scm (toc): fixed a bug in arranging headers
 	  into a tree.
 
