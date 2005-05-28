@@ -1,3 +1,11 @@
+2005-05-27  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/format.scm (fmt-lines generator): fixed a problem of
+	  context-passing between included pages.  We only need to pass
+	  information of nestings of headings, which is required to generate
+	  proper heading IDs for tha page that consists of included ones.  
+	  Other context information could screw fmt-lines.
+
 2005-05-12  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/format.scm (mailto): prevent creating an empty anchor tag

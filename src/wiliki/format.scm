@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.36 2005-05-13 02:27:39 shirok Exp $
+;;; $Id: format.scm,v 1.37 2005-05-28 02:17:51 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -296,9 +296,13 @@
           (receive (wikiname rest) (find-closer post 0 '())
             (if wikiname
               (bracket rest
-                       (append (reverse! (parameterize ((fmt-context ctx))
-                                           (fmt-wikiname wikiname)))
-                               (bold pre seed)))
+                       (append-reverse!
+                        (parameterize ((fmt-context (filter (lambda (e)
+                                                              (and (pair? e)
+                                                                   (memq (car e) '(h1 h2 h3 h4 h5 h6))))
+                                                            ctx)))
+                          (fmt-wikiname wikiname))
+                        (bold pre seed)))
               (bold rest (bold pre seed))))
           (bold line seed)))))
   (define (smacro line seed)
