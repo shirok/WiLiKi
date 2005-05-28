@@ -1,7 +1,10 @@
 2005-05-27  Shiro Kawai  <shiro@acm.org>
 
 	* release 0.5.1
-	
+
+	* src/wiliki/format.scm (fmt-line): accept telnet:// as a valid
+	  protocol, as well as mailto, http(s) and ftp.
+
 	* src/wiliki/format.scm (fmt-lines generator): fixed a problem of
 	  context-passing between included pages.  We only need to pass
 	  information of nestings of headings, which is required to generate

@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.37 2005-05-28 02:17:51 shirok Exp $
+;;; $Id: format.scm,v 1.38 2005-05-28 02:48:00 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -238,7 +238,7 @@
   ;; NB: the precedence is embedded to the order of calling regexp-fold.
   (define (mailto line seed)
     (regexp-fold
-     #/\[(mailto:[-\w]+(?:\.[-\w]+)*@[-\w]+(?:\.[-\w]+)+)\s+(.+)\]/
+     #/\[(mailto:[-\w]+(?:\.[-\w]+)*@[-\w]+(?:\.[-\w]+)+|telnet:\/\/[-\w.]+(?::\d+)?)\s+(.+)\]/
      cons
      (lambda (match seed)
        (cons `(a (@ (href ,(match 1))) ,(match 2)) seed))
