@@ -1,3 +1,12 @@
+2005-07-26  Shiro Kawai  <shiro@acm.org>
+
+	* configure.in, Makefile.in: adapted to the new build scheme.
+	  Now it installs gpd file so that gauche-package can display
+	  the package version.  And configure.in no longer depends on
+	  gauche-specific autoconf macros.
+	* src/Makefile.in: removed, for it is now handled by the toplevel
+	  Makefile.
+
 2005-05-27  Shiro Kawai  <shiro@acm.org>
 
 	* release 0.5.1
