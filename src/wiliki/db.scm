@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: db.scm,v 1.11 2004-03-22 05:38:41 shirok Exp $
+;;; $Id: db.scm,v 1.12 2005-07-26 22:38:29 shirok Exp $
 
 (define-module wiliki.db
   (use srfi-1)
@@ -36,7 +36,8 @@
           wiliki-db-exists? wiliki-db-record->page
           wiliki-db-get wiliki-db-put! wiliki-db-delete!
           wiliki-db-recent-changes
-          wiliki-db-map wiliki-db-search wiliki-db-search-content)
+          wiliki-db-map wiliki-db-fold wiliki-db-for-each
+          wiliki-db-search wiliki-db-search-content)
   )
 (select-module wiliki.db)
 
@@ -152,13 +153,19 @@
   (read-from-string (dbm-get (check-db) *recent-changes* "()"))  )
 
 ;; higher-order ops
+(define (wiliki-db-fold proc seed)
+  (dbm-fold (check-db)
+            (lambda (k v seed)
+              (if (string-prefix? " " k)
+                seed
+                (proc k v seed)))
+            '()))
+
 (define (wiliki-db-map proc)
-  (reverse! (dbm-fold (check-db)
-                      (lambda (k v r)
-                        (if (string-prefix? " " k)
-                            r
-                            (cons (proc k v) r)))
-                      '())))
+  (reverse! (wiliki-db-fold (lambda (k v seed) (cons (proc k v) seed)) '())))
+
+(define (wiliki-db-for-each proc)
+  (wiliki-db-fold (lambda (k v seed) (proc k v) #f) #f))
 
 (define (wiliki-db-search pred . maybe-sorter)
   (sort

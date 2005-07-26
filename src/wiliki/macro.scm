@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.28 2005-05-13 02:04:01 shirok Exp $
+;;; $Id: macro.scm,v 1.29 2005-07-26 22:38:29 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
@@ -89,8 +89,8 @@
                  ,#`"Macro error in [[,|name|]]:\n"
                  ,(call-with-output-string
                     (cut with-error-to-port <>
-                         (cut report-error e))))
-            ,(unrecognized name))))
+                         (cut report-error e)))))
+          (unrecognized name)))
     (lambda ()
       (wrap-macro-output
        (cond ((finder) => applier)

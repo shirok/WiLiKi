@@ -1,5 +1,8 @@
 2005-07-26  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki/db.scm: added wiliki-db-fold and wiliki-db-for-each
+	* src/wiliki/macro.scm: fixed the error handling code
+
 	* configure.in, Makefile.in, src/Makefile.in: adapted to the new
 	  build scheme.
 	  Now it installs gpd file so that gauche-package can display
