@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.1 2005-07-26 19:38:48 shirok Exp $
+# $Id: Makefile.in,v 1.2 2005-07-26 21:35:37 shirok Exp $
 #
 
 # General info
@@ -27,15 +27,9 @@ EXEEXT = @EXEEXT@
 PACKAGE   = WiLiKi
 
 ARCHFILES =
-SCMFILES  = src/wiliki.scm src/wiliki/db.scm src/wiliki/edit.scm \
-	    src/wiliki/format.scm src/wiliki/history.scm src/wiliki/log.scm \
-	    src/wiliki/mcatalog.scm src/wiliki/macro.scm src/wiliki/util.scm \
-	    src/wiliki/rss.scm src/wiliki/rssmix.scm src/wiliki/pasttime.scm \
-	    src/wiliki/version.scm
+SCMFILES  = 
 HEADERS   = 
 
-TARGET    = src/wiliki/msgs.jp src/wiliki/version.scm
-GENERATED = src/wiliki/msgs.jp src/wiliki/version.scm
 CONFIG_GENERATED = Makefile config.cache config.log config.status \
 		   configure.lineno autom4te*.cache $(PACKAGE).gpd
 
@@ -43,47 +37,37 @@ HEADER_INSTALL_DIR  = $(DESTDIR)`$(GAUCHE_CONFIG) --siteincdir`
 SCM_INSTALL_DIR     = $(DESTDIR)`$(GAUCHE_CONFIG) --sitelibdir`
 ARCH_INSTALL_DIR    = $(DESTDIR)`$(GAUCHE_CONFIG) --sitearchdir`
 
-all :$(TARGET)
+all :
+	cd src; $(MAKE)
 	cd doc; $(MAKE)
-
-src/wiliki/msgs.jp : src/wiliki/msgs.jp.euc
-	$(GAUCHE_CESCONV) -f euc-jp -o src/wiliki/msgs.jp src/wiliki/msgs.jp.euc
-
-src/wiliki/version.scm : VERSION
-	$(GOSH) src/gen-version VERSION > src/wiliki/version.scm
-
-extract:
-	$(GOSH) src/extract.scm src/wiliki/msgs.jp.euc $(SCMFILES)
 
 check :
 	cd test; $(MAKE) check
 
 install : all
+	cd src; $(MAKE) install
 	cd doc; $(MAKE) install
-	$(INSTALL) -m 444 -T $(HEADER_INSTALL_DIR) $(HEADERS)
-	$(INSTALL) -m 444 -T $(SCM_INSTALL_DIR) $(SCMFILES) 
-	$(INSTALL) -m 555 -T $(ARCH_INSTALL_DIR) $(ARCHFILES)
 	$(INSTALL) -m 444 -T $(SCM_INSTALL_DIR)/.packages $(PACKAGE).gpd
 
 uninstall :
+	cd src; $(MAKE) uninstall
 	cd doc; $(MAKE) uninstall
-	$(INSTALL) -U $(HEADER_INSTALL_DIR) $(HEADERS)
-	$(INSTALL) -U $(SCM_INSTALL_DIR) $(SCMFILES) 
-	$(INSTALL) -U $(ARCH_INSTALL_DIR) $(ARCHFILES)
 	$(INSTALL) -U $(SCM_INSTALL_DIR)/.packages $(PACKAGE).gpd
 
 clean :
+	cd src; $(MAKE) clean
 	cd doc; $(MAKE) clean
 	cd test; $(MAKE) clean
-	rm -rf core $(TARGET) $(GENERATED) *~ src/*~ src/wiliki/*~ \
-	  *.log src/*.log src/wiliki/*.orig
+	rm -rf core $(GENERATED) *~ *.log
 
 distclean : clean
+	cd src; $(MAKE) distclean
 	cd doc; $(MAKE) distclean
 	cd test; $(MAKE) distclean
 	rm -rf $(CONFIG_GENERATED)
 
 maintainer-clean : clean
+	cd src; $(MAKE) maintainer-clean
 	cd doc; $(MAKE) maintainer-clean
 	cd test; $(MAKE) maintainer-clean
 	rm -rf $(CONFIG_GENERATED) configure

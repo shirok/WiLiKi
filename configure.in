@@ -2,7 +2,7 @@ dnl
 dnl Configuring wiliki
 dnl Process this file with autoconf to generate 'configure'.
 dnl
-dnl $Id: configure.in,v 1.12 2005-07-26 19:38:48 shirok Exp $
+dnl $Id: configure.in,v 1.13 2005-07-26 21:35:37 shirok Exp $
 AC_PREREQ(2.54)
 AC_INIT(WiLiKi, 0.5.2_pre1, shiro@acm.org)
 
@@ -46,4 +46,4 @@ $GAUCHE_PACKAGE make-gpd "$PACKAGE_NAME" \
 
 dnl Output
 echo $PACKAGE_VERSION > VERSION
-AC_OUTPUT(Makefile doc/Makefile test/Makefile)
+AC_OUTPUT(Makefile src/Makefile doc/Makefile test/Makefile)

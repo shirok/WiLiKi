@@ -26,6 +26,8 @@ $(HTMLDIR)/index.html :
 
 install :
 
+uninstall :
+
 clean :
 	rm -rf core *~ manual-ja/*~ $(GENERATED)
 
