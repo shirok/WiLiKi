@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.29 2005-07-26 22:38:29 shirok Exp $
+;;; $Id: macro.scm,v 1.30 2005-07-27 04:07:58 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
@@ -111,7 +111,7 @@
              (acons sname
                     (lambda p
                       (if (arity-matches? p 'args)
-                          (receive args (apply values p) . body)
+                          (apply (lambda args . body) p)
                           (unrecognized sname)))
                     *reader-macro-alist*))))
     ))
@@ -124,7 +124,7 @@
              (acons sname
                     (lambda p
                       (if (arity-matches? p 'args)
-                          (receive args (apply values p) . body)
+                          (apply (lambda args . body) p)
                           (unrecognized sname)))
                     *writer-macro-alist*))))
     ))
@@ -136,7 +136,7 @@
 	   (acons expr
 		  (lambda p
 		    (rxmatch-if (rxmatch expr (car p)) (var ...)
-                      (receive args (apply values p) . body)
+                      (apply (lambda args . body) p)
                       (unrecognized (regexp->string expr))))
 		  *virtual-page-alist*)))
     ))

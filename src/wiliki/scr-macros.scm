@@ -1,58 +1,81 @@
 ;;
 ;; Macros used in SchemeCrossReference site
 ;; included for the reference
-;; $Id: scr-macros.scm,v 1.1 2005-07-26 22:40:31 shirok Exp $
+;; $Id: scr-macros.scm,v 1.2 2005-07-27 04:07:58 shirok Exp $
 
 (select-module wiliki.macro)
 (use srfi-1)
 (use srfi-13)
 (use util.list)
 
-(define-reader-macro (implemented-srfis . numbers)
-  `((p "Implements the following SRFIs: "
+(define-reader-macro (srfis . numbers)
+  `((p "Implementing " ,@(wiliki:format-wikiname "SRFI") "s: "
        ,@(append-map (lambda (num)
-                       (wiliki:format-wikiname #`"SRFI-,num"))
+                       (cons " " (wiliki:format-wikiname #`"SRFI-,num")))
                      numbers))))
+
+(define (pick-srfis-macro page-record)
+  (cond ((#/\[\[$$srfis ([\s\d]+)\]\]/ page-record)
+         => (lambda (m)
+              (map x->integer (string-tokenize (m 1)))))
+        (else #f)))
 
 (define-reader-macro (srfi-implementors-map)
   (let1 tab (make-hash-table 'eqv?)
     (wiliki-db-for-each
      (lambda (pagename record)
-       (cond ((#/\[\[$$implemented-srfis ([\s\d]+)\]\]/ record)
-              => (lambda (m)
-                   (dolist (n (map x->integer (string-tokenize (m 1))))
-                     (hash-table-push! tab n pagename))))
-             (else #f))))
-    (let1 keys (filter-map (lambda (key)
-                             (cond ((assv-ref *final-srfis* key)
-                                    => (cut list key <>))
-                                   (else #f)))
-                           (sort (hash-table-keys tab)))
-      (list
-       `(table
-         (@ (style "border-width: 0"))
-         ,@(map (lambda (srfi-num&title)
-                  (let* ((num (car srfi-num&title))
-                         (title (cadr srfi-num&title))
-                         (popularity (length (hash-table-get tab num '())))
-                         (bgcolor (case popularity
-                                    ((0) "#ffffff")
-                                    ((1) "#ffeeee")
-                                    ((2) "#ffdddd")
-                                    ((3) "#ffcccc")
-                                    ((4) "#ffbbbb")
-                                    ((5 6) "#ffaaaa")
-                                    ((7 8 9) "#ff9999")
-                                    (else "#ff8888"))))
-                    `(tr
-                      (td (@ (style ,#`"background-color: ,bgcolor"))
-                          ,@(wiliki:format-wikiname #`"SRFI-,num")
-                          ": ")
-                      (td (@ (style ,#`"background-color: ,bgcolor"))
-                          ,title)
-                      (td (@ (style ,#`"background-color: ,bgcolor ; font-size: 60%"))
-                          ,#`"[,|popularity| implementation(s)]"))))
-                keys))))))
+       (cond ((pick-srfis-macro record)
+              => (cut map (cut hash-table-push! tab <> pagename) <>)))))
+    (list
+     `(table
+       (@ (style "border-width: 0"))
+       ,@(map (lambda (srfi-num&title)
+                (let* ((num (car srfi-num&title))
+                       (title (cdr srfi-num&title))
+                       (popularity (length (hash-table-get tab num '())))
+                       (bgcolor (case popularity
+                                  ((0) "#ffffff")
+                                  ((1) "#fff8f8")
+                                  ((2) "#fff0f0")
+                                  ((3 4) "#ffe0e0")
+                                  ((5 6) "#ffcccc")
+                                  ((7 8) "#ffaaaa")
+                                  (else "#ff8888"))))
+                  `(tr
+                    (td (@ (style ,#`"background-color: ,bgcolor"))
+                        ,@(wiliki:format-wikiname #`"SRFI-,num")
+                        ": ")
+                    (td (@ (style ,#`"background-color: ,bgcolor"))
+                        ,title)
+                    (td (@ (style ,#`"background-color: ,bgcolor ; font-size: 60%"))
+                        ,(format "[~a implementation~a]"
+                                 popularity
+                                 (if (= popularity 1) "" "s"))))))
+              *final-srfis*)))))
+
+(define-reader-macro (srfi-implementors . maybe-num)
+  (let* ((num   (x->integer
+                 (get-optional maybe-num
+                               (or (and-let* ((t (ref (wiliki:current-page)
+                                                      'title))
+                                              (m (#/SRFI-(\d+)/ t)))
+                                     (m 1))
+                                   "-1"))))
+         (impls (sort (wiliki-db-fold
+                       (lambda (pagename record seed)
+                         (cond ((pick-srfis-macro record)
+                                => (lambda (srfis)
+                                     (if (memv num srfis)
+                                       (cons pagename seed)
+                                       seed)))
+                               (else seed)))
+                       '()))))
+    `((p "SRFI-" ,(x->string num) " is implemented in "
+         ,@(if (null? impls)
+             '("(none)")
+             (append-map (lambda (impl)
+                           (cons " " (wiliki:format-wikiname impl)))
+                         impls))))))
 
 ;;; The SRFI table below can be obtained by the following code snippet.
 #|

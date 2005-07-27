@@ -1,8 +1,11 @@
 2005-07-26  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/db.scm: added wiliki-db-fold and wiliki-db-for-each
-	* src/wiliki/macro.scm: fixed the error handling code
-
+	* src/wiliki/macro.scm: fixed the error handling code.  fixed
+	  define-reader-macro etc to avoid using receive to bind args, 
+	  for the # of arguments given to the macro can exceed the limit
+	  of # of values.
+	* src/wiliki/scr-macros.scm: added as a sample of auxiliary macros.
 	* configure.in, Makefile.in, src/Makefile.in: adapted to the new
 	  build scheme.
 	  Now it installs gpd file so that gauche-package can display
