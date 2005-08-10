@@ -11,17 +11,18 @@ while [ $# -gt 0 ]; do
 done
 
 if [ "$gen" = "yes" ]; then
-  autoconf -I `gauche-config --ac`
-  ./configure
+  autoconf
 fi
 
 if [ "$tgz" = "yes" ]; then
-  make distclean
+  if [ -f Makefile ]; then make maintainer-clean; fi
+  autoconf
   ./configure
   if [ ! -f VERSION ]; then echo "no VERSION -- something wrong?"; exit 1; fi
   VERSION=`cat VERSION`
+  make distclean
   rm -rf ../WiLiKi-$VERSION
-  rm -f DIST_ECLUDE_X
+  rm -f DIST_EXCLUDE_X
   cat DIST_EXCLUDE > DIST_EXCLUDE_X
   find . -name CVS -print -prune >> DIST_EXCLUDE_X
 

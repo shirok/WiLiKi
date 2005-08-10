@@ -2,9 +2,9 @@ dnl
 dnl Configuring wiliki
 dnl Process this file with autoconf to generate 'configure'.
 dnl
-dnl $Id: configure.in,v 1.13 2005-07-26 21:35:37 shirok Exp $
+dnl $Id: configure.in,v 1.14 2005-08-10 11:24:04 shirok Exp $
 AC_PREREQ(2.54)
-AC_INIT(WiLiKi, 0.5.2_pre1, shiro@acm.org)
+AC_INIT(WiLiKi, 0.5.2, shiro@acm.org)
 
 dnl If you want to use the system name (OS, architecture, etc) in the
 dnl configure, uncomment the following line.  In such a case, you need
