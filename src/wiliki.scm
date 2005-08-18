@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.114 2005-08-18 04:03:04 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.115 2005-08-18 04:05:47 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -414,7 +414,7 @@
                  `((a (@ (href ,(format "~a~a~a" scheme inter-prefix
                                         (uri-encode-string
                                          (cv-out real-name)))))
-                      ,real-name))))
+                      ,name))))
               ;; NB: the order of checks here is debatable.  Should a virtual
               ;; page shadow an existing page, or an existing page shadow a
               ;; virtual one?  Note also the order of this check must match
