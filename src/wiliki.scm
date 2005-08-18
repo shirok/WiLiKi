@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.113 2005-08-18 02:32:36 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.114 2005-08-18 04:03:04 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -394,8 +394,9 @@
   (define (reader-macro-wikiname? name)
     (cond ((string-prefix? "$$" name)
            (handle-reader-macro name))
-          ((or (string-index name #[\s])
-               (string-prefix? "$" name))
+          ((or (string-prefix? "$" name)
+               (#/^\s/ name)
+               (#/\s$/ name))
            ;;invalid wiki name
            (list "[[" name "]]"))
           (else #f)))
@@ -404,24 +405,26 @@
       (or (and head
                (and-let* ((inter-prefix (inter-wikiname-prefix head)))
                  (values inter-prefix after)))
-          (values #f #f))))
-  (receive (prefix inner) (inter-wikiname? name)
-    (cond ((reader-macro-wikiname? name))
-          (prefix
-           (let ((scheme
-                  (if (#/^(https?|ftp|mailto):/ prefix) "" "http://")))
-             `((a (@ (href ,(format "~a~a~a" scheme prefix
-                                    (uri-encode-string (cv-out inner)))))
-                  ,name))))
-          ;; NB: the order of checks here is debatable.  Should a virtual
-          ;; page shadow an existing page, or an existing page shadow a
-          ;; virtual one?  Note also the order of this check must match
-          ;; the order in cmd-view.
-          ((or (wiliki-db-exists? name) (virtual-page? name))
-           (list (wiliki:wikiname-anchor name)))
-          (else
-           `(,name
-             (a (@ (href ,(url "p=~a&c=e" (cv-out name)))) "?")))))
+          (values #f name))))
+  (or (reader-macro-wikiname? name)
+      (receive (inter-prefix real-name) (inter-wikiname? name)
+        (cond (inter-prefix
+               (let1 scheme
+                   (if (#/^(https?|ftp|mailto):/ inter-prefix) "" "http://")
+                 `((a (@ (href ,(format "~a~a~a" scheme inter-prefix
+                                        (uri-encode-string
+                                         (cv-out real-name)))))
+                      ,real-name))))
+              ;; NB: the order of checks here is debatable.  Should a virtual
+              ;; page shadow an existing page, or an existing page shadow a
+              ;; virtual one?  Note also the order of this check must match
+              ;; the order in cmd-view.
+              ((or (wiliki-db-exists? real-name) (virtual-page? real-name))
+               (list (wiliki:wikiname-anchor real-name)))
+              (else
+               `(,real-name
+                 (a (@ (href ,(url "p=~a&c=e" (cv-out real-name)))) "?")))))
+      )
   )
 
 (wiliki:formatter

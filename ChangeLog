@@ -1,7 +1,10 @@
 2005-08-17  Shiro Kawai  <shiro@acm.org>
 
-	* src/wiliki.scm (wiliki:default-head-elements): added LINK tag for
-	  RSS auto discovery.
+	* src/wiliki.scm
+	  (wiliki:default-head-elements): added LINK tag for RSS auto
+	  discovery.
+	  (default-format-wikiname): Allow whitespaces within WikiNames.
+
 	* src/wiliki/format.scm, src/wiliki/history.scm: added META tag
 	  for the head element of edit-history pages so that robots won't
 	  follow every link of the revisions and differences.
