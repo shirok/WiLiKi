@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.22 2005-08-18 01:56:28 shirok Exp $
+# $Id: Makefile.in,v 1.23 2005-08-18 05:17:38 shirok Exp $
 #
 
 # General info
@@ -53,7 +53,7 @@ extract :
 	$(GOSH) ./extract.scm wiliki/msgs.jp.euc $(SCMFILES)
 
 install :
-	$(INSTALL) -m -444 -T $(SCM_INSTALL_DIR) $(TARGET)
+	$(INSTALL) -m 444 -T $(SCM_INSTALL_DIR) $(TARGET)
 
 uninstall :
 	$(INSTALL) -U $(SCM_INSTALL_DIR) $(TARGET)
