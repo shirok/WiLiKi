@@ -1,0 +1,73 @@
+#
+# $Id: Makefile.in,v 1.22 2005-08-18 01:56:28 shirok Exp $
+#
+
+# General info
+SHELL       = @SHELL@
+prefix      = @prefix@
+exec_prefix = @exec_prefix@
+bindir      = @bindir@
+libdir      = @libdir@
+VPATH       = $(srcdir)
+
+# These may be overridden by make invocators
+DESTDIR        =
+GOSH           = @GOSH@
+GAUCHE_CONFIG  = @GAUCHE_CONFIG@
+GAUCHE_PACKAGE = @GAUCHE_PACKAGE@
+GAUCHE_CESCONV = @GAUCHE_CESCONV@
+INSTALL        = @GAUCHE_INSTALL@
+
+SCMFILES = wiliki.scm \
+	   wiliki/db.scm \
+	   wiliki/edit.scm \
+           wiliki/format.scm \
+           wiliki/history.scm \
+           wiliki/log.scm \
+           wiliki/mcatalog.scm \
+           wiliki/macro.scm \
+           wiliki/util.scm \
+           wiliki/rss.scm \
+           wiliki/rssmix.scm \
+           wiliki/pasttime.scm \
+	   wiliki/scr-macros.scm \
+	   wiliki/version.scm
+
+TARGET = $(SCMFILES) wiliki/msgs.jp
+
+GENERATED = wiliki/msgs.jp wiliki/version.scm
+
+HEADER_INSTALL_DIR  = $(DESTDIR)`$(GAUCHE_CONFIG) --siteincdir`
+SCM_INSTALL_DIR     = $(DESTDIR)`$(GAUCHE_CONFIG) --sitelibdir`
+ARCH_INSTALL_DIR    = $(DESTDIR)`$(GAUCHE_CONFIG) --sitearchdir`
+
+all : wiliki/msgs.jp wiliki/version.scm
+
+wiliki/msgs.jp: wiliki/msgs.jp.euc
+	$(GAUCHE_CESCONV) -f EUC-jp -o wiliki/msgs.jp wiliki/msgs.jp.euc
+
+wiliki/version.scm : ../VERSION
+	$(GOSH) ./gen-version ../VERSION > wiliki/version.scm
+
+extract :
+	$(GOSH) ./extract.scm wiliki/msgs.jp.euc $(SCMFILES)
+
+install :
+	$(INSTALL) -m -444 -T $(SCM_INSTALL_DIR) $(TARGET)
+
+uninstall :
+	$(INSTALL) -U $(SCM_INSTALL_DIR) $(TARGET)
+
+
+clean :
+	rm -f core *~ wiliki/*~ wiliki/*.orig $(GENERATED)
+
+distclean : clean
+	rm -f Makefile
+
+maintainer-clean :
+	rm -f Makefile
+
+check :
+
+test :
