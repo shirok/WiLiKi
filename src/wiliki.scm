@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.112 2004-03-22 11:44:35 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.113 2005-08-18 02:32:36 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -338,8 +338,11 @@
 
 (define (wiliki:default-head-elements page opts)
   `((title ,(ref page 'title))
-    ,@(or (and-let* ((w (wiliki)))
-            `((base (@ (href ,(full-script-path-of w))))))
+    ,@(or (and-let* ((w (wiliki))
+                     (fsp (full-script-path-of w)))
+            `((base (@ (href ,fsp)))
+              (link (@ (rel "alternative") (type "application/rss+xml")
+                       (title "RSS") (href ,(format "~a?c=rss" fsp))))))
           '())
     ,(or (and-let* ((w (wiliki)) (ss (style-sheet-of w)))
            `(link (@ (rel "stylesheet") (href ,ss) (type "text/css"))))
