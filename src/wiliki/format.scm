@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.38 2005-05-28 02:48:00 shirok Exp $
+;;; $Id: format.scm,v 1.39 2005-08-18 02:21:47 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -637,6 +637,10 @@
    ;; command - A URL parameters to reproduce this page.  Only meaningful
    ;;           for transient pages.
    (command :init-value #f :init-keyword :command)
+   ;; extra-head-eleemnts - List of SXML to be inserted in the head element
+   ;;           of output html.
+   ;;           Useful to add meta info in the auto-generated pages.
+   (extra-head-elements :init-value '() :init-keyword :extra-head-elements)
    ;; content - Either a wiliki-marked-up string or SXML.
    (content :init-value "" :init-keyword :content)
    ;; creation and modification times, and users (users not used now).
@@ -742,7 +746,9 @@
 (define-method wiliki:format-head-elements ((fmt  <wiliki-formatter>)
                                             (page <wiliki-page>)
                                             . options)
-  ((ref fmt 'head-elements) page options))
+  (append
+   ((ref fmt 'head-elements) page options)
+   (ref page 'extra-head-elements)))
 (define-method wiliki:format-head-elements ((page <wiliki-page>) . opts)
   (apply wiliki:format-head-elements (the-formatter) page opts))
 

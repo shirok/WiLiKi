@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: history.scm,v 1.15 2004-03-22 11:44:35 shirok Exp $
+;;;  $Id: history.scm,v 1.16 2005-08-18 02:21:47 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -103,6 +103,8 @@
   (html-page
    (make <wiliki-page>
      :title ($$ "Edit History")
+     :extra-head-elements
+     '((meta (@ (name "robots") (content "noindex,nofollow"))))
      :content
      (or (and-let* ((logfile (log-file-path (wiliki)))
                     (picked (wiliki-log-pick-from-file pagename logfile))
@@ -152,6 +154,8 @@
   (html-page
    (make <wiliki-page>
      :title ($$ "Edit History:Diff")
+     :extra-head-elements
+     '((meta (@ (name "robots") (content "noindex,nofollow"))))
      :content
      (or (and-let* ((logfile (log-file-path (wiliki)))
                     (page    (wiliki-db-get pagename))
@@ -168,6 +172,8 @@
   (html-page
    (make <wiliki-page>
      :title ($$ "Edit History:View")
+     :extra-head-elements
+     '((meta (@ (name "robots") (content "noindex,nofollow"))))
      :content
      (or (and-let* ((logfile (log-file-path (wiliki)))
                     (page    (wiliki-db-get pagename))
