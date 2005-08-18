@@ -1,5 +1,7 @@
 2005-08-17  Shiro Kawai  <shiro@acm.org>
 
+	* release 0.5.3
+
 	* src/wiliki.scm
 	  (wiliki:default-head-elements): added LINK tag for RSS auto
 	  discovery.
