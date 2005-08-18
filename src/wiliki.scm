@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.115 2005-08-18 04:05:47 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.116 2005-08-18 04:24:13 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -300,10 +300,12 @@
 (define (wiliki:search-box)
   `((form (@ (method POST) (action ,(cgi-name-of (wiliki)))
              (style "margin:0pt; padding:0pt"))
-          (input (@ (type hidden) (name c) (value s)
+          (input (@ (type hidden) (name c) (value s)))
+          (input (@ (type text) (name key) (size 15)
                     (style "margin:0pt; padding:0pt")))
-          (span ,($$ "Search:")
-                (input (@ (type text) (name key) (size 10)))))))
+          (input (@ (type submit) (name search) (value ,($$ "Search"))
+                    (style "margin:0pt; padding:0pt")))
+          )))
 
 (define (wiliki:menu-links page)
   `((table

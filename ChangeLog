@@ -4,6 +4,7 @@
 	  (wiliki:default-head-elements): added LINK tag for RSS auto
 	  discovery.
 	  (default-format-wikiname): Allow whitespaces within WikiNames.
+	  (wiliki:search-box): added submit button to the search form.
 
 	* src/wiliki/format.scm, src/wiliki/history.scm: added META tag
 	  for the head element of edit-history pages so that robots won't
