@@ -17,7 +17,7 @@
   (call-with-input-string string
     (lambda (p)
       (port-map identity
-                (with-module wiliki.format
+                (with-module wiliki.parse
                   (make-line-scanner p))))))
 
 (test* "normal" '()

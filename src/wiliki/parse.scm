@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: parse.scm,v 1.3 2005-08-21 05:16:25 shirok Exp $
+;;; $Id: parse.scm,v 1.4 2005-08-21 10:40:15 shirok Exp $
 
 (define-module wiliki.parse
   (use srfi-1)
@@ -43,14 +43,14 @@
 ;; Entries
 ;;
 
-;; wiliki-parse :: Port -> SXML
-(define (wiliki:parse port)
+;; wiliki-parse :: Port -> [SXML]
+(define (wiliki-parse port)
   (with-port-locking port
     (cut fmt-lines (make-line-scanner port))))
 
-;; wiliki-parse-string :: String -> SXML
-(define (wiliki:parse-string string)
-  (call-with-input-string string wiliki:parse))
+;; wiliki-parse-string :: String -> [SXML]
+(define (wiliki-parse-string string)
+  (call-with-input-string string wiliki-parse))
 
 ;;----------------------------------------------------------
 ;; Parser body
@@ -244,7 +244,8 @@
            (new-ctx (acons elm hstr ctx)))
       (cont (next-token new-ctx)
             new-ctx
-            `(,elm ,@(reverse! (fmt-line ctx hstr '()))))))
+            `(,elm (@@ (hkey ,hstr)) ; keep this for header-id calculation
+                   ,@(reverse! (fmt-line ctx hstr '()))))))
 
   ;; Table
   (define (table tok ctx cont)
@@ -388,6 +389,30 @@
                     (loop post (proc-match m (proc-nomatch pre seed)))))))
           (else
            (proc-nomatch line seed)))
+    ))
+
+;; Expands tabs in a line.
+(define expand-tab 
+  (let ((pads #("        "
+                " "
+                "  "
+                "   "
+                "    "
+                "     "
+                "      "
+                "       ")))
+    (lambda (line)
+      (let loop ((line   line)
+                 (r      '())
+                 (column 0))
+        (receive (before after) (string-scan line #\tab 'both)
+          (if before
+              (let* ((newcol  (+ (string-length before) column))
+                     (fill-to (inexact->exact (* (ceiling (/ newcol 8)) 8))))
+                (loop after
+                      (list* (vector-ref pads (- fill-to newcol)) before r)
+                      fill-to))
+              (reverse (cons line r))))))
     ))
 
 ;; After "##(" is read, retrieve one expr from string.
