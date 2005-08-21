@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.40 2005-08-21 10:40:15 shirok Exp $
+;;; $Id: format.scm,v 1.41 2005-08-21 11:23:36 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -97,7 +97,8 @@
    (footer        :init-keyword :footer
                   :init-value (lambda (page opts) '()))
    (content       :init-keyword :content
-                  :init-value (lambda (page opts) (fmt-content page)))
+                  :init-value (lambda (page opts)
+                                (wiliki:format-content page)))
    (head-elements :init-keyword :head-elements
                   :init-value (lambda (page opts) '()))
    ))
@@ -106,26 +107,8 @@
 (define the-formatter
   (make-parameter (make <wiliki-formatter>)))
 
-(define fmt-context
-  (make-parameter '()))
-
-;; These are for convenience of internal use.
-(define (fmt-wikiname name)
-  (wiliki:format-wikiname (the-formatter) name))
-
-(define (fmt-macro expr context)
-  (wiliki:format-macro (the-formatter) expr context))
-
-(define (fmt-time time)
-  (wiliki:format-time (the-formatter) time))
-
-;; Utilities
-
-
-
 ;; similar to sxml:sxml->xml, but deals with stree node, which
 ;; embeds a string tree.
-
 (define (wiliki:sxml->stree sxml)
   (define (sxml-node type body)
     (define (attr lis r)
@@ -232,7 +215,7 @@
    (muser   :init-value #f :init-keyword :muser)
    ))
 
-(define (fmt-content page)
+(define (wiliki:format-content page)
   (define (do-fmt content)
     (expand-page (wiliki-parse-string content)))
   (cond ((string? page) (do-fmt page))
@@ -257,9 +240,8 @@
       ((('wiki-name name) . rest)
        (append (wiliki:format-wikiname (the-formatter) name)
                (rec rest hctx)))
-      ((('wiki-macro name . args) . rest)
-       ;; for the time being...
-       (append #`"##(,name ,args)" (rec rest hctx)))
+      ((('wiki-macro . expr) . rest)
+       (wiliki:format-macro (the-formatter) expr 'inline))
       (((and ((or 'h2 'h3 'h4 'h5 'h6) . _) sxml) . rest)
        ;; extract heading hierarchy to calculate heading id
        (let* ((hn   (sxml:name sxml))
@@ -310,8 +292,6 @@
 (define wiliki:formatter        the-formatter)
 (define wiliki:page-stack       page-stack)
 (define wiliki:current-page     current-page)
-
-(define wiliki:format-content   fmt-content)
 
 ;; Default formatting methods.
 ;; Methods are supposed to return SXML nodeset.
