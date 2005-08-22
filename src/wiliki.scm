@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.116 2005-08-18 04:24:13 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.117 2005-08-22 02:33:33 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -82,14 +82,6 @@
                            wiliki:recent-changes-alist
                            wiliki:get-formatted-page-content)
 
-;; Version check.
-(when (version<? (gauche-version) "0.7.3")
-  (print (tree->string
-          `(,(cgi-header)
-            ,(html:html (html:head (html:title "Error")))
-            ,(html:body "Gauche 0.7.3 or later is required."))))
-  (exit 0))
-
 ;; Some constants
 
 (define *lwp-version* "1.0")            ;''lightweight protocol'' version
@@ -102,14 +94,6 @@
 
 (define wiliki:lang lang) ;; alias to export
 (define wiliki:db db)     ;; alias to export
-
-;; getting cgi meta-variables; first we try cgi-metavariables parameter,
-;; then use getenv for fallback.
-(define (get-meta name)
-  (or (and-let* ((mv (cgi-metavariables))
-                 (p  (assoc name mv)))
-        (cadr p))
-      (sys-getenv name)))
 
 ;; Class <wiliki> ------------------------------------------
 ;;   A main data structure that holds run-time information.
@@ -151,13 +135,13 @@
                 :init-value "WiLiKi, a Wiki engine written in Scheme")
    ;; information for server
    (protocol    :accessor protocol-of    :init-keyword :protocol
-                :initform (if (get-meta "HTTPS") "https" "http"))
+                :initform (if (cgi-get-metavariable "HTTPS") "https" "http"))
    (server-name :accessor server-name-of :init-keyword :server-name
-                :init-form (or (get-meta "SERVER_NAME") "localhost"))
+                :init-form (or (cgi-get-metavariable "SERVER_NAME") "localhost"))
    (server-port :accessor server-port-of :init-keyword :server-port
-                :init-form (or (x->integer (get-meta "SERVER_PORT")) 80))
+                :init-form (or (x->integer (cgi-get-metavariable "SERVER_PORT")) 80))
    (script-name :accessor script-name-of :init-keyword :script-name
-                :init-form (or (get-meta "SCRIPT_NAME") "/wiliki.cgi"))
+                :init-form (or (cgi-get-metavariable "SCRIPT_NAME") "/wiliki.cgi"))
    ;; debug level
    (debug-level :accessor debug-level    :init-keyword :debug-level
                 :init-value 0)
@@ -226,34 +210,6 @@
                   (db-type-of (wiliki))
                   thunk
                   :rwmode (get-optional rwmode :read)))
-
-;; Backward compatibility
-(define (wdb-exists? db key)
-  (wiliki-db-exists? key))
-
-(define (wdb-record->page db key record)
-  (wiliki-db-record->page key record))
-
-(define (wdb-get db key . option)
-  (apply wiliki-db-get key option))
-
-(define (wdb-put! db key page . option)
-  (apply wiliki-db-put! key page option))
-
-(define (wdb-delete! db key)
-  (wiliki-db-delete! key))
-
-(define (wdb-recent-changes db)
-  (wiliki-db-recent-changes))
-
-(define (wdb-map db proc)
-  (wiliki-db-map proc))
-
-(define (wdb-search db pred . maybe-sorter)
-  (apply wiliki-db-search pred maybe-sorter))
-
-(define (wdb-search-content db key . maybe-sorter)
-  (apply wiliki-db-search-content key maybe-sorter))
 
 ;; Creates a link to switch language
 (define (wiliki:language-link page)
@@ -362,18 +318,12 @@
    (wiliki:sxml->stree
     `(a (@ (href ,(url "~a" (cv-out wikiname)))) ,wikiname))))
 
-;; for backward compatibility
-(define (format-wikiname-anchor wikiname)
-  (html:a :href (url "~a" (cv-out wikiname)) (html-escape-string wikiname)))
-
 (define (default-format-time time)
   (if time
     (if (zero? time)
       ($$ "Epoch")
       (sys-strftime "%Y/%m/%d %T %Z" (sys-localtime time)))
     "-"))
-
-(define format-time default-format-time)  ;; for backward compatibility
 
 (define (default-format-wikiname name)
   (define (inter-wikiname-prefix head)
@@ -486,13 +436,13 @@
 ;; Logging ----------------------------------------
 
 (define (log-file-path wiliki)
-  (and wiliki
-       (and-let* ((filename (log-file wiliki)))
-         (if (or (string-prefix? "./" filename)
-                 (string-prefix? "../" filename)
-                 (string-prefix? "/" filename))
-           filename
-           (string-append (sys-dirname (db-path-of wiliki)) "/" filename)))))
+  (and-let* (wiliki
+             (filename (log-file wiliki)))
+    (if (or (string-prefix? "./" filename)
+            (string-prefix? "../" filename)
+            (string-prefix? "/" filename))
+      filename
+      (string-append (sys-dirname (db-path-of wiliki)) "/" filename))))
 
 ;; NB: we assume write-log is always called during the main database
 ;; is locked, so we don't do any locking here.
@@ -501,8 +451,8 @@
     (let ((content (wiliki-log-create
                     pagename new old
                     :timestamp timestamp
-                    :remote-addr (or (get-meta "REMOTE_ADDR") "")
-                    :remote-user (or (get-meta "REMOTE_USER") "")
+                    :remote-addr (or (cgi-get-metavariable "REMOTE_ADDR") "")
+                    :remote-user (or (cgi-get-metavariable "REMOTE_USER") "")
                     :message logmsg)))
       (call-with-output-file logfile
         (lambda (p) (display content p) (flush p))
@@ -512,13 +462,12 @@
 ;; CGI processing ---------------------------------
 
 (define (html-page page . args)
-  ;; NB: cgi-header should be able to handle extra header fields.
-  ;; for now, I add extra headers manually.
-  `("Content-Style-Type: text/css\n"
-    ,(cgi-header
-      :content-type #`"text/html; charset=,(output-charset)")
-    ,(html-doctype :type :transitional)
-    ,(wiliki:sxml->stree (apply wiliki:format-page page args))))
+  (list
+   (cgi-header
+    :content-type #`"text/html; charset=,(output-charset)"
+    :content-style-type  "text/css")
+   (html-doctype :type :transitional)
+   (wiliki:sxml->stree (apply wiliki:format-page page args))))
 
 (define (error-page e)
   (html-page
@@ -534,8 +483,7 @@
    ))
 
 (define (redirect-page key)
-  (cons "Status: 302 Moved\n"
-        (cgi-header :location (url "~a" key))))
+  (cgi-header :location (url "~a" key) :status "302 Moved"))
 
 (define (cmd-view pagename)
   ;; NB: see the comment in format-wikiname about the order of
@@ -641,7 +589,7 @@
 
   ;; Extract the extra components of PATH_INFO
   (define (get-path-info)
-    (and-let* ((path (get-meta "PATH_INFO"))
+    (and-let* ((path (cgi-get-metavariable "PATH_INFO"))
                ((string-prefix? "/" path))
                (conv (cv-in (uri-decode-string (string-drop path 1)))))
       conv))
