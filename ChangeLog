@@ -1,3 +1,9 @@
+2005-08-22  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm: Rewrote the main action dispatcher using
+	  define-wiliki-action.  Removed a chunk of legacy code (it may
+	  break some existing macros).
+
 2005-08-20  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/format.scm, src/wiliki/parse.scm: Splitted string->sxml

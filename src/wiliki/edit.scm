@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: edit.scm,v 1.14 2004-03-22 11:44:35 shirok Exp $
+;;;  $Id: edit.scm,v 1.15 2005-08-23 03:14:23 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -48,7 +48,7 @@
      (br)
      (input (@ (type hidden) (name c) (value c)))
      (input (@ (type hidden) (name p) (value ,pagename)))
-     (input (@ (type hidden) (name l) (value ,(lang))))
+     (input (@ (type hidden) (name l) (value ,(wiliki:lang))))
      (input (@ (type hidden) (name mtime) (value ,mtime)))
      (textarea (@ (name content)
                   (class content)

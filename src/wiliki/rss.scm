@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: rss.scm,v 1.7 2004-03-22 11:44:35 shirok Exp $
+;;;  $Id: rss.scm,v 1.8 2005-08-23 03:14:23 shirok Exp $
 ;;;
 
 ;; In future, this might be rewritten to use proper XML framework.
@@ -38,7 +38,7 @@
 (select-module wiliki.rss)
 
 ;; API
-(define (rss-page db)
+(define (rss-page)
   (rss-format (take* (wiliki-db-recent-changes) 15)))
 
 (define (rss-format entries)

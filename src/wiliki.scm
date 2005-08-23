@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.117 2005-08-22 02:33:33 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.118 2005-08-23 03:14:23 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -54,7 +54,7 @@
           wiliki:get-formatted-page-content
           wiliki:recent-changes-alist
           wiliki:page-lines-fold
-          wiliki:db wiliki:lang
+          wiliki:lang
           wiliki:version
           )
   )
@@ -88,12 +88,9 @@
 (define $$ gettext)
 
 ;; Parameters
-(define wiliki (make-parameter #f))     ;current instance
-(define lang   (make-parameter #f))     ;current language
-(define (db)   #f)     ;for backward compatibility
-
-(define wiliki:lang lang) ;; alias to export
-(define wiliki:db db)     ;; alias to export
+(define wiliki      (make-parameter #f))     ;current instance
+(define wiliki:lang (make-parameter #f))     ;current language
+(define wiliki:actions (make-parameter '())) ;action list (internal)
 
 ;; Class <wiliki> ------------------------------------------
 ;;   A main data structure that holds run-time information.
@@ -150,6 +147,7 @@
    ;; it is regarded in the same directory as db-path.
    (log-file    :accessor log-file       :init-keyword :log-file
                 :init-value #f)
+
    ;; OBSOLETED: customize edit text area size
    ;; Use stylesheet to customize them!
    (textarea-rows :accessor textarea-rows-of :init-keyword :textarea-rows
@@ -186,8 +184,8 @@
     (define (url-format full? fmt args)
       (let* ((self (wiliki))
              (fstr (if fmt
-                     #`"?,|fmt|,(lang-spec (lang) '&)"
-                     (lang-spec (lang) '?))))
+                     #`"?,|fmt|,(lang-spec (wiliki:lang) '&)"
+                     (lang-spec (wiliki:lang) '?))))
         (string-append
          (if full?
            (full-script-path-of self)
@@ -204,18 +202,11 @@
 ;; For export
 (define wiliki:self-url url)
 
-;; Convenient wrapper
-(define (with-db thunk . rwmode)
-  (wiliki-with-db (db-path-of (wiliki))
-                  (db-type-of (wiliki))
-                  thunk
-                  :rwmode (get-optional rwmode :read)))
-
 ;; Creates a link to switch language
 (define (wiliki:language-link page)
   (and-let* ((target (or (ref page 'command) (ref page 'key))))
     (receive (language label)
-        (case (lang)
+        (case (wiliki:lang)
           ((jp) (values 'en "->English"))
           (else (values 'jp "->Japanese")))
       `(a (@ (href ,(string-append (cgi-name-of (wiliki)) "?" target
@@ -226,12 +217,174 @@
 (define-method title-of (obj) "WiLiKi")
 (define-method debug-level (obj) 0)
 
-;; WiLiKi-specific formatting routines ----------------------
+;;;==================================================================
+;;; Actions
+;;;
+
+;;
+;; Framework --------------------------------------------------------
+;;
+
+;; Symbol -> (Pagename, Params -> HtmlPage)
+(define (wiliki-action-ref cmd)
+  (assq-ref (wiliki:actions) cmd))
+
+;; Symbol, (Pagename, Params -> HtmlPage) -> ()
+(define (wiliki-action-add! cmd action)
+  (wiliki:actions (acons cmd action (wiliki:actions))))
+
+(define-syntax define-wiliki-action
+  (syntax-rules ()
+    ((_ name rwmode (pagename (arg . opts) ...) . body)
+     (wiliki-action-add!
+      'name
+      (lambda (pagename params)
+        (wiliki-with-db (db-path-of (wiliki))
+                        (db-type-of (wiliki))
+                        (lambda ()
+                          (let ((arg (cgi-get-parameter (x->string 'arg)
+                                                        params . opts))
+                                ...)
+                            . body))
+                        :rwmode rwmode))))
+    ))
+
+;;
+;; View page
+;;
+(define-wiliki-action v :read (pagename)
+  ;; NB: see the comment in format-wikiname about the order of
+  ;; wiliki-db-get and virtual-page? check.
+  (cond ((wiliki-db-get pagename) => html-page)
+        ((virtual-page? pagename)
+         (html-page (handle-virtual-page pagename)))
+        ((equal? pagename (top-page-of (wiliki)))
+         (let ((toppage (make <wiliki-page>
+                          :title pagename :key pagename :mtime (sys-time))))
+           ;; Top page is non-existent, or its name may be changed.
+           ;; create it automatically.  We need to ensure db is writable.
+           (if (editable? (wiliki))
+             (wiliki-with-db (db-path-of (wiliki))
+                             (db-type-of (wiliki))
+                             (lambda ()
+                               (wiliki-db-put! (top-page-of (wiliki)) toppage)
+                               (html-page toppage))
+                             :rwmode :write)
+             (errorf "Top-page (~a) doesn't exist, and the database is read-only" toppage))))
+        ((or (string-index pagename #[\s\[\]])
+             (string-prefix? "$" pagename))
+         (error "Invalid page name" pagename))
+        (else
+         (html-page
+          (make <wiliki-page>
+            :title (string-append ($$ "Nonexistent page: ") pagename)
+            :content `((p ,($$ "Create a new page: ")
+                          ,@(wiliki:format-wikiname pagename))))))
+        ))  
+
+(define-wiliki-action lv :read (pagename)
+  (let ((page (wiliki-db-get pagename #f)))
+    `(,(cgi-header
+        :content-type #`"text/plain; charset=,(output-charset)")
+      ,#`"title: ,|pagename|\n"
+      ,#`"wiliki-lwp-version: ,|*lwp-version*|\n"
+      ,(if page
+         `(,#`"mtime: ,(ref page 'mtime)\n"
+           "\n"
+           ,(ref page 'content))
+         `(,#`"mtime: 0\n"
+           "\n")))))
+
+;;
+;; All pages, recent changes, RSS
+;;
+(define-wiliki-action a :read (_)
+  (html-page
+   (make <wiliki-page>
+     :title (string-append (title-of (wiliki))": "($$ "All Pages"))
+     :command "c=a"
+     :content `((ul
+                 ,@(map (lambda (k)
+                          `(li ,(wiliki:wikiname-anchor k)))
+                        (sort (wiliki-db-map (lambda (k v) k)) string<?))))
+     )))
+
+(define-wiliki-action r :read (_)
+  (html-page
+   (make <wiliki-page>
+     :title (string-append (title-of (wiliki))": "($$ "Recent Changes"))
+     :command "c=r"
+     :content
+     `((table
+        ,@(map (lambda (p)
+                 `(tr
+                   (td ,(wiliki:format-time (cdr p)))
+                   (td "(" ,(how-long-since (cdr p)) " ago)")
+                   (td ,(wiliki:wikiname-anchor (car p)))))
+               (wiliki-db-recent-changes))))
+     )))
+
+(define-wiliki-action rss :read (_)
+  (rss-page))
+
+;;
+;; Search
+;;
+(define-wiliki-action s :read (_
+                               (key :convert cv-in))
+  (html-page
+   (make <wiliki-page>
+     :title (string-append (title-of (wiliki))": "($$ "Search results"))
+     :command (format #f "c=s&key=~a" (html-escape-string key))
+     :content
+     `((ul
+        ,@(map (lambda (p)
+                 `(li
+                   ,(wiliki:wikiname-anchor (car p))
+                   ,(or (and-let* ((mtime (get-keyword :mtime (cdr p) #f)))
+                          #`"(,(how-long-since mtime))")
+                        "")))
+               (wiliki-db-search-content key))))
+     )))
+
+;;
+;; Edit and commit
+;;
+(define-wiliki-action e :read (pagename)
+  (cmd-edit pagename))
+
+(define-wiliki-action c :write (pagename
+                                (commit :default #f)
+                                (content :convert cv-in)
+                                (mtime   :convert x->integer :default 0)
+                                (logmsg  :convert cv-in)
+                                (donttouch :default #f))
+  ((if commit cmd-commit-edit cmd-preview)
+   pagename content mtime logmsg donttouch))
+
+;;
+;; History
+;;
+(define-wiliki-action h :read (pagename)
+  (cmd-history pagename))
+
+(define-wiliki-action hd :read (pagename
+                                (t  :convert x->integer :default 0)
+                                (t1 :convert x->integer :default 0))
+  (cmd-diff pagename t t1))
+
+(define-wiliki-action hv :read (pagename
+                                (t  :convert x->integer :default 0))
+  (cmd-viewold pagename t))
+
+;;================================================================
+;; WiLiKi-specific formatting routines
+;;
 
 ;; Default menu link composers
 (define (wiliki:top-link page)
   (and (not (equal? (ref page 'title) (top-page-of (wiliki))))
-       `(a (@ (href ,#`",(cgi-name-of (wiliki)),(lang-spec (lang) '?)"))
+       `(a (@ (href ,#`",(cgi-name-of (wiliki)),(lang-spec (wiliki:lang) '?)"))
            ,($$ "[Top Page]"))))
 
 (define (wiliki:edit-link page)
@@ -428,7 +581,7 @@
 
 (define (output-charset)
   (or (and-let* (((wiliki))
-                 (p (assoc (lang) (charsets-of (wiliki))))
+                 (p (assoc (wiliki:lang) (charsets-of (wiliki))))
                  ((symbol? (cdr p))))
         (cdr p))
       "EUC-JP")) ;; this is a fallback.
@@ -485,85 +638,7 @@
 (define (redirect-page key)
   (cgi-header :location (url "~a" key) :status "302 Moved"))
 
-(define (cmd-view pagename)
-  ;; NB: see the comment in format-wikiname about the order of
-  ;; wiliki-db-get and virtual-page? check.
-  (cond ((wiliki-db-get pagename) => html-page)
-        ((virtual-page? pagename)
-         (html-page (handle-virtual-page pagename)))
-        ((equal? pagename (top-page-of (wiliki)))
-         (let ((toppage (make <wiliki-page>
-                          :title pagename :key pagename :mtime (sys-time))))
-           ;; Top page is non-existent, or its name may be changed.
-           ;; create it automatically.  We need to ensure db is writable.
-           (if (editable? (wiliki))
-             (with-db (lambda ()
-                        (wiliki-db-put! (top-page-of (wiliki)) toppage)
-                        (html-page toppage))
-               :write)
-             (errorf "Top-page (~a) doesn't exist, and the database is read-only" toppage))))
-        ((or (string-index pagename #[\s\[\]])
-             (string-prefix? "$" pagename))
-         (error "Invalid page name" pagename))
-        (else
-         (html-page
-          (make <wiliki-page>
-            :title (string-append ($$ "Nonexistent page: ") pagename)
-            :content `((p ,($$ "Create a new page: ")
-                          ,@(wiliki:format-wikiname pagename))))))
-        ))
 
-(define (cmd-all)
-  (html-page
-   (make <wiliki-page>
-     :title (string-append (title-of (wiliki))": "($$ "All Pages"))
-     :command "c=a"
-     :content `((ul
-                 ,@(map (lambda (k)
-                          `(li ,(wiliki:wikiname-anchor k)))
-                        (sort (wiliki-db-map (lambda (k v) k)) string<?)))))))
-
-(define (cmd-recent-changes)
-  (html-page
-   (make <wiliki-page>
-     :title (string-append (title-of (wiliki))": "($$ "Recent Changes"))
-     :command "c=r"
-     :content
-     `((table
-        ,@(map (lambda (p)
-                 `(tr
-                   (td ,(wiliki:format-time (cdr p)))
-                   (td "(" ,(how-long-since (cdr p)) " ago)")
-                   (td ,(wiliki:wikiname-anchor (car p)))))
-               (wiliki-db-recent-changes)))))))
-
-(define (cmd-search key)
-  (html-page
-   (make <wiliki-page>
-     :title (string-append (title-of (wiliki))": "($$ "Search results"))
-     :command (format #f "c=s&key=~a" (html-escape-string key))
-     :content
-     `((ul
-        ,@(map (lambda (p)
-                 `(li
-                   ,(wiliki:wikiname-anchor (car p))
-                   ,(or (and-let* ((mtime (get-keyword :mtime (cdr p) #f)))
-                          #`"(,(how-long-since mtime))")
-                        "")))
-               (wiliki-db-search-content key)))))))
-
-(define (cmd-lwp-view key)
-  (let ((page (wiliki-db-get key #f)))
-    `(,(cgi-header
-        :content-type #`"text/plain; charset=,(output-charset)")
-      ,#`"title: ,|key|\n"
-      ,#`"wiliki-lwp-version: ,|*lwp-version*|\n"
-      ,(if page
-           `(,#`"mtime: ,(ref page 'mtime)\n"
-             "\n"
-             ,(ref page 'content))
-           `(,#`"mtime: 0\n"
-             "\n")))))
 
 ;; Retrieve requested page name.
 ;; The pagename can be specified in one of the following ways:
@@ -615,52 +690,15 @@
            (language (cgi-get-parameter "l" param :convert string->symbol)))
        (parameterize
            ((wiliki self)
-            (lang   (or language (language-of self))))
+            (wiliki:lang (or language (language-of self))))
         (cgi-output-character-encoding (output-charset))
-        (textdomain (lang))
+        (textdomain (wiliki:lang))
         (cond
          ;; command may #t if we're looking at the page named "c".
-         ((or (not command) (eq? command #t))
-          (with-db (cut cmd-view pagename)))
-         ((equal? command "lv")
-          (with-db (cut cmd-lwp-view pagename)))
-         ((equal? command "e")
-          (with-db (cut cmd-edit pagename)))
-         ((equal? command "a")
-          (with-db cmd-all))
-         ((equal? command "r")
-          (with-db cmd-recent-changes))
-         ((equal? command "h")
-          (with-db (cut cmd-history pagename)))
-         ((equal? command "hd")
-          (with-db (cut cmd-diff pagename
-                        (cgi-get-parameter "t" param :convert x->integer
-                                           :default 0)
-                        (cgi-get-parameter "t1" param :convert x->integer
-                                           :default 0))))
-         ((equal? command "hv")
-          (with-db (cut cmd-viewold pagename
-                        (cgi-get-parameter "t" param :convert x->integer
-                                           :default 0))))
-         ((equal? command "s")
-          (with-db
-           (cut cmd-search (cgi-get-parameter "key" param :convert cv-in))))
-         ((equal? command "c")
-          (with-db
-           (cut
-            (if (cgi-get-parameter "commit" param :default #f)
-              cmd-commit-edit
-              cmd-preview)
-            pagename
-            (cgi-get-parameter "content" param :convert cv-in)
-            (cgi-get-parameter "mtime" param
-                               :convert x->integer
-                               :default 0)
-            (cgi-get-parameter "logmsg" param :convert cv-in)
-            (cgi-get-parameter "donttouch" param :default #f))
-           :write))
-         ((equal? command "rss")
-          (with-db (cut rss-page (db))))
+         ((wiliki-action-ref (if (string? command)
+                               (string->symbol command)
+                               'v))
+          => (cut <> pagename param))
          (else (error "Unknown command" command))
          ))))
    :merge-cookies #t
