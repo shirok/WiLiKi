@@ -1,3 +1,9 @@
+2005-09-04  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/format.scm, src/wiliki/page.scm : Splitted <wiliki-page>
+	  routines into wiliki.page module, which is independent from
+	  other parts.
+
 2005-08-22  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm: Rewrote the main action dispatcher using

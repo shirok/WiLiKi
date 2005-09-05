@@ -7,7 +7,9 @@
 (use wiliki.format)
 (use wiliki.db)
 
-(define (my-page-header page opts)
+(define-class <my-formatter> (<wiliki-formatter>) ())
+
+(define-method wiliki:format-page-header ((fmt <my-formatter>) page . opts)
   `((div (@ (style "font-size:80%;text-align:right"))
          ,@(cond-list
             ((wiliki:top-link page))
@@ -17,7 +19,7 @@
             ((wiliki:recent-link page))
             ((wiliki:language-link page))))))
 
-(define (my-page-footer page opts)
+(define-method wiliki:format-page-footer ((fmt <my-formatter>) page . opts)
   `((hr)
     (div (@ (class "footer") (style "text-align:right"))
          "Last modified : " ,(wiliki:format-time (ref page 'mtime))
@@ -28,7 +30,7 @@
          (a (@ (href "http://www.shiro.dreamhost.com/scheme/gauche/"))
             "Gauche ",(gauche-version)))))
 
-(define (my-page-content page opts)
+(define-method wiliki:format-page-content ((fmt <my-formatter>) page . opts)
   `((table
      (@ (border 0) (cellspacing 8) (width "100%") (class "content-table"))
      (tr (td (@ (class "menu-strip")
@@ -48,10 +50,7 @@
              ,@(wiliki:page-title page)
              ,@(wiliki:format-content page))))))
 
-(let ((formatter (wiliki:formatter)))
-  (set! (ref formatter 'header) my-page-header)
-  (set! (ref formatter 'footer) my-page-footer)
-  (set! (ref formatter 'content) my-page-content))
+(wiliki:formatter (make <my-formatter>))
 
 (define (main args)
   (wiliki-main

@@ -1,7 +1,7 @@
 ;;
 ;; Macros used in SchemeCrossReference site
 ;; included for the reference
-;; $Id: scr-macros.scm,v 1.2 2005-07-27 04:07:58 shirok Exp $
+;; $Id: scr-macros.scm,v 1.3 2005-09-05 01:00:22 shirok Exp $
 
 (select-module wiliki.macro)
 (use srfi-1)
@@ -56,7 +56,7 @@
 (define-reader-macro (srfi-implementors . maybe-num)
   (let* ((num   (x->integer
                  (get-optional maybe-num
-                               (or (and-let* ((t (ref (wiliki:current-page)
+                               (or (and-let* ((t (ref (wiliki-current-page)
                                                       'title))
                                               (m (#/SRFI-(\d+)/ t)))
                                      (m 1))

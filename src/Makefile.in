@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.24 2005-08-21 10:40:14 shirok Exp $
+# $Id: Makefile.in,v 1.25 2005-09-05 01:00:21 shirok Exp $
 #
 
 # General info
@@ -29,6 +29,7 @@ SCMFILES = wiliki.scm \
            wiliki/util.scm \
            wiliki/rss.scm \
            wiliki/rssmix.scm \
+           wiliki/page.scm \
            wiliki/parse.scm \
            wiliki/pasttime.scm \
 	   wiliki/scr-macros.scm \

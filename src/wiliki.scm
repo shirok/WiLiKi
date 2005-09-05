@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.118 2005-08-23 03:14:23 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.119 2005-09-05 01:00:21 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -44,6 +44,7 @@
   (use gauche.sequence)
   (use wiliki.mcatalog)
   (use wiliki.format)
+  (use wiliki.page)
   (use wiliki.db)
   (export <wiliki> wiliki-main wiliki
           wiliki:language-link wiliki:self-url

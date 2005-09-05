@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.41 2005-08-21 11:23:36 shirok Exp $
+;;; $Id: format.scm,v 1.42 2005-09-05 01:00:22 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -41,9 +41,9 @@
   (use gauche.charconv)
   (use gauche.sequence)
   (use wiliki.parse)
+  (use wiliki.page)
   (use sxml.tools)
   (export <wiliki-formatter>
-          <wiliki-page>
           wiliki:persistent-page?
           wiliki:transient-page?
           wiliki:format-wikiname
@@ -51,9 +51,6 @@
           wiliki:format-time
           wiliki:format-content
           wiliki:formatter
-          wiliki:page-stack
-          wiliki:page-circular?
-          wiliki:current-page
           wiliki:format-page-header
           wiliki:format-page-content
           wiliki:format-page-footer
@@ -177,54 +174,16 @@
   
 ;; Page ======================================================
 
-(define page-stack
-  (make-parameter '()))
-
-(define (current-page)
-  (let1 hist (page-stack)
-    (if (null? hist) #f (car hist))))
-
-;; Class <wiliki-page> ---------------------------------------------
-;;   Represents a page.
-;;
-;;   persistent page: a page that is (or will be) stored in DB.
-;;         - has 'key' value.
-;;         - if mtime is #f, it is a freshly created page before saved.
-;;   transient page: other pages created procedurally just for display.
-;;         - 'key' slot has #f.
-
-(define-class <wiliki-page> ()
-  (;; title - Page title.  For persistent pages, this is set to
-   ;;         the same value as the database key.
-   (title   :init-value #f :init-keyword :title)
-   ;; key   - Database key.  For transient pages, this is #f.
-   (key     :init-value #f :init-keyword :key)
-   ;; command - A URL parameters to reproduce this page.  Only meaningful
-   ;;           for transient pages.
-   (command :init-value #f :init-keyword :command)
-   ;; extra-head-eleemnts - List of SXML to be inserted in the head element
-   ;;           of output html.
-   ;;           Useful to add meta info in the auto-generated pages.
-   (extra-head-elements :init-value '() :init-keyword :extra-head-elements)
-   ;; content - Either a wiliki-marked-up string or SXML.
-   (content :init-value "" :init-keyword :content)
-   ;; creation and modification times, and users (users not used now).
-   (ctime   :init-value (sys-time) :init-keyword :ctime)
-   (cuser   :init-value #f :init-keyword :cuser)
-   (mtime   :init-value #f :init-keyword :mtime)
-   (muser   :init-value #f :init-keyword :muser)
-   ))
-
 (define (wiliki:format-content page)
   (define (do-fmt content)
     (expand-page (wiliki-parse-string content)))
   (cond ((string? page) (do-fmt page))
         ((is-a? page <wiliki-page>)
-         (if (wiliki:page-circular? page)
+         (if (wiliki-page-circular? page)
            ;; loop in $$include chain detected
            `(p ">>>$$include loop detected<<<")
            (parameterize
-               ((page-stack (cons page (page-stack))))
+               ((wiliki-page-stack (cons page (wiliki-page-stack))))
              (if (string? (ref page 'content))
                (do-fmt (ref page 'content))
                (ref page 'content)))))
@@ -273,12 +232,6 @@
 (define (heading-id hctx)
   (wiliki:calculate-heading-id (map cdr hctx)))
 
-(define (wiliki:page-circular? page)
-  (member page (page-stack)
-          (lambda (p1 p2)
-            (and (ref p1 'key) (ref p2 'key)
-                 (string=? (ref p1 'key) (ref p2 'key))))))
-
 ;; default page body formatter
 (define (fmt-body page opts)
   `(,@(wiliki:format-page-header  page opts)
@@ -290,8 +243,6 @@
 ;;;
 
 (define wiliki:formatter        the-formatter)
-(define wiliki:page-stack       page-stack)
-(define wiliki:current-page     current-page)
 
 ;; Default formatting methods.
 ;; Methods are supposed to return SXML nodeset.
