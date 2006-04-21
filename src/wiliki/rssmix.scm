@@ -24,7 +24,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: rssmix.scm,v 1.1 2004-05-23 22:57:52 shirok Exp $
+;;;  $Id: rssmix.scm,v 1.2 2006-04-21 09:44:46 shirok Exp $
 ;;;
 
 ;; *EXPERIMENTAL*
@@ -132,7 +132,7 @@
 
 (define-method rss-page ((self <rssmix>) title body)
   `("Content-Style-Type: text/css\n"
-    ,(cgi-header :content-type #`"text/html; charset=\"EUC-JP\"")
+    ,(cgi-header :content-type #`"text/html; charset=\",(gauche-character-encoding)\"")
     ,(html-doctype :type :transitional)
     ,(html:html
       (html:head
