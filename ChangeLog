@@ -1,3 +1,14 @@
+2006-04-21  Shiro Kawai  <shiro@acm.org>
+
+	* Makefile.in, configure.in, po/Makefile.in, src/wiliki.scm:
+	  switched from makeshift message catalog to text.gettext
+	  for message localization.  The message catalogs are installed
+	  under $(datadir)/locale/$lingua/LC_MESSAGES/, thus --prefix
+	  now matters.
+	* po/ja.po : Japanese message catalog.
+	* src/wiliki/mcatalog.scm, src/wiliki/msgs.jp.euc, src/extract.scm:
+	  Removed.
+
 2006-04-20  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/rssmix.scm (rss-page): fix charset output to reflect

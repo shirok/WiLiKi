@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.2 2005-07-26 21:35:37 shirok Exp $
+# $Id: Makefile.in,v 1.3 2006-04-22 01:14:33 shirok Exp $
 #
 
 # General info
@@ -40,6 +40,7 @@ ARCH_INSTALL_DIR    = $(DESTDIR)`$(GAUCHE_CONFIG) --sitearchdir`
 all :
 	cd src; $(MAKE)
 	cd doc; $(MAKE)
+	cd po; $(MAKE)
 
 check :
 	cd test; $(MAKE) check
@@ -47,27 +48,32 @@ check :
 install : all
 	cd src; $(MAKE) install
 	cd doc; $(MAKE) install
+	cd po; $(MAKE) install
 	$(INSTALL) -m 444 -T $(SCM_INSTALL_DIR)/.packages $(PACKAGE).gpd
 
 uninstall :
 	cd src; $(MAKE) uninstall
 	cd doc; $(MAKE) uninstall
+	cd po; $(MAKE) uninstall
 	$(INSTALL) -U $(SCM_INSTALL_DIR)/.packages $(PACKAGE).gpd
 
 clean :
 	cd src; $(MAKE) clean
 	cd doc; $(MAKE) clean
 	cd test; $(MAKE) clean
+	cd po; $(MAKE) clean
 	rm -rf core $(GENERATED) *~ *.log
 
 distclean : clean
 	cd src; $(MAKE) distclean
 	cd doc; $(MAKE) distclean
 	cd test; $(MAKE) distclean
+	cd po; $(MAKE) distclean
 	rm -rf $(CONFIG_GENERATED)
 
 maintainer-clean : clean
 	cd src; $(MAKE) maintainer-clean
 	cd doc; $(MAKE) maintainer-clean
 	cd test; $(MAKE) maintainer-clean
+	cd po; $(MAKE) maintainer-clean
 	rm -rf $(CONFIG_GENERATED) configure

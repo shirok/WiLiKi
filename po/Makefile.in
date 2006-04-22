@@ -1,0 +1,92 @@
+#
+# $Id: Makefile.in,v 1.1 2006-04-22 01:14:34 shirok Exp $
+#
+
+# General info
+SHELL       = @SHELL@
+prefix      = @prefix@
+exec_prefix = @exec_prefix@
+bindir      = @bindir@
+libdir      = @libdir@
+datadir     = @datadir@
+VPATH       = $(srcdir)
+top_srcdir  = @top_srcdir@
+
+# These may be overridden by make invocators
+DESTDIR        =
+GOSH           = @GOSH@
+GAUCHE_CONFIG  = @GAUCHE_CONFIG@
+GAUCHE_PACKAGE = @GAUCHE_PACKAGE@
+GAUCHE_CESCONV = @GAUCHE_CESCONV@
+INSTALL        = @GAUCHE_INSTALL@
+
+# Other parameters
+ALL_LINGUAS = @ALL_LINGUAS@
+
+PO_FILES = $(addsuffix .po,$(ALL_LINGUAS))
+MO_FILES = $(addsuffix .gmo,$(ALL_LINGUAS))
+
+MSGDIR = $(datadir)/locale/$$lingua/LC_MESSAGES/
+
+POTFILES = $(top_srcdir)/src/wiliki.scm \
+           $(top_srcdir)/src/wiliki/db.scm \
+           $(top_srcdir)/src/wiliki/edit.scm \
+           $(top_srcdir)/src/wiliki/format.scm \
+           $(top_srcdir)/src/wiliki/history.scm \
+           $(top_srcdir)/src/wiliki/log.scm \
+           $(top_srcdir)/src/wiliki/macro.scm \
+           $(top_srcdir)/src/wiliki/page.scm \
+           $(top_srcdir)/src/wiliki/parse.scm \
+           $(top_srcdir)/src/wiliki/pasttime.scm \
+           $(top_srcdir)/src/wiliki/rss.scm \
+           $(top_srcdir)/src/wiliki/rssmix.scm \
+           $(top_srcdir)/src/wiliki/util.scm
+
+# Module-specific stuff
+PACKAGE   = WiLiKi
+
+# Rules
+
+TARGET = $(MO_FILES)
+
+.SUFFIXES: .po .gmo
+
+.po.gmo:
+	msgfmt -o $@ $<
+
+all : $(TARGET)
+
+$(PACKAGE).pot : $(POTFILES)
+	xgettext -d$(PACKAGE) -LScheme -k'$$$$' -o$(PACKAGE).pot \
+	         --copyright-holder='Shiro Kawai' \
+	         --msgid-bugs-address='@PACKAGE_BUGREPORT@' \
+	         $(POTFILES)
+
+update-po: $(PACKAGE).pot
+	for lingua in $(ALL_LINGUAS); do \
+	  if [ ! -r $$lingua.po ]; \
+	    then cp $(PACKAGE).pot $$lingua.po; \
+	    else  msgmerge -U $$lingua.po $(PACKAGE).pot; \
+	  fi; \
+	done
+
+install : $(MO_FILES)
+	for lingua in $(ALL_LINGUAS); do \
+	  $(INSTALL) -d $(MSGDIR); \
+	  $(INSTALL) -m 444 $$lingua.gmo $(MSGDIR)/$(PACKAGE).mo; \
+	done
+
+uninstall :
+	for lingua in $(ALL_LINGUAS); do \
+	  $(INSTALL) -U $(MSGDIR) $(PACKAGE).mo; \
+	done
+
+clean:
+	rm -f $(PACKAGE).pot *.gmo *~
+
+distclean: clean
+	rm -f Makefile
+
+maintainer-clean: clean
+	rm -f Makefile
+

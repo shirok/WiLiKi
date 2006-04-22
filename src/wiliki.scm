@@ -23,17 +23,17 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.119 2005-09-05 01:00:21 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.120 2006-04-22 01:14:34 shirok Exp $
 ;;;
 
 (define-module wiliki
   (use srfi-1)
-  (use srfi-2)                          ;and-let*
   (use srfi-11)
   (use srfi-13)
   (use text.html-lite)
   (use text.tree)
   (use text.tr)
+  (use text.gettext)
   (use util.list)
   (use www.cgi)
   (use rfc.uri)
@@ -42,7 +42,6 @@
   (use gauche.version)
   (use gauche.parameter)
   (use gauche.sequence)
-  (use wiliki.mcatalog)
   (use wiliki.format)
   (use wiliki.page)
   (use wiliki.db)
@@ -693,7 +692,7 @@
            ((wiliki self)
             (wiliki:lang (or language (language-of self))))
         (cgi-output-character-encoding (output-charset))
-        (textdomain (wiliki:lang))
+        (textdomain "WiLiKi" (case (wiliki:lang) ((jp) "ja") (else "en")))
         (cond
          ;; command may #t if we're looking at the page named "c".
          ((wiliki-action-ref (if (string? command)

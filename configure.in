@@ -2,7 +2,7 @@ dnl
 dnl Configuring wiliki
 dnl Process this file with autoconf to generate 'configure'.
 dnl
-dnl $Id: configure.in,v 1.15 2005-08-18 04:41:16 shirok Exp $
+dnl $Id: configure.in,v 1.16 2006-04-22 01:14:33 shirok Exp $
 AC_PREREQ(2.54)
 AC_INIT(WiLiKi, 0.5.3, shiro@acm.org)
 
@@ -37,6 +37,9 @@ dnl Add your macro calls to check existence of programs, if you have any.
 dnl Check for libraries
 dnl Add your macro calls to check required libraries, if you have any.
 
+ALL_LINGUAS="ja"
+AC_SUBST(ALL_LINGUAS)
+
 dnl Creating gpd (gauche package description) file
 GAUCHE_PACKAGE_CONFIGURE_ARGS="`echo ""$ac_configure_args"" | sed 's/[\\""\`\$]/\\\&/g'`"
 AC_MSG_NOTICE([creating ${PACKAGE_NAME}.gpd])
@@ -46,4 +49,4 @@ $GAUCHE_PACKAGE make-gpd "$PACKAGE_NAME" \
 
 dnl Output
 echo $PACKAGE_VERSION > VERSION
-AC_OUTPUT(Makefile src/Makefile doc/Makefile test/Makefile)
+AC_OUTPUT(Makefile src/Makefile doc/Makefile test/Makefile po/Makefile)

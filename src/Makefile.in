@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.25 2005-09-05 01:00:21 shirok Exp $
+# $Id: Makefile.in,v 1.26 2006-04-22 01:14:34 shirok Exp $
 #
 
 # General info
@@ -24,7 +24,6 @@ SCMFILES = wiliki.scm \
            wiliki/format.scm \
            wiliki/history.scm \
            wiliki/log.scm \
-           wiliki/mcatalog.scm \
            wiliki/macro.scm \
            wiliki/util.scm \
            wiliki/rss.scm \
@@ -35,24 +34,18 @@ SCMFILES = wiliki.scm \
 	   wiliki/scr-macros.scm \
 	   wiliki/version.scm
 
-TARGET = $(SCMFILES) wiliki/msgs.jp
+TARGET = $(SCMFILES)
 
-GENERATED = wiliki/msgs.jp wiliki/version.scm
+GENERATED = wiliki/version.scm
 
 HEADER_INSTALL_DIR  = $(DESTDIR)`$(GAUCHE_CONFIG) --siteincdir`
 SCM_INSTALL_DIR     = $(DESTDIR)`$(GAUCHE_CONFIG) --sitelibdir`
 ARCH_INSTALL_DIR    = $(DESTDIR)`$(GAUCHE_CONFIG) --sitearchdir`
 
-all : wiliki/msgs.jp wiliki/version.scm
-
-wiliki/msgs.jp: wiliki/msgs.jp.euc
-	$(GAUCHE_CESCONV) -f EUC-jp -o wiliki/msgs.jp wiliki/msgs.jp.euc
+all : wiliki/version.scm
 
 wiliki/version.scm : ../VERSION
 	$(GOSH) ./gen-version ../VERSION > wiliki/version.scm
-
-extract :
-	$(GOSH) ./extract.scm wiliki/msgs.jp.euc $(SCMFILES)
 
 install :
 	$(INSTALL) -m 444 -T $(SCM_INSTALL_DIR) $(TARGET)
