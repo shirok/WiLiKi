@@ -1,7 +1,7 @@
 ;;;
 ;;; wiliki/parse.scm - wiliki markup -> SXML converter
 ;;;
-;;;  Copyright (c) 2003-2005 Shiro Kawai, All rights reserved.
+;;;  Copyright (c) 2003-2006 Shiro Kawai, All rights reserved.
 ;;;
 ;;;  Permission is hereby granted, free of charge, to any person
 ;;;  obtaining a copy of this software and associated documentation
@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: parse.scm,v 1.4 2005-08-21 10:40:15 shirok Exp $
+;;; $Id: parse.scm,v 1.5 2006-04-23 01:02:19 shirok Exp $
 
 (define-module wiliki.parse
   (use srfi-1)
@@ -38,6 +38,9 @@
 ;; as 'wiki-name' and 'wiki-macro' SXML node into the output.
 ;; The higher-level layer is responsible to interpret these node
 ;; as it desires.
+;;
+;; This module is the 'bottom' of wiliki functionality---it doesn't
+;; depend on any other wiliki modules, and can be used individually.
 
 ;;==========================================================
 ;; Entries

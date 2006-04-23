@@ -1,7 +1,7 @@
 ;;;
-;;; wiliki/format.scm - wiliki markup -> SXML converter
+;;; wiliki/format.scm - format wiki pages (backward compatibility module)
 ;;;
-;;;  Copyright (c) 2003-2005 Shiro Kawai, All rights reserved.
+;;;  Copyright (c) 2003-2006 Shiro Kawai, All rights reserved.
 ;;;
 ;;;  Permission is hereby granted, free of charge, to any person
 ;;;  obtaining a copy of this software and associated documentation
@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.42 2005-09-05 01:00:22 shirok Exp $
+;;; $Id: format.scm,v 1.43 2006-04-23 01:02:18 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -66,10 +66,10 @@
   )
 (select-module wiliki.format)
 
-;; This module implements a generic function that translates WiLiki
-;; notation to SXML.   It is designed not to depend other parts of
-;; WiLiKi so that it can be used for other applications that needs
-;; wiki-like formatting capability.
+;;; NOTE: This module is going to fade out.  The main function of
+;;; formatting is now moved to wiliki.parse, and the abstraction
+;;; of pages are in wiliki.page.  We keep this module for a while
+;;; to maintain backward compatibility of the existing macros, though.
 
 ;; A formatter base class.
 ;; The user can define her own formatter by subclassing this and
