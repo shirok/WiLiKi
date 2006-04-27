@@ -1,5 +1,9 @@
 2006-04-26  Shiro Kawai  <shiro@acm.org>
 
+	* po/Makefile.in, DIST: include *.gmo files in tarball.  It appears
+	  that the target environment can have older msgfmt which doesn't
+	  handle encoding well.
+
 	* src/wiliki.scm (<wiliki>): added gettext-paths slot to specify
 	  additional paths to search message catalogs.
 

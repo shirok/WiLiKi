@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.1 2006-04-22 01:14:34 shirok Exp $
+# $Id: Makefile.in,v 1.2 2006-04-27 08:53:26 shirok Exp $
 #
 
 # General info
@@ -81,12 +81,16 @@ uninstall :
 	  $(INSTALL) -U $(MSGDIR) $(PACKAGE).mo; \
 	done
 
+# NB: We don't remove *.gmo files by 'clean', since we want to
+# include them in the distribution tarball---the target environment
+# may not have msgfmt, or have an older version which might cause
+# a problem.  (msgfmt 0.10.40 doesn't handle encoding info well.)
 clean:
-	rm -f $(PACKAGE).pot *.gmo *~
+	rm -f $(PACKAGE).pot *~
 
 distclean: clean
 	rm -f Makefile
 
 maintainer-clean: clean
-	rm -f Makefile
+	rm -f Makefile *.gmo 
 

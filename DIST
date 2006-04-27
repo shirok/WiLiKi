@@ -20,6 +20,7 @@ if [ "$tgz" = "yes" ]; then
   ./configure
   if [ ! -f VERSION ]; then echo "no VERSION -- something wrong?"; exit 1; fi
   VERSION=`cat VERSION`
+  (cd po; make all)
   make distclean
   rm -rf ../WiLiKi-$VERSION
   rm -f DIST_EXCLUDE_X
