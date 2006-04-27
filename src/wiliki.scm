@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.122 2006-04-27 08:07:18 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.123 2006-04-27 10:08:18 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -277,7 +277,8 @@
                                (html-page toppage))
                              :rwmode :write)
              (errorf "Top-page (~a) doesn't exist, and the database is read-only" toppage))))
-        ((or (string-index pagename #[\s\[\]])
+        ((or (string-index pagename #[\[\]])
+             (#/^\s|\s$/ pagename)
              (string-prefix? "$" pagename))
          (error "Invalid page name" pagename))
         (else
