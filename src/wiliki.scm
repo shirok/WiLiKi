@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.121 2006-04-27 06:28:21 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.122 2006-04-27 08:07:18 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -148,6 +148,11 @@
    ;; it is regarded in the same directory as db-path.
    (log-file    :accessor log-file       :init-keyword :log-file
                 :init-value #f)
+
+   ;; additional paths to search localized messages by gettext.
+   ;; (e.g. /usr/local/share/locale)
+   (gettext-paths :accessor gettext-paths :init-keyword :gettext-paths
+                  :init-value '())
 
    ;; OBSOLETED: customize edit text area size
    ;; Use stylesheet to customize them!
@@ -694,7 +699,9 @@
            ((wiliki self)
             (wiliki:lang (or language (language-of self))))
         (cgi-output-character-encoding (output-charset))
-        (textdomain "WiLiKi" (case (wiliki:lang) ((jp) "ja") (else "en")))
+        (textdomain "WiLiKi"
+                    (case (wiliki:lang) ((jp) "ja") (else "en"))
+                    (ref (wiliki) 'gettext-paths))
         (cond
          ;; command may #t if we're looking at the page named "c".
          ((wiliki-action-ref (if (string? command)

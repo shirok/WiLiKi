@@ -1,5 +1,8 @@
 2006-04-26  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki.scm (<wiliki>): added gettext-paths slot to specify
+	  additional paths to search message catalogs.
+
 	* src/wiliki/edit.scm, src/wiliki/history.scm: added a feature
 	  of editing older versions.  Useful to revert from spams.
 	* src/wiliki.scm, src/wiliki/log.scm: adjustment for the above change.
