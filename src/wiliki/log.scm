@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: log.scm,v 1.10 2004-01-10 11:07:33 shirok Exp $
+;;; $Id: log.scm,v 1.11 2006-04-27 06:28:21 shirok Exp $
 
 (define-module wiliki.log
   (use srfi-1)
@@ -43,6 +43,7 @@
           wiliki-log-diff*
           wiliki-log-revert
           wiliki-log-revert*
+          wiliki-log-recover-content
           wiliki-log-merge
           )
   )
@@ -278,6 +279,15 @@
     (if (null? entries)
       (string->lines page) ;; ensure returning a list of lines
       (loop (cdr entries) (wiliki-log-revert (car entries) page)))))
+
+;; Convenience function.  Returns the content of the page (in list of lines)
+;; at the specified time, or #f if the log of the specified time isn't 
+;; available.
+(define (wiliki-log-recover-content pagename logfile current-content time)
+  (and-let* ((logfile)
+             (picked (wiliki-log-pick-from-file pagename logfile))
+             (entries (wiliki-log-entries-after picked time)))
+    (wiliki-log-revert* entries current-content)))
 
 ;; Merge branches  ----------------------------------------
 

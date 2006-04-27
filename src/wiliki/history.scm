@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: history.scm,v 1.17 2005-08-22 03:02:58 shirok Exp $
+;;;  $Id: history.scm,v 1.18 2006-04-27 06:28:21 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -67,6 +67,10 @@
                                          (cv-out pagename)
                                          (ref entry 'timestamp))))
                           "View")
+                  "|" `(a (@ (href ,(url "p=~a&c=e&t=~a"
+                                         (cv-out pagename)
+                                         (ref entry 'timestamp))))
+                          "Edit")
                   " this version] "
                   (if (eq? first entry)
                     `("[Diff to ",(diff-to-prev entry prev-timestamp)"]")
@@ -177,18 +181,22 @@
      :content
      (or (and-let* ((logfile (log-file-path (wiliki)))
                     (page    (wiliki-db-get pagename))
-                    (picked  (wiliki-log-pick-from-file pagename logfile)))
-           (let* ((entries  (wiliki-log-entries-after picked old-time))
-                  (reverted (wiliki-log-revert* entries (ref page 'content))))
-             `((h2 (stree ,(format ($$ "Content of ~a at ~a")
-                                   (wiliki:wikiname-anchor-string pagename)
-                                   (wiliki:format-time old-time))))
-               (p (@ (style "text-align:right"))
-                  (a (@ (href ,(url "~a&c=hd&t=~a"
-                                    (cv-out pagename) old-time)))
-                     ,($$ "View diff from current version")))
-               ,(return-to-edit-history pagename)
-               ,(wiliki:format-diff-pre reverted))))
+                    (reverted (wiliki-log-recover-content pagename logfile
+                                                          (ref page 'content)
+                                                          old-time)))
+           `((h2 (stree ,(format ($$ "Content of ~a at ~a")
+                                 (wiliki:wikiname-anchor-string pagename)
+                                 (wiliki:format-time old-time))))
+             (p (@ (style "text-align:right"))
+                (a (@ (href ,(url "~a&c=hd&t=~a"
+                                  (cv-out pagename) old-time)))
+                   ,($$ "View diff from current version")))
+             (p (@ (style "text-align:right"))
+                (a (@ (href ,(url "~a&c=e&t=~a"
+                                  (cv-out pagename) old-time)))
+                   ,($$ "Edit this version")))
+             ,(return-to-edit-history pagename)
+             ,(wiliki:format-diff-pre reverted)))
          (no-history-info pagename)))
    ))
 

@@ -1,7 +1,7 @@
 ;;;
 ;;; WiLiKi - Wiki in Scheme
 ;;;
-;;;  Copyright (c) 2000-2004 Shiro Kawai, All rights reserved.
+;;;  Copyright (c) 2000-2006 Shiro Kawai, All rights reserved.
 ;;;
 ;;;  Permission is hereby granted, free of charge, to any person
 ;;;  obtaining a copy of this software and associated documentation
@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.120 2006-04-22 01:14:34 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.121 2006-04-27 06:28:21 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -71,6 +71,7 @@
                          wiliki-log-parse-entry wiliki-log-entries-after
                          wiliki-log-diff wiliki-log-diff*
                          wiliki-log-revert wiliki-log-revert*
+                         wiliki-log-recover-content
                          wiliki-log-merge)
 
 ;; Less frequently used commands are separated to subfiles.
@@ -350,8 +351,9 @@
 ;;
 ;; Edit and commit
 ;;
-(define-wiliki-action e :read (pagename)
-  (cmd-edit pagename))
+(define-wiliki-action e :read (pagename
+                               (t :convert x->integer :default #f))
+  (cmd-edit pagename t))
 
 (define-wiliki-action c :write (pagename
                                 (commit :default #f)

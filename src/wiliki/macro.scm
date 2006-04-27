@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.31 2005-09-05 01:00:22 shirok Exp $
+;;; $Id: macro.scm,v 1.32 2006-04-27 06:28:21 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
@@ -36,7 +36,8 @@
   (use wiliki.page)
   (use wiliki.db)
   (extend wiliki)
-  (export handle-reader-macro handle-writer-macro
+  (export define-reader-macro define-writer-macro define-virtual-page
+          handle-reader-macro handle-writer-macro
           handle-virtual-page virtual-page?))
 (select-module wiliki.macro)
 (use srfi-19)

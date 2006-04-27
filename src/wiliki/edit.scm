@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: edit.scm,v 1.15 2005-08-23 03:14:23 shirok Exp $
+;;;  $Id: edit.scm,v 1.16 2006-04-27 06:28:21 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -110,15 +110,24 @@
          It emphasizes a null string, so it's effectively nothing.</p>"))
      )))
 
-(define (cmd-edit pagename)
+(define (cmd-edit pagename time)
+  (define (get-old-content page)
+    (and-let* ((time)
+               (lines (wiliki-log-recover-content pagename
+                                                  (log-file-path (wiliki))
+                                                  (ref page 'content)
+                                                  time)))
+      (string-join lines "\n")))
   (unless (editable? (wiliki))
     (errorf "Can't edit the page ~s: the database is read-only" pagename))
-  (let ((page (wiliki-db-get pagename #t)))
+  (let* ((page (wiliki-db-get pagename #t))
+         (content (or (get-old-content page) (ref page 'content)))
+         )
     (html-page (make <wiliki-page>
                    :title pagename
                    :content
-                   (edit-form #t pagename
-                              (ref page 'content)
+                   (edit-form #t pagename                   
+                              content
                               (ref page 'mtime) "" #f)))))
 
 (define (cmd-preview pagename content mtime logmsg donttouch)

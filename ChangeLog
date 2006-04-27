@@ -1,3 +1,10 @@
+2006-04-26  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/edit.scm, src/wiliki/history.scm: added a feature
+	  of editing older versions.  Useful to revert from spams.
+	* src/wiliki.scm, src/wiliki/log.scm: adjustment for the above change.
+	* po/ja.po: ditto.
+
 2006-04-21  Shiro Kawai  <shiro@acm.org>
 
 	* Makefile.in, configure.in, po/Makefile.in, src/wiliki.scm:
