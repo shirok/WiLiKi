@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2004 Tokuya Kameshima.  All rights reserved.
 
-;; $Id: wiliki.el,v 1.11 2004-06-03 16:27:29 tkame Exp $
+;; $Id: wiliki.el,v 1.12 2006-07-29 16:40:52 tkame Exp $
 
 ;;; Installation:
 
@@ -97,6 +97,14 @@ via the proxy server `wiliki-http-proxy'."
   :type '(choice (const :tag "Off" nil)
 		 regexp))
 
+(defcustom wiliki-default-coding-system
+  (if (coding-system-p 'utf-8)
+      'utf-8
+    'euc-jp)
+  "Default coding system for WiLiKi."
+  :group 'wiliki
+  :type 'symbol)
+
 (defcustom wiliki-use-other-window nil
   "If non-nil, wiliki page will be opened in another window."
   :group 'wiliki
@@ -143,6 +151,8 @@ via the proxy server `wiliki-http-proxy'."
 
 (defvar wiliki-http-user-agent
   (concat "Emacs-WiLiKi/" wiliki-emacs-wiliki-version))
+
+(defvar wiliki-coding-system wiliki-default-coding-system)
 
 (defvar wiliki-use-lwp-for-commit t)
 
@@ -290,7 +300,7 @@ internet drafts directory for a copy.")
 	       (if (not (memq ch wiliki-url-unreserved-chars))
 		   (format "%%%02x" ch)
 		 (char-to-string ch)))
-	     (encode-coding-string str 'euc-jp)
+	     (encode-coding-string str wiliki-coding-system)
 	     ""))
 
 (defun wiliki-url-unhexify-string (string)
@@ -302,7 +312,7 @@ internet drafts directory for a copy.")
 		     str))
 		 (wiliki-scan-string "%[0-9a-f][0-9a-f]\\|." string)
 		 "")))
-    (decode-coding-string result 'euc-jp)))
+    (decode-coding-string result wiliki-coding-system)))
 
 (defun wiliki-scan-string (regexp str)
   "Ruby's scan-like function."
@@ -391,7 +401,7 @@ Return a list of (http-version status-code reason-phrase)."
 	      (match-string 2)		; Status-Code
 	      (match-string 3)))))	; Reason-Phrase
 
-(defun wiliki-parse-header ()
+(defun wiliki-parse-header (charset)
   "Parse the header fields beginning from the current point of the buffer
 and return the result as an association list.
 The point is moved to the place after the header parsed.
@@ -402,39 +412,58 @@ where each FIELD is of the form
 	(FIELD-NAME . FIELD-VALUE)
 FIELD-NAME is converted to lower-case."
   (catch 'bad-header-format
-    (let ((pos-saved (point))
-	  alist)
-      (beginning-of-line)
-      (while (and (not (looking-at "\r?\n"))
-		  (not (eobp)))
-	(if (looking-at "^\\([^:\r\n]+\\):[ \t]*\\([^\r\n]*\\)")
-	    (setq alist (cons (cons (downcase (match-string 1))
-				    (match-string 2))
-			      alist))
-	  (goto-char pos-saved)
-	  (throw 'bad-header-format nil))
-	(forward-line))
-      (forward-line)
-      alist)))
+    (let* ((beg (point))
+	   (end (or (re-search-forward "\r?\n\r?\n" nil t)
+		    (goto-char (point-max))))
+	   (header-lines (decode-mime-charset-string (buffer-substring beg end)
+						     charset))
+	   alist)
+      (goto-char end)
+      (with-temp-buffer
+	(insert header-lines)
+	(goto-char (point-min))
+	(while (and (not (looking-at "\r?\n"))
+		    (not (eobp)))
+	  (if (looking-at "^\\([^:\r\n]+\\):[ \t]*\\([^\r\n]*\\)")
+	      (setq alist (cons (cons (downcase (match-string 1))
+				      (match-string 2))
+				alist))
+	    (goto-char beg)
+	    (throw 'bad-header-format nil))
+	  (forward-line))
+	alist))))
 
-(defun wiliki-http-parse-response (&optional buffer)
+(defun wiliki-http-parse-response (&optional buffer default-charset)
   (with-current-buffer (or buffer (current-buffer))
     (goto-char (point-min))
     (let* ((http-stat (wiliki-parse-http-status-line))
-	   (http-header (wiliki-parse-header))
+	   (http-header (wiliki-parse-header 'raw-text))
+	   (charset (let ((content-type
+			   (cdr (assoc "content-type" http-header))))
+		      (if content-type
+			  (and (string-match "charset=\\(.*\\)" content-type)
+			       (intern (downcase
+					(match-string 1 content-type))))
+			default-charset)))
 	   (wiliki-header
 	    (if (string-match "^text/plain;?"
 			      (cdr (assoc "content-type" http-header)))
-		(wiliki-parse-header)))
-	   (body (buffer-substring (point) (point-max))))
-      (list http-stat http-header wiliki-header body))))
+		(wiliki-parse-header charset)))
+	   (body (decode-mime-charset-string
+		  (buffer-substring (point) (point-max))
+		  charset)))
+      (if (not (coding-system-p charset))
+	  (setq charset wiliki-default-coding-system))
+      (list http-stat http-header wiliki-header charset body))))
 
-(defmacro with-wiliki-response (session wiliki-params &rest body)
-  `(let* ((response (wiliki-http-parse-response ,session))
+(defmacro with-wiliki-response (session default-charset wiliki-params
+					&rest body)
+  `(let* ((response (wiliki-http-parse-response ,session ,default-charset))
 	  (http-status (nth 0 response))
 	  (http-header (nth 1 response))
 	  (wiliki-header (nth 2 response))
-	  (body (nth 3 response))
+	  (charset (nth 3 response))
+	  (body (nth 4 response))
 	  (header (append wiliki-header http-header)))
      (if (not (member (nth 1 http-status) '("200"    ; OK
 					    "302"))) ; Moved Temporarily
@@ -444,12 +473,14 @@ FIELD-NAME is converted to lower-case."
 						  header))))
 		       wiliki-params))
 	 ,@body))))
-(put 'with-wiliki-response 'lisp-indent-function 2)
+;; (put 'with-wiliki-response 'lisp-indent-function 2)
+(put 'with-wiliki-response 'lisp-indent-function 3)
 
 (defun wiliki-fetch-page-sentinel (base-url session)
   "Sentinel for nomarl wiki page.
 This is supporsed to be called when server closed connection"
-  (with-wiliki-response session (wiliki-lwp-version title mtime status)
+  (with-wiliki-response session wiliki-coding-system
+			(wiliki-lwp-version title mtime status)
     ;; `body' is also bound.
     (unless wiliki-lwp-version
       (error "Not a WiLiKi site."))
@@ -468,6 +499,7 @@ This is supporsed to be called when server closed connection"
 	(setq buffer-read-only t)
 	(setq wiliki-site-info (wiliki-site-info base-url))
 	(setq wiliki-base-url base-url)
+	(setq wiliki-coding-system charset)
 	(setq wiliki-title title)
 	(setq wiliki-mtime mtime)
 	(setq wiliki-status status)
@@ -492,7 +524,7 @@ beginning of the html data.  END-REGEXP bounds the search.  The match
 found must not extend after the position matching END-REGEXP.  With
 each occurrence of the match, FUNCTION is called.  FUNCTION is a
 function returning a string which is inserted into the page buffer."
-  (with-wiliki-response session (date content-type)
+  (with-wiliki-response session wiliki-coding-system (date content-type)
     (if (not (string-match "^text/html" content-type))
 	(error "Not a html"))
     (let ((buf (get-buffer-create (wiliki-buffer-name base-url page)))
@@ -529,6 +561,7 @@ function returning a string which is inserted into the page buffer."
 	(setq buffer-read-only t)
 	(setq wiliki-site-info (wiliki-site-info base-url))
 	(setq wiliki-base-url base-url)
+	(setq wiliki-coding-system charset)
 	(setq wiliki-title page)
 ;; 	(setq wiliki-mtime mtime) ;; (time-to-seconds (date-to-time date))
 	(setq wiliki-editable nil)
@@ -541,7 +574,8 @@ function returning a string which is inserted into the page buffer."
 ;; - Location: wiliki.cgi?WiLiKi
 (defun wiliki-commit-sentinel-html (base-url page session)
   (let ((edit-buf (get-buffer (wiliki-buffer-name base-url page 'edit)))
-	(conflict (with-wiliki-response session (location content-type)
+	(conflict (with-wiliki-response session wiliki-coding-system
+					(location content-type)
 		    (if (not location)
 			t)))
 	buf)
@@ -567,7 +601,8 @@ function returning a string which is inserted into the page buffer."
 	(goto-char pos)))))
 
 (defun wiliki-commit-sentinel (base-url session)
-  (with-wiliki-response session (wiliki-lwp-version title mtime status)
+  (with-wiliki-response session wiliki-coding-system
+			(wiliki-lwp-version title mtime status)
     ;; `body' is bound.
     (let* ((edit-buf (get-buffer (wiliki-buffer-name base-url title 'edit)))
 	   buf)
@@ -632,8 +667,7 @@ function returning a string which is inserted into the page buffer."
 	     (session (process-buffer proc)))
 	(set-buffer session)
 	(erase-buffer)
-	;; TODO: honor char-set in the response message
-	(set-buffer-process-coding-system 'euc-jp 'euc-jp)
+	(set-buffer-process-coding-system 'no-conversion 'no-conversion)
 	(set-process-sentinel proc 'ignore)
 	(process-send-string proc req)
 	;;
@@ -930,10 +964,15 @@ Return the base URL as a string."
 (defun wiliki-page-buffer (base-url page &optional force-fetch)
   "Return the buffer of PAGE on BASE-URL.
 If the page buffer does not exist, fetch the page from the server of BASE-URL.
-If FORCE-FETCH is non-nil, the page is forced to fetch from the server."
+If FORCE-FETCH is non-nil, the page is forced to fetch from the server.
+
+You can explicitly specify the coding system for the access with
+\\[universal-coding-system-argument]."
   (or (and (not force-fetch)
 	   (get-buffer (wiliki-buffer-name base-url page)))
-      (wiliki-fetch base-url page)))
+      (let ((wiliki-coding-system (or coding-system-for-read
+				      wiliki-coding-system)))
+	(wiliki-fetch base-url page))))
 
 (defun wiliki-view-page (base-url page &optional force-fetch no-history)
   "Visit and view WiLiKi page PAGE from url BASE-URL.
@@ -1134,6 +1173,7 @@ if one exists."
 	    (setq pos      (point)
 		  body     (buffer-string)
 		  base-url wiliki-base-url
+		  charset  wiliki-coding-system
 		  title    wiliki-title
 		  mtime    wiliki-mtime
 		  status   wiliki-status
@@ -1143,6 +1183,7 @@ if one exists."
 	  (erase-buffer)
 	  (wiliki-edit-mode)
 	  (setq wiliki-edit-base-url base-url)
+	  (setq wiliki-coding-system charset)
 	  (setq wiliki-edit-title title)
 	  (setq wiliki-edit-mtime mtime)
 	  (setq wiliki-edit-status status)
@@ -1563,6 +1604,7 @@ If DONT-TOUCH is non-nil, the page does not update 'Recent Changes'."
   (make-local-variable 'wiliki-status)
   (make-local-variable 'wiliki-editable)
   (make-local-variable 'wiliki-use-lwp-for-commit)
+  (make-local-variable 'wiliki-coding-system)
   (set (make-local-variable 'font-lock-support-mode)
        'fast-lock-mode)
   (set (make-local-variable 'font-lock-defaults)
@@ -1587,6 +1629,7 @@ If DONT-TOUCH is non-nil, the page does not update 'Recent Changes'."
   (make-local-variable 'wiliki-edit-status)
   (make-local-variable 'wiliki-edit-previous-window-config)
   (make-local-variable 'wiliki-use-lwp-for-commit)
+  (make-local-variable 'wiliki-coding-system)
   (set (make-local-variable 'font-lock-defaults)
        '(wiliki-font-lock-keywords t t nil backward-paragraph))
   (set (make-local-variable 'font-lock-syntactic-keywords)
