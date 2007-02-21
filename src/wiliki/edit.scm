@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: edit.scm,v 1.16 2006-04-27 06:28:21 shirok Exp $
+;;;  $Id: edit.scm,v 1.17 2007-02-21 07:54:23 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -201,12 +201,21 @@
     ;; the page.
     (unless (editable? (wiliki))
       (errorf "Can't edit the page ~s: the database is read-only" pagename))
-    (if (or (not (ref p 'mtime)) (eqv? (ref p 'mtime) mtime))
+    (cond
+     ;; A very ad-hoc filter for mechanical spams.  Normal wiliki content
+     ;; never includes explicit HTML tags (strictly speaking, the content
+     ;; may have HTML tag within verbatim block.  let's see if it becomes
+     ;; a problem or not.)
+     ((or (and (string? content) (#/<a\s+href=/i content))
+          (and (string? logmsg) (#/<a\s+href=/i logmsg)))
+      (redirect-page (top-page-of (wiliki))))
+     ((or (not (ref p 'mtime)) (eqv? (ref p 'mtime) mtime))
       (if (and (not (equal? pagename (top-page-of (wiliki))))
                (string-every #[\s] content))
         (erase-page)
-        (update-page content))
-      (handle-conflict))))
+        (update-page content)))
+     (else (handle-conflict)))
+    ))
 
 (define (conflict-page page diff content logmsg donttouch)
   (html-page
