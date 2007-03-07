@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: edit.scm,v 1.17 2007-02-21 07:54:23 shirok Exp $
+;;;  $Id: edit.scm,v 1.18 2007-03-07 01:38:40 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -206,8 +206,13 @@
      ;; never includes explicit HTML tags (strictly speaking, the content
      ;; may have HTML tag within verbatim block.  let's see if it becomes
      ;; a problem or not.)
-     ((or (and (string? content) (#/<a\s+href=/i content))
-          (and (string? logmsg) (#/<a\s+href=/i logmsg)))
+     ((or (and (string? content) (#/<a\s+href=[\"']/i content))
+          (and (string? logmsg) (#/<a\s+href=[\"']/i logmsg)))
+      (redirect-page (top-page-of (wiliki))))
+     ;; Another ad-hoc filter: some (probably automated) spammer put
+     ;; the same string in content and logmsg
+     ((and (not (equal? content ""))
+           (equal? content logmsg))
       (redirect-page (top-page-of (wiliki))))
      ((or (not (ref p 'mtime)) (eqv? (ref p 'mtime) mtime))
       (if (and (not (equal? pagename (top-page-of (wiliki))))

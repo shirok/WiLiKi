@@ -1,3 +1,11 @@
+2007-03-06  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/edit.scm (cmd-commit-edit): A fix on the makeshift
+	  spam filtering (includes opening quote in the match, so that
+	  we can pass an HTML A tag in the code, in which usually quotes
+	  are escaped).  Also added another spam measure to see if
+	  the same string is written into both contents and log message.
+	
 2007-02-20  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/edit.scm (cmd-commit-edit): Added a very ad-hoc filter
