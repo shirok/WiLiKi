@@ -24,7 +24,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: rssmix.scm,v 1.2 2006-04-21 09:44:46 shirok Exp $
+;;;  $Id: rssmix.scm,v 1.3 2007-04-06 09:18:58 shirok Exp $
 ;;;
 
 ;; *EXPERIMENTAL*
@@ -358,7 +358,7 @@
   ;; with ':' between hours and minutes.  I need to parse it manually.
   (define (parse-date date)
     (and-let* 
-        ((match (#/^(\d\d\d\d)-(\d\d)-(\d\d)T(\d\d):(\d\d)(?::(\d\d))?([+-]\d\d):(\d\d)/ date)))
+        ((match (#/^(\d\d\d\d)-(\d\d)-(\d\d)(?:T(\d\d):(\d\d)(?::(\d\d))?([+-]\d\d):(\d\d))?/ date)))
       (receive (year month day hour minute second zh zm)
           (apply values (map (lambda (i) (x->integer (match i))) (iota 8 1)))
         (time-second
