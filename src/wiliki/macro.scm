@@ -23,12 +23,12 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.32 2006-04-27 06:28:21 shirok Exp $
+;;; $Id: macro.scm,v 1.33 2007-05-01 02:37:26 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
-  (use srfi-2)
   (use srfi-13)
+  (use gauche.sequence)
   (use text.html-lite)
   (use text.tree)
   (use util.list)
@@ -269,6 +269,28 @@
              :follow-includes? #t
              :skip-verbatim? #t)
           (make-ul headings 1 '() (lambda (_ ul) (list ul))))
+        ))))
+
+(define-reader-macro (path . opts)
+  (let-optionals* opts ((name #f)
+                        (delim ":"))
+    (define (make-link-comp rcomps acc)
+      (if (null? acc)
+        (list (car rcomps))
+        (cons (wiliki:wikiname-anchor (string-join (reverse rcomps) delim)
+                                      (car rcomps))
+              acc)))
+    (let1 page (if name (wiliki-db-get name #f) (wiliki-current-page))
+      (if (not page)
+        (if name
+          (list #`"[[$$toc ,(car maybe-page)]]")
+          (list "[[$$toc]]"))
+        `((span (@ (class "path"))
+                ,@(intersperse
+                   delim
+                   (pair-fold make-link-comp
+                              '()
+                              (reverse (string-split (ref page 'title) delim))))))
         ))))
 
 (define-reader-macro (testerr . x)

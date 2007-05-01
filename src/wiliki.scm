@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.123 2006-04-27 10:08:18 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.124 2007-05-01 02:37:26 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -471,13 +471,14 @@
     ))
 
 ;; Returns SXML anchor node and string for given wikiname.
-(define (wiliki:wikiname-anchor wikiname)
-  `(a (@ (href ,(url "~a" (cv-out wikiname)))) ,wikiname))
+(define (wiliki:wikiname-anchor wikiname . maybe-anchor-string)
+  `(a (@ (href ,(url "~a" (cv-out wikiname))))
+      ,(get-optional maybe-anchor-string wikiname)))
 
-(define (wiliki:wikiname-anchor-string wikiname)
+(define (wiliki:wikiname-anchor-string wikiname . maybe-anchor-string)
   (tree->string
    (wiliki:sxml->stree
-    `(a (@ (href ,(url "~a" (cv-out wikiname)))) ,wikiname))))
+    (apply wiliki:wikiname-anchor wikiname maybe-anchor-string))))
 
 (define (default-format-time time)
   (if time

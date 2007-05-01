@@ -1,3 +1,11 @@
+2007-04-30  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm (wiliki:wikiname-anchor): allow an optional argument
+	  to customize the anchor string.
+
+	* src/wiliki/macro.scm (path): added $$path macro that generates
+	  so-called breadcrumb links.
+
 2007-04-05  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/rssmix.scm (extract-from-rdf): Accept dc:date without
