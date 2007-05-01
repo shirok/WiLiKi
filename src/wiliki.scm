@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.126 2007-05-01 11:50:10 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.127 2007-05-01 12:24:49 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -671,8 +671,6 @@
 (define (redirect-page key)
   (cgi-header :location (url "~a" key) :status "302 Moved"))
 
-
-
 ;; Retrieve requested page name.
 ;; The pagename can be specified in one of the following ways:
 ;;
@@ -713,6 +711,20 @@
       pg))
   )
 
+;; Setting up the textdomain.
+;;  1. If language is explicitly set (by 'l' parameter) we use it.
+;;  2. Otherwise, we look at HTTP_ACCEPT_LANGUAGE.  If it is set,
+;;     we just take the first one.
+;;  3. Otherwise, we take the language slot of <wiliki>.
+
+(define (setup-textdomain wiliki param-lang)
+  (let1 lang (cond
+              (param-lang)
+              ((cgi-get-metavariable "HTTP_ACCEPT_LANGUAGE")
+               => (lambda (v) (car (string-split v #/[\s,]+/))))
+              (else (ref wiliki 'language)))
+    (textdomain "WiLiKi" (x->string lang) (ref wiliki 'gettext-paths))))
+
 ;; Entry ------------------------------------------
 
 (define-method wiliki-main ((self <wiliki>))
@@ -725,9 +737,7 @@
            ((wiliki self)
             (wiliki:lang (or language (language-of self))))
         (cgi-output-character-encoding (output-charset))
-        (textdomain "WiLiKi"
-                    (case (wiliki:lang) ((jp) "ja") (else "en"))
-                    (ref (wiliki) 'gettext-paths))
+        (setup-textdomain self language)
         (cond
          ;; command may #t if we're looking at the page named "c".
          ((wiliki-action-ref (if (string? command)

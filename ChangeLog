@@ -14,8 +14,9 @@
 	  from traversing edit & edit history pages, causing heavy server
 	  traffic.
 	* src/wiliki.scm (wiliki:menu-links) : dropped language switch link.
-	  It has not been very useful.  Maybe we should switch the message
-	  catalog with browsers accept-language.
+	  It has not been very useful.
+	* src/wiliki.scm (setup-textdomain): honor Accept-Language header
+	  to switch the message catalog.
 
 	* po/ja.po: updated.
 
