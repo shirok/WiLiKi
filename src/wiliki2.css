@@ -79,6 +79,12 @@ input.navi-button {
   border: solid thin #777777;
 }
 
+input.search-box {
+  margin: 0pt;
+  padding: 0pt;
+  border: solid 1pt #777777;
+}
+
 input.navi-button:hover {
   background: #ffffee;
 }
