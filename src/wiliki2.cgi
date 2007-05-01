@@ -10,14 +10,16 @@
 (define-class <my-formatter> (<wiliki-formatter>) ())
 
 (define-method wiliki:format-page-header ((fmt <my-formatter>) page . opts)
-  `((div (@ (style "font-size:80%;text-align:right"))
-         ,@(cond-list
-            ((wiliki:top-link page))
-            ((wiliki:edit-link page))
-            ((wiliki:history-link page))
-            ((wiliki:all-link page))
-            ((wiliki:recent-link page))
-            ((wiliki:language-link page))))))
+  (define (td x) (list 'td x))
+  `((div (@ (style "font-size:80%") (align "right"))
+         (table
+          (tr (td ,@(wiliki:breadcrumb-links page ":"))
+              ,@(cond-list
+                 ((wiliki:top-link page) => td)
+                 ((wiliki:edit-link page) => td)
+                 ((wiliki:history-link page) => td)
+                 ((wiliki:all-link page) => td)
+                 ((wiliki:recent-link page) => td)))))))
 
 (define-method wiliki:format-page-footer ((fmt <my-formatter>) page . opts)
   `((hr)

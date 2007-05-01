@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.33 2007-05-01 02:37:26 shirok Exp $
+;;; $Id: macro.scm,v 1.34 2007-05-01 11:26:28 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
@@ -271,27 +271,15 @@
           (make-ul headings 1 '() (lambda (_ ul) (list ul))))
         ))))
 
-(define-reader-macro (path . opts)
+(define-reader-macro (breadcrumb-links . opts)
   (let-optionals* opts ((name #f)
                         (delim ":"))
-    (define (make-link-comp rcomps acc)
-      (if (null? acc)
-        (list (car rcomps))
-        (cons (wiliki:wikiname-anchor (string-join (reverse rcomps) delim)
-                                      (car rcomps))
-              acc)))
     (let1 page (if name (wiliki-db-get name #f) (wiliki-current-page))
       (if (not page)
         (if name
-          (list #`"[[$$toc ,(car maybe-page)]]")
-          (list "[[$$toc]]"))
-        `((span (@ (class "path"))
-                ,@(intersperse
-                   delim
-                   (pair-fold make-link-comp
-                              '()
-                              (reverse (string-split (ref page 'title) delim))))))
-        ))))
+          (list #`"[[$$breadcrumb-links ,(car opts)]]")
+          (list "[[$$breadcrumb-links]]"))
+        (wiliki:breadcrumb-links page delim)))))
 
 (define-reader-macro (testerr . x)
   (error (x->string x)))

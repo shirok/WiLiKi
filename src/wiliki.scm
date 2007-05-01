@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.124 2007-05-01 02:37:26 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.125 2007-05-01 11:26:28 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -34,6 +34,7 @@
   (use text.tree)
   (use text.tr)
   (use text.gettext)
+  (use util.match)
   (use util.list)
   (use www.cgi)
   (use rfc.uri)
@@ -49,7 +50,7 @@
           wiliki:language-link wiliki:self-url
           wiliki:top-link wiliki:edit-link wiliki:history-link
           wiliki:all-link wiliki:recent-link wiliki:search-box
-          wiliki:menu-links wiliki:page-title
+          wiliki:menu-links wiliki:page-title wiliki:breadcrumb-links
           wiliki:wikiname-anchor wiliki:wikiname-anchor-string
           wiliki:get-formatted-page-content
           wiliki:recent-changes-alist
@@ -389,51 +390,72 @@
 ;; WiLiKi-specific formatting routines
 ;;
 
-;; Default menu link composers
+;; Navigation buttons
+(define (wiliki:make-navi-button params content)
+  `(form (@ (method POST) (action ,(cgi-name-of (wiliki)))
+            (style "matgin:0pt; padding:0pt"))
+         ,@(map (match-lambda
+                  ((n v) `(input (@ (type hidden) (name ,n) (value ,v)))))
+                params)
+         (input (@ (type submit) (class "navi-button") (value ,content)))))
+
 (define (wiliki:top-link page)
   (and (not (equal? (ref page 'title) (top-page-of (wiliki))))
-       `(a (@ (href ,#`",(cgi-name-of (wiliki)),(lang-spec (wiliki:lang) '?)"))
-           ,($$ "[Top Page]"))))
+       (wiliki:make-navi-button '() ($$ "Top"))))
 
 (define (wiliki:edit-link page)
   (and (ref (wiliki) 'editable?)
        (wiliki:persistent-page? page)
-       `(a (@ (href ,(url "p=~a&c=e" (ref page 'key)))) ,($$ "[Edit]"))))
+       (wiliki:make-navi-button `((p ,(ref page 'key)) (c e)) ($$ "Edit"))))
 
 (define (wiliki:history-link page)
   (and (ref (wiliki) 'log-file)
        (wiliki:persistent-page? page)
-       `(a (@ (href ,(url "p=~a&c=h" (ref page 'key))))
-           ,($$ "[Edit History]"))))
+       (wiliki:make-navi-button `((p ,(ref page 'key)) (c h)) ($$ "History"))))
 
 (define (wiliki:all-link page)
   (and (not (equal? (ref page 'command) "c=a"))
-       `(a (@ (href ,(url "c=a"))) ,($$ "[All Pages]"))))
+       (wiliki:make-navi-button '((c a)) ($$ "All"))))
 
 (define (wiliki:recent-link page)
   (and (not (equal? (ref page 'command) "c=r"))
-       `(a (@ (href ,(url "c=r"))) ,($$ "[Recent Changes]"))))
+       (wiliki:make-navi-button '((c r)) ($$ "Recent Changes"))))
 
 (define (wiliki:search-box)
   `((form (@ (method POST) (action ,(cgi-name-of (wiliki)))
              (style "margin:0pt; padding:0pt"))
           (input (@ (type hidden) (name c) (value s)))
-          (input (@ (type text) (name key) (size 15)
-                    (style "margin:0pt; padding:0pt")))
+          (input (@ (type text) (name key) (size 15)))
           (input (@ (type submit) (name search) (value ,($$ "Search"))
-                    (style "margin:0pt; padding:0pt")))
+                    (class "navi-button")))
           )))
 
+(define (wiliki:breadcrumb-links page delim)
+  (define (make-link-comp rcomps acc)
+    (if (null? acc)
+      (list (car rcomps))
+      (cons (wiliki:wikiname-anchor (string-join (reverse rcomps) delim)
+                                    (car rcomps))
+            acc)))
+  (let1 combs (string-split (ref page 'title) delim)
+    (if (pair? (cdr combs))
+      `((span (@ (class "breadcrumb-links"))
+              ,@(intersperse
+                 delim
+                 (pair-fold make-link-comp '() (reverse combs)))))
+      '())))
+
 (define (wiliki:menu-links page)
+  (define (td x) (list 'td x))
   `((table
      (@ (border 0) (cellpadding 0))
-     (tr (td ,@(cond-list
-                ((wiliki:language-link page))
-                ((wiliki:top-link page))
-                ((wiliki:edit-link page))
-                ((wiliki:history-link page))
-                ((wiliki:all-link page))
-                ((wiliki:recent-link page))))
+     (tr ,@(cond-list
+            ;((wiliki:language-link page) => td)
+            ((wiliki:top-link page) => td)
+            ((wiliki:edit-link page) => td)
+            ((wiliki:history-link page) => td)
+            ((wiliki:all-link page) => td)
+            ((wiliki:recent-link page) => td))
          (td ,@(wiliki:search-box))))))
 
 (define (wiliki:page-title page)
@@ -444,6 +466,7 @@
 
 (define (wiliki:default-page-header page opts)
   `(,@(wiliki:page-title page)
+    (div (@ (align "right")) ,@(wiliki:breadcrumb-links page ":"))
     (div (@ (align "right")) ,@(wiliki:menu-links page))
     (hr)))
 

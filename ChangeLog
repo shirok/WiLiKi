@@ -1,3 +1,24 @@
+2007-05-01  Shiro Kawai  <shiro@acm.org>
+
+	* 0.6_pre2 (not a significant meaning, but rather for the convenience
+	  to register those changes).
+
+	* src/wiliki.scm (wiliki:breadcrumb-links): make the $$path macro
+	  feature below to a utility function.
+	* src/wiliki/macro.scm : renamed $$path -> $$breadcrumb-links
+
+	* src/wiliki.scm (wiliki:default-page-header) : include breadcrumb
+	  links.
+	* src/wiliki.scm (wiliki:top-link etc.) : make those commands
+	  a form button instead of anchor links, to prevent web spiders
+	  from traversing edit & edit history pages, causing heavy server
+	  traffic.
+	* src/wiliki.scm (wiliki:menu-links) : dropped language switch link.
+	  It has not been very useful.  Maybe we should switch the message
+	  catalog with browsers accept-language.
+
+	* po/ja.po: updated.
+
 2007-04-30  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm (wiliki:wikiname-anchor): allow an optional argument

@@ -8,62 +8,58 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WiLiKi-0.6_pre1\n"
 "Report-Msgid-Bugs-To: shiro@acm.org\n"
-"POT-Creation-Date: 2006-04-26 19:08-1000\n"
+"POT-Creation-Date: 2007-05-01 00:44-1000\n"
 "PO-Revision-Date: 2006-04-26 19:08-1000\n"
 "Last-Translator: Shiro Kawai <shiro@acm.org\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=euc-jp\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ../src/wiliki.scm:281
+#: ../src/wiliki.scm:288
 msgid "Nonexistent page: "
 msgstr "ページが存在しません: "
 
-#: ../src/wiliki.scm:282
+#: ../src/wiliki.scm:289
 msgid "Create a new page: "
 msgstr "新規ページ作製: "
 
-#: ../src/wiliki.scm:305
+#: ../src/wiliki.scm:312
 msgid "All Pages"
 msgstr "一覧"
 
-#: ../src/wiliki.scm:316
+#: ../src/wiliki.scm:323 ../src/wiliki.scm:422
 msgid "Recent Changes"
 msgstr "最近の更新"
 
-#: ../src/wiliki.scm:338
+#: ../src/wiliki.scm:345
 msgid "Search results"
 msgstr "検索結果"
 
-#: ../src/wiliki.scm:390
-msgid "[Top Page]"
-msgstr "[トップ]"
-
-#: ../src/wiliki.scm:395
-msgid "[Edit]"
-msgstr "[編集]"
-
-#: ../src/wiliki.scm:401
-msgid "[Edit History]"
-msgstr "[編集履歴]"
-
-#: ../src/wiliki.scm:405
-msgid "[All Pages]"
-msgstr "[一覧]"
+#: ../src/wiliki.scm:404
+msgid "Top"
+msgstr "トップ"
 
 #: ../src/wiliki.scm:409
-msgid "[Recent Changes]"
-msgstr "[最近の更新]"
+msgid "Edit"
+msgstr "編集"
 
-#: ../src/wiliki.scm:417
+#: ../src/wiliki.scm:414
+msgid "History"
+msgstr "編集履歴"
+
+#: ../src/wiliki.scm:418
+msgid "All"
+msgstr "一覧"
+
+#: ../src/wiliki.scm:429
 msgid "Search"
 msgstr "検索"
 
-#: ../src/wiliki.scm:448
+#: ../src/wiliki.scm:477
 msgid "Last modified : "
 msgstr "最終更新 : "
 
-#: ../src/wiliki.scm:479
+#: ../src/wiliki.scm:509
 msgid "Epoch"
 msgstr "記録開始"
 
@@ -184,30 +180,15 @@ msgstr ""
 msgid "Preview of ~a"
 msgstr "~a のプレビュー"
 
-#: ../src/wiliki/edit.scm:214
-msgid "Update Conflict"
-msgstr "更新の衝突"
-
-#: ../src/wiliki/edit.scm:216
-msgid ""
-"<p>It seems that somebody has updated this page\n"
-"       while you're editing.  The difference is snown below.\n"
-"       Please revise <a href=\"#edit\">your edit</a> and commit again.</p>"
-msgstr ""
-"<p>あなたがこのページを編集している間に、他の人がこのページを編集したようで"
-"す。\n"
-"  現在のバージョンとあなたの編集との差異を下に表示します。これを参考に、\n"
-"  <a href=\"#edit\">再編集</a>してコミットして下さい。</p>"
-
-#: ../src/wiliki/edit.scm:222
+#: ../src/wiliki/edit.scm:236
 msgid "lines you added (or somebody else deleted)"
 msgstr "あなたが追加した行、もしくは他の人が削除した行"
 
-#: ../src/wiliki/edit.scm:224
+#: ../src/wiliki/edit.scm:238
 msgid "lines somebody else added (or you deleted)"
 msgstr "他の人が追加した行、もしくはあなたが削除した行"
 
-#: ../src/wiliki/edit.scm:227
+#: ../src/wiliki/edit.scm:241
 msgid ""
 "<p>The following shows what you are about to submit.  Please re-edit the "
 "content and submit again.</p>"
@@ -271,3 +252,28 @@ msgstr "~aのページには編集履歴情報がありません"
 #: ../src/wiliki/history.scm:210
 msgid "Return to the edit history"
 msgstr "編集履歴ページに戻る"
+
+#~ msgid "[Top Page]"
+#~ msgstr "[トップ]"
+
+#~ msgid "[Edit History]"
+#~ msgstr "[編集履歴]"
+
+#~ msgid "[All Pages]"
+#~ msgstr "[一覧]"
+
+#~ msgid "[Recent Changes]"
+#~ msgstr "[最近の更新]"
+
+#~ msgid "Update Conflict"
+#~ msgstr "更新の衝突"
+
+#~ msgid ""
+#~ "<p>It seems that somebody has updated this page\n"
+#~ "       while you're editing.  The difference is snown below.\n"
+#~ "       Please revise <a href=\"#edit\">your edit</a> and commit again.</p>"
+#~ msgstr ""
+#~ "<p>あなたがこのページを編集している間に、他の人がこのページを編集したよう"
+#~ "です。\n"
+#~ "  現在のバージョンとあなたの編集との差異を下に表示します。これを参考に、\n"
+#~ "  <a href=\"#edit\">再編集</a>してコミットして下さい。</p>"

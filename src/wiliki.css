@@ -49,5 +49,21 @@ dt { font-weight: bold }
 td.inbody { background: #dddddd }   /* used in formatted body */
 td.preview { background: #eeddaa }  /* used in preview page */
 
+input.navi-button {
+  margin: 0pt;
+  padding: 0pt;
+  background-color: #dddddd;
+  border: solid thin #777777;
+}
+
+input.navi-button:hover {
+  background: #ffffee;
+}
+
+span.breadcrumb-links {
+  color: #444444;
+  font-size: 90%;
+}
+
 span.wiliki-alert { background-color: #ff8080; } /* used to warn internal error */
 
