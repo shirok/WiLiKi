@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: parse.scm,v 1.5 2006-04-23 01:02:19 shirok Exp $
+;;; $Id: parse.scm,v 1.6 2007-05-02 10:37:17 shirok Exp $
 
 (define-module wiliki.parse
   (use srfi-1)
@@ -107,10 +107,21 @@
                     `(a (@ (href ,url)) ,scheme ":" ,(or server "") ,path)
                     seed)))))
      seed line))
+  (define (bracket line seed)
+    (if (string-null? line)
+      seed
+      (receive (pre post) (string-scan line "[[" 'both)
+        (if pre
+          (receive (wikiname rest) (find-closer post 0 '())
+            (if wikiname
+              (bracket rest
+                       (cons `(wiki-name ,wikiname) (uri pre seed)))
+              (uri rest (uri pre seed))))
+          (uri line seed)))))
   (define (nl line seed)
     (regexp-fold
      #/~%/
-     uri
+     bracket
      (lambda (match seed) (cons '(br) seed))
      seed line))
   ;; NB: we remove empty bold and italic, for backward compatibility
@@ -132,17 +143,6 @@
          seed
          (cons `(strong ,@(reverse! (nl (match 1) '()))) seed)))
      seed line))
-  (define (bracket line seed)
-    (if (string-null? line)
-      seed
-      (receive (pre post) (string-scan line "[[" 'both)
-        (if pre
-          (receive (wikiname rest) (find-closer post 0 '())
-            (if wikiname
-              (bracket rest
-                       (cons `(wiki-name ,wikiname) (bold pre seed)))
-              (bold rest (bold pre seed))))
-          (bold line seed)))))
   (define (smacro line seed)
     (if (string-null? line)
       seed
@@ -152,9 +152,9 @@
             ;; NB: we should handle distinction of inline and block elements
             ;; here.  It requires some trick, so for now I leave it.
             (if expr
-              (smacro rest (cons `(wiki-macro ,@expr) (bracket pre seed)))
-              (smacro post (bracket (string-append pre "##(") seed))))
-          (bracket line seed)))))
+              (smacro rest (cons `(wiki-macro ,@expr) (bold pre seed)))
+              (smacro post (bold (string-append pre "##(") seed))))
+          (bold line seed)))))
   ;; Main body
   (cons "\n" (smacro line seed)))
 

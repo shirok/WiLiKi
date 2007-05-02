@@ -1,5 +1,9 @@
 2007-05-02  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki/parse.scm (fmt-line): changed the formatting order
+	  so that bracket names can be included inside emphasize/strong.
+	  (Patch from Tatsuya BIZENN).
+
 	* src/wiliki/history.scm (cmd-history): Paging histories.
 
 2007-05-01  Shiro Kawai  <shiro@acm.org>
