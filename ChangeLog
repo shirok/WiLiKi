@@ -1,5 +1,8 @@
 2007-05-02  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki/macro.scm (toc): if named page is not found, emit
+	  the original macro form, instead of toc of the current page.
+
 	* src/wiliki/parse.scm (fmt-line): changed the formatting order
 	  so that bracket names can be included inside emphasize/strong.
 	  (Patch from Tatsuya BIZENN).

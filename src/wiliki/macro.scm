@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.35 2007-05-02 02:41:09 shirok Exp $
+;;; $Id: macro.scm,v 1.36 2007-05-02 10:52:55 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
@@ -217,9 +217,8 @@
       (badimg))))
 
 (define-reader-macro (toc . maybe-page)
-  (let1 page (or (and-let* ((name (get-optional maybe-page #f)))
-                   (wiliki-db-get name #f))
-                 (wiliki-current-page))
+  (let* ((name (get-optional maybe-page #f))
+         (page (if name (wiliki-db-get name #f) (wiliki-current-page))))
     (if (not page)
       (if (pair? maybe-page)
         (list #`"[[$$toc ,(car maybe-page)]]")
