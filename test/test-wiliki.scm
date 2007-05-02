@@ -1,7 +1,7 @@
 ;;
 ;; test for wiliki
 ;;
-;; $Id: test-wiliki.scm,v 1.12 2007-05-02 02:41:09 shirok Exp $
+;; $Id: test-wiliki.scm,v 1.13 2007-05-02 13:02:44 shirok Exp $
 
 (use srfi-1)
 (use srfi-13)
@@ -404,7 +404,7 @@
 
 (test* "Search result"
        `(body
-         (!contain (h1 "Test: Search results")
+         (!contain (h1 "Test: Search results of \"dreamhost\"")
                    (ul
                     (li (a (@ (href "wiliki.cgi?InterWikiName")) ?*) ?*))))
        (values-ref (run-cgi-script->sxml

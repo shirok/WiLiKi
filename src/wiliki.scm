@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.130 2007-05-02 12:54:10 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.131 2007-05-02 13:02:44 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -489,7 +489,7 @@
     ,@(or (and-let* ((w (wiliki))
                      (fsp (full-script-path-of w)))
             `((base (@ (href ,fsp)))
-              (link (@ (rel "alternative") (type "application/rss+xml")
+              (link (@ (rel "alternate") (type "application/rss+xml")
                        (title "RSS") (href ,(format "~a?c=rss" fsp))))))
           '())
     ,(or (and-let* ((w (wiliki)) (ss (style-sheet-of w)))

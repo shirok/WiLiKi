@@ -1,7 +1,13 @@
 2007-05-02  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki/rss.scm (rss-format): put (title-of (wiliki)) in
+	  rdf-title.
+
 	* src/wiliki.scm (s): Show search key in the page title.
+	  (wiliki:default-head-elements): Fix link element of RDF auto
+	  discoverty (rel=alternative should be rel=alternate).
 	
+
 	* src/wiliki/macro.scm (toc): if named page is not found, emit
 	  the original macro form, instead of toc of the current page.
 

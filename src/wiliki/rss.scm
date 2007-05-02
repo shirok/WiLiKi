@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: rss.scm,v 1.8 2005-08-23 03:14:23 shirok Exp $
+;;;  $Id: rss.scm,v 1.9 2007-05-02 13:02:44 shirok Exp $
 ;;;
 
 ;; In future, this might be rewritten to use proper XML framework.
@@ -53,7 +53,7 @@
       >\n"
       ,(rdf-channel
         full-url
-        (rdf-title (top-page-of self))
+        (rdf-title (title-of self))
         (rdf-link  full-url)
         (rdf-description (description-of self))
         (rdf-items-seq
