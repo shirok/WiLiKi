@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.128 2007-05-02 02:41:09 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.129 2007-05-02 10:23:22 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -378,8 +378,9 @@
 ;;
 ;; History
 ;;
-(define-wiliki-action h :read (pagename)
-  (cmd-history pagename))
+(define-wiliki-action h :read (pagename
+                               (s :convert x->integer :default 0))
+  (cmd-history pagename s))
 
 (define-wiliki-action hd :read (pagename
                                 (t  :convert x->integer :default 0)
@@ -396,7 +397,7 @@
 
 ;; Navigation buttons
 (define (wiliki:make-navi-button params content)
-  `(form (@ (method POST) (action ,(cgi-name-of (wiliki)))
+  `(form (@ (method GET) (action ,(cgi-name-of (wiliki)))
             (style "matgin:0pt; padding:0pt"))
          ,@(map (match-lambda
                   ((n v) `(input (@ (type hidden) (name ,n) (value ,v)))))

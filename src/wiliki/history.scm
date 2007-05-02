@@ -23,14 +23,16 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: history.scm,v 1.18 2006-04-27 06:28:21 shirok Exp $
+;;;  $Id: history.scm,v 1.19 2007-05-02 10:23:22 shirok Exp $
 ;;;
 
 (select-module wiliki)
 (use util.lcs)
 
+(define-constant HISTORY_SIZE 25)  ;; # of histories per page
+
 ;; "Edit History" page. ---------------------------------------
-(define (cmd-history pagename)
+(define (cmd-history pagename start-count)
   
   (define (td a . c)
     `(td (@ (class "history_td")
@@ -56,9 +58,8 @@
                        (cv-out pagename) (ref entry 'timestamp))))
         "current"))
 
-  (define (history-table-row first entry rev prev-timestamp)
-    `((tr ,(td '((rowspan 2)) (x->string rev))
-          ,(td '() (wiliki:format-time (ref entry 'timestamp)))
+  (define (history-table-row first entry prev-timestamp)
+    `((tr ,(td '((rowspan 2)) (wiliki:format-time (ref entry 'timestamp)))
           ,(td '() (format "+~a -~a line(s)"
                            (length (ref entry 'added-lines))
                            (length (ref entry 'deleted-lines))))
@@ -72,11 +73,11 @@
                                          (ref entry 'timestamp))))
                           "Edit")
                   " this version] "
-                  (if (eq? first entry)
+                  (if (and (zero? start-count) (eq? first entry))
                     `("[Diff to ",(diff-to-prev entry prev-timestamp)"]")
                     `("[Diff to ",(diff-to-current entry)
                       "|",(diff-to-prev entry prev-timestamp)"]"))))
-      (tr ,(td '((colspan 3))
+      (tr ,(td '((colspan 2))
                (let1 l (ref entry 'log-message)
                  (cond ((or (not l) (equal? l ""))
                         "*** no log message ***")
@@ -85,23 +86,27 @@
                        (else l))))
           )))
 
-  (define (history-table entries)
+  (define (history-table entries end?)
     `(table
       (@ (width "90%"))
-      (tr ,(th '((rowspan 2)) "Rev")
-          ,(th '() "Time") ,(th '() "Changes") ,(th '() "Operations"))
-      (tr ,(th '((colspan 3)) "Log"))
+      (tr ,(th '((rowspan 2)) "Timestamp")
+          ,(th '() "Changes") ,(th '() "Operations"))
+      (tr ,(th '((colspan 2)) "Log"))
       ,@(if (not (null? entries))
           (append-map
-           (cut history-table-row (car entries) <> <> <>)
-           entries
-           (iota (length entries) (length entries) -1)
+           (cut history-table-row (car entries) <> <>)
+           (take* entries HISTORY_SIZE)
            (fold-right (lambda (e r) (cons (ref e 'timestamp) r))
                        '(0) (drop* entries 1)))
           '())
       (tr ,(tdr '((colspan 4))
-                "[" `(a (@ (href ,(url "p=~a&c=hd&t=0" (cv-out pagename))))
-                        "Diff from epoch")
+                "["
+                (if end?
+                  `(a (@ (href ,(url "p=~a&c=hd&t=0" (cv-out pagename))))
+                      "Diff from epoch")
+                  `(a (@ (href ,(url "p=~a&c=h&s=~a" (cv-out pagename)
+                                     (+ start-count HISTORY_SIZE))))
+                      "Older histories..."))
                 "]"))))
   
   (html-page
@@ -111,12 +116,18 @@
      '((meta (@ (name "robots") (content "noindex,nofollow"))))
      :content
      (or (and-let* ((logfile (log-file-path (wiliki)))
-                    (picked (wiliki-log-pick-from-file pagename logfile))
-                    ((not (null? picked)))
+                    (logs (wiliki-log-pick-from-file pagename logfile))
+                    (picked (take* (if (= start-count 0)
+                                     logs
+                                     (drop* logs start-count))
+                                   (+ HISTORY_SIZE 1)))
+                    ( (not (null? picked)) )
                     )
            `((h2 (stree ,(format ($$ "Edit history of ~a")
                                  (wiliki:wikiname-anchor-string pagename))))
-             ,(history-table (map wiliki-log-parse-entry picked))))
+             ,(history-table
+               (map wiliki-log-parse-entry picked)
+               (< (length picked) (+ HISTORY_SIZE 1)))))
          (no-history-info pagename)))
    ))
 

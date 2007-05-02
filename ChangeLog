@@ -1,6 +1,14 @@
+2007-05-02  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/history.scm (cmd-history): Paging histories.
+
 2007-05-01  Shiro Kawai  <shiro@acm.org>
 
-	* src/macro.scm (handle-reader-macro, handle-writer-macro): 
+	* src/wiliki.scm (wiliki:make-navi-button): Change form method of
+	  navi buttons to GET, so that users can get the proper url
+	  on their browser.
+
+	* src/wiliki/macro.scm (handle-reader-macro, handle-writer-macro): 
 	  Chaneged macro argument syntax---now you can include whitespaces
 	  in an argument by surrounding the argument by double quotes.
 	  To include a double quote inside double-quoted argument, use
