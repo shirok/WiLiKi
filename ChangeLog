@@ -1,7 +1,14 @@
 2007-05-01  Shiro Kawai  <shiro@acm.org>
 
-	* 0.6_pre2 (not a significant meaning, but rather for the convenience
-	  to register those changes).
+	* src/macro.scm (handle-reader-macro, handle-writer-macro): 
+	  Chaneged macro argument syntax---now you can include whitespaces
+	  in an argument by surrounding the argument by double quotes.
+	  To include a double quote inside double-quoted argument, use
+	  two consecutive double quotes (CSV-ish, since we just use text.csv
+	  to parse the arguments, with #\space as a delimiting character).
+
+	* 0.6_pre2: not a significant meaning, but rather for the convenience
+	  to register those changes.
 
 	* src/wiliki.scm (wiliki:breadcrumb-links): make the $$path macro
 	  feature below to a utility function.

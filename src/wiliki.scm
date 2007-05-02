@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.127 2007-05-01 12:24:49 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.128 2007-05-02 02:41:09 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -119,7 +119,7 @@
                 :init-value 'jp)
    ;; charset map ((<lang> . <encoding>) ...)
    (charsets    :accessor charsets-of    :init-keyword :charsets
-                :init-value ())
+                :init-value '())
    ;; editable?
    (editable?   :accessor editable?      :init-keyword :editable?
                 :init-value #t)
@@ -162,6 +162,10 @@
    (textarea-cols :accessor textarea-cols-of :init-keyword :textarea-cols
                   :init-value 80)
    ))
+
+;; fallback functions
+(define-method title-of (_) "")
+(define-method language-of (_) 'en)
 
 ;; Various gadgets -----------------------------------------
 
@@ -451,7 +455,6 @@
   `((table
      (@ (border 0) (cellpadding 0))
      (tr ,@(cond-list
-            ;((wiliki:language-link page) => td)
             ((wiliki:top-link page) => td)
             ((wiliki:edit-link page) => td)
             ((wiliki:history-link page) => td)

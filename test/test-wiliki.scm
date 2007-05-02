@@ -1,7 +1,7 @@
 ;;
 ;; test for wiliki
 ;;
-;; $Id: test-wiliki.scm,v 1.11 2004-05-23 21:53:31 shirok Exp $
+;; $Id: test-wiliki.scm,v 1.12 2007-05-02 02:41:09 shirok Exp $
 
 (use srfi-1)
 (use srfi-13)
@@ -63,6 +63,7 @@
                ?*)
          (body ?@
                (h1 (a (@ (href "wiliki.cgi?c=s&key=[[TEST]]")) "TEST"))
+               (div ?*)
                (div ?*)
                (hr)
                (hr)

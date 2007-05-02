@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.34 2007-05-01 11:26:28 shirok Exp $
+;;; $Id: macro.scm,v 1.35 2007-05-02 02:41:09 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
@@ -32,6 +32,7 @@
   (use text.html-lite)
   (use text.tree)
   (use util.list)
+  (use text.csv)
   (use wiliki.format)
   (use wiliki.page)
   (use wiliki.db)
@@ -61,20 +62,23 @@
     `((stree ,@output)))) ;;otherwise, wrap it by stree node
 
 ;;----------------------------------------------
-;; API called from main WiLiKi system
+;; API called from the main WiLiKi system
 ;;
 
 (define (handle-reader-macro name)
-  (let1 args (string-tokenize name)
-    (handle-expansion name
-                      (lambda () (assoc (car args) *reader-macro-alist*))
-                      (lambda (p) (apply (cdr p) (cdr args))))))
+  (or (and-let* ((args (parse-macro-args name)))
+        (handle-expansion name
+                          (lambda () (assoc (car args) *reader-macro-alist*))
+                          (lambda (p) (apply (cdr p) (cdr args)))))
+      (unrecognized name)))
+      
 
 (define (handle-writer-macro name)
-  (let1 args (string-tokenize name)
-    (handle-expansion name
-                      (lambda () (assoc (car args) *writer-macro-alist*))
-                      (lambda (p) (apply (cdr p) (cdr args))))))
+  (or (and-let* ((args (parse-macro-args name)))
+        (handle-expansion name
+                          (lambda () (assoc (car args) *writer-macro-alist*))
+                          (lambda (p) (apply (cdr p) (cdr args)))))
+      (unrecognized name)))
 
 (define (handle-virtual-page name)
   (make <wiliki-page>
@@ -84,19 +88,18 @@
                                (lambda (p) ((cdr p) name)))))
 
 (define (handle-expansion name finder applier)
-  (with-error-handler
-      (lambda (e)
-        (if (positive? (debug-level (wiliki)))
-          `((pre (@ (class "macroerror"))
-                 ,#`"Macro error in [[,|name|]]:\n"
-                 ,(call-with-output-string
-                    (cut with-error-to-port <>
-                         (cut report-error e)))))
-          (unrecognized name)))
-    (lambda ()
-      (wrap-macro-output
-       (cond ((finder) => applier)
-             (else (unrecognized name)))))))
+  (guard (e
+          (else
+           (if (positive? (debug-level (wiliki)))
+             `((pre (@ (class "macroerror"))
+                    ,#`"Macro error in [[,|name|]]:\n"
+                    ,(call-with-output-string
+                       (cut with-error-to-port <>
+                            (cut report-error e)))))
+             (unrecognized name))))
+    (wrap-macro-output
+     (cond ((finder) => applier)
+           (else (unrecognized name))))))
 
 ;;----------------------------------------------
 ;; Utility to define macros
@@ -155,6 +158,12 @@
         ((null? formals) #f)
         ((pair? formals) (arity-matches? (cdr list) (cdr formals)))
         (else #t)))
+
+(define parse-macro-args
+  (let1 parser (make-csv-reader #\space)
+    (lambda (name)
+      (guard (e (else #f))
+        (call-with-input-string name parser)))))
 
 ;;----------------------------------------------
 ;; Writer macro definitions
