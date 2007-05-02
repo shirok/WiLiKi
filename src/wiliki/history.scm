@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: history.scm,v 1.19 2007-05-02 10:23:22 shirok Exp $
+;;;  $Id: history.scm,v 1.20 2007-05-02 11:09:03 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -33,15 +33,17 @@
 
 ;; "Edit History" page. ---------------------------------------
 (define (cmd-history pagename start-count)
-  
-  (define (td a . c)
+
+  (define (row-bg cnt)
+    (if (even? cnt) "background-color:#ffffff" "background-color:#f0f0f8"))
+  (define (td cnt a . c)
     `(td (@ (class "history_td")
-            (style "background-color:#ffffff; color:#000000")
+            (style ,#`",(row-bg cnt); color:#000000")
             ,@a)
          ,@c))
-  (define (tdr a . c)
+  (define (tdr cnt a . c)
     `(td (@ (class "history_td")
-            (style "background-color:#ffffff; color:#000000; text-align:right")
+            (style ,#`",(row-bg cnt); color:#000000; text-align:right")
             ,@a)
          ,@c))
   (define (th a . c)
@@ -58,12 +60,12 @@
                        (cv-out pagename) (ref entry 'timestamp))))
         "current"))
 
-  (define (history-table-row first entry prev-timestamp)
-    `((tr ,(td '((rowspan 2)) (wiliki:format-time (ref entry 'timestamp)))
-          ,(td '() (format "+~a -~a line(s)"
-                           (length (ref entry 'added-lines))
-                           (length (ref entry 'deleted-lines))))
-          ,(apply tdr '()
+  (define (history-table-row first entry prev-timestamp cnt)
+    `((tr ,(td cnt '((rowspan 2)) (wiliki:format-time (ref entry 'timestamp)))
+          ,(td cnt '() (format "+~a -~a line(s)"
+                               (length (ref entry 'added-lines))
+                               (length (ref entry 'deleted-lines))))
+          ,(apply tdr cnt '()
                   "[" `(a (@ (href ,(url "p=~a&c=hv&t=~a"
                                          (cv-out pagename)
                                          (ref entry 'timestamp))))
@@ -77,7 +79,7 @@
                     `("[Diff to ",(diff-to-prev entry prev-timestamp)"]")
                     `("[Diff to ",(diff-to-current entry)
                       "|",(diff-to-prev entry prev-timestamp)"]"))))
-      (tr ,(td '((colspan 2))
+      (tr ,(td cnt '((colspan 2))
                (let1 l (ref entry 'log-message)
                  (cond ((or (not l) (equal? l ""))
                         "*** no log message ***")
@@ -94,12 +96,13 @@
       (tr ,(th '((colspan 2)) "Log"))
       ,@(if (not (null? entries))
           (append-map
-           (cut history-table-row (car entries) <> <>)
+           (cut history-table-row (car entries) <> <> <>)
            (take* entries HISTORY_SIZE)
            (fold-right (lambda (e r) (cons (ref e 'timestamp) r))
-                       '(0) (drop* entries 1)))
+                       '(0) (drop* entries 1))
+           (iota (length entries)))
           '())
-      (tr ,(tdr '((colspan 4))
+      (tr ,(tdr HISTORY_SIZE '((colspan 4))
                 "["
                 (if end?
                   `(a (@ (href ,(url "p=~a&c=hd&t=0" (cv-out pagename))))

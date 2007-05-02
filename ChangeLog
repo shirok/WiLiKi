@@ -7,7 +7,8 @@
 	  so that bracket names can be included inside emphasize/strong.
 	  (Patch from Tatsuya BIZENN).
 
-	* src/wiliki/history.scm (cmd-history): Paging histories.
+	* src/wiliki/history.scm (cmd-history): Paging histories. 
+	  Alternate colors every row for readability.
 
 2007-05-01  Shiro Kawai  <shiro@acm.org>
 
