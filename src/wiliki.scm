@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.129 2007-05-02 10:23:22 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.130 2007-05-02 12:54:10 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -346,7 +346,8 @@
                                (key :convert cv-in))
   (html-page
    (make <wiliki-page>
-     :title (string-append (title-of (wiliki))": "($$ "Search results"))
+     :title (string-append (title-of (wiliki))": "
+                           (format ($$ "Search results of \"~a\"") key))
      :command (format #f "c=s&key=~a" (html-escape-string key))
      :content
      `((ul
