@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.131 2007-05-02 13:02:44 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.132 2007-05-03 06:33:43 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -47,7 +47,7 @@
   (use wiliki.page)
   (use wiliki.db)
   (export <wiliki> wiliki-main wiliki
-          wiliki:language-link wiliki:self-url
+          wiliki:language-link wiliki:self-url wiliki:make-navi-button
           wiliki:top-link wiliki:edit-link wiliki:history-link
           wiliki:all-link wiliki:recent-link wiliki:search-box
           wiliki:menu-links wiliki:page-title wiliki:breadcrumb-links
@@ -399,7 +399,7 @@
 ;; Navigation buttons
 (define (wiliki:make-navi-button params content)
   `(form (@ (method GET) (action ,(cgi-name-of (wiliki)))
-            (style "matgin:0pt; padding:0pt"))
+            (style "margin:0pt; padding:0pt"))
          ,@(map (match-lambda
                   ((n v) `(input (@ (type hidden) (name ,n) (value ,v)))))
                 params)
