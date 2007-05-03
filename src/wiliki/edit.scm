@@ -23,20 +23,20 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: edit.scm,v 1.19 2007-03-07 03:31:11 shirok Exp $
+;;;  $Id: edit.scm,v 1.20 2007-05-03 08:33:31 shirok Exp $
 ;;;
 
 (select-module wiliki)
 
 (use text.diff)
 
-(define (edit-form preview? pagename content mtime logmsg donttouch)
+(define (edit-form preview pagename content mtime logmsg donttouch)
   (define (buttons)
-    (if preview?
-        `((input (@ (type submit) (name preview) (value ,($$ "Preview"))))
-          (input (@ (type submit) (name commit) (value ,($$ "Commit without preview")))))
+    (if preview
         `((input (@ (type submit) (name preview) (value ,($$ "Preview again"))))
-          (input (@ (type submit) (name commit) (value ,($$ "Commit")))))))
+          (input (@ (type submit) (name commit) (value ,($$ "Commit")))))
+        `((input (@ (type submit) (name preview) (value ,($$ "Preview"))))
+          (input (@ (type submit) (name commit) (value ,($$ "Commit without preview")))))))
   (define (donttouch-checkbox)
     `((input (@ (type checkbox) (name donttouch) (value on) (id donttouch)
                 ,@(if donttouch '((checked checked)) '())))
@@ -44,12 +44,13 @@
   
   `((form
      (@ (method POST) (action ,(cgi-name-of (wiliki))))
-     ,@(buttons) ,@(donttouch-checkbox)
-     (br)
      (input (@ (type hidden) (name c) (value c)))
      (input (@ (type hidden) (name p) (value ,pagename)))
      (input (@ (type hidden) (name l) (value ,(wiliki:lang))))
      (input (@ (type hidden) (name mtime) (value ,mtime)))
+     ,@(buttons) ,@(donttouch-checkbox)
+     (br)
+     ,@(if preview (list preview '(hr)) '())
      (textarea (@ (name content)
                   (class content)
                   (rows ,(textarea-rows-of (wiliki)))
@@ -126,7 +127,7 @@
     (html-page (make <wiliki-page>
                    :title pagename
                    :content
-                   (edit-form #t pagename                   
+                   (edit-form #f pagename                   
                               content
                               (ref page 'mtime) "" #f)))))
 
@@ -136,9 +137,8 @@
      (make <wiliki-page>
        :title (format #f ($$ "Preview of ~a") pagename)
        :content
-       `(,(preview-box (wiliki:format-content content))
-         (hr)
-         ,@(edit-form #f pagename content mtime logmsg donttouch))))))
+       (edit-form (preview-box (wiliki:format-content content))
+                  pagename content mtime logmsg donttouch)))))
 
 (define (cmd-commit-edit pagename content mtime logmsg donttouch)
   (let ((p   (wiliki-db-get pagename #t))
@@ -239,7 +239,7 @@
        ,(wiliki:format-diff-pre diff)
        (a (@ (name "edit")) (hr))
        ,($$ "<p>The following shows what you are about to submit.  Please re-edit the content and submit again.</p>")
-       ,@(edit-form #t (ref page 'key) content (ref page 'mtime) logmsg donttouch)
+       ,@(edit-form #f (ref page 'key) content (ref page 'mtime) logmsg donttouch)
        ))))
 
 (define (preview-box content)

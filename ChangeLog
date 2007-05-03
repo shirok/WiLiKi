@@ -1,5 +1,8 @@
 2007-05-02  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki/edit.scm (edit-form): put preview/commit button
+	  before preview box for the convenience.
+
 	* src/wiliki/rss.scm (rss-format): put (title-of (wiliki)) in
 	  rdf-title.
 
