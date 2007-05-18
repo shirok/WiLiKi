@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.43 2006-04-23 01:02:18 shirok Exp $
+;;; $Id: format.scm,v 1.44 2007-05-18 11:14:26 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -200,7 +200,8 @@
        (append (wiliki:format-wikiname (the-formatter) name)
                (rec rest hctx)))
       ((('wiki-macro . expr) . rest)
-       (wiliki:format-macro (the-formatter) expr 'inline))
+       (append (wiliki:format-macro (the-formatter) expr 'inline)
+               (rec rest hctx)))
       (((and ((or 'h2 'h3 'h4 'h5 'h6) . _) sxml) . rest)
        ;; extract heading hierarchy to calculate heading id
        (let* ((hn   (sxml:name sxml))
