@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.132 2007-05-03 06:33:43 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.133 2007-06-04 01:51:10 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -722,11 +722,21 @@
 ;;     we just take the first one.
 ;;  3. Otherwise, we take the language slot of <wiliki>.
 
+;; NB: HTTP_ACCEPT_LANGUAGE sends language-range (language-tag), 
+;; which has rather complicated syntax & semantics.  We just cheat
+;; by taking primary tag and first sub tag (if any), and assumes 
+;; they are language and country code.
+
 (define (setup-textdomain wiliki param-lang)
   (let1 lang (cond
-              (param-lang)
+              (param-lang
+               (if (eq? param-lang 'jp) 'ja param-lang)) ; kluge for compatibility
               ((cgi-get-metavariable "HTTP_ACCEPT_LANGUAGE")
-               => (lambda (v) (car (string-split v #/[\s,]+/))))
+               => (lambda (v)
+                    (rxmatch-case v
+                      [#/^\s*([a-zA-Z]+)(?:-([a-zA-Z]+))?/ (_ pri sec)
+                        (if sec #`",|pri|_,|sec|" pri)]
+                      [else #f])))
               (else (ref wiliki 'language)))
     (textdomain "WiLiKi" (x->string lang) (ref wiliki 'gettext-paths))))
 
