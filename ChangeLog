@@ -1,3 +1,15 @@
+2007-06-21  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm (wiliki-main): Sets current-error-port's buffering
+	  mode to :line, in order to avoid messing up Apache log.  (Should
+	  it be the default in www.cgi?  Or should it be up to the
+	  application's main *.cgi file?  Needs to think over.)
+	  Also bind the parameter 'wiliki' before entering cgi-main, so that
+	  it will be avaiable when error page is created.
+	  (cv-in, cv-out): make more permissive, for errors within these
+	  functions prevents error page from being shown, making diagnostic
+	  difficult.
+
 2007-06-03  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm (setup-textdomain): look at language-range

@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.133 2007-06-04 01:51:10 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.134 2007-06-22 01:11:47 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -610,12 +610,15 @@
 ;; Character conv ---------------------------------
 
 ;; input conversion - get data from outside world
-(define (cv-in str) (ces-convert str "*JP"))
+(define (cv-in str)
+  (if (string? str) (ces-convert str "*JP") ""))
 
 ;; output conversion - put data to outside world, according to charsets spec
 (define (cv-out str)
-  (ces-convert str (symbol->string (gauche-character-encoding))
-               (output-charset)))
+  (if (string? str)
+    (ces-convert str (symbol->string (gauche-character-encoding))
+                 (output-charset))
+    ""))
 
 (define (output-charset)
   (or (and-let* (((wiliki))
@@ -743,26 +746,26 @@
 ;; Entry ------------------------------------------
 
 (define-method wiliki-main ((self <wiliki>))
-  (cgi-main
-   (lambda (param)
-     (let ((pagename (get-page-name self param))
-           (command  (cgi-get-parameter "c" param))
-           (language (cgi-get-parameter "l" param :convert string->symbol)))
-       (parameterize
-           ((wiliki self)
-            (wiliki:lang (or language (language-of self))))
-        (cgi-output-character-encoding (output-charset))
-        (setup-textdomain self language)
-        (cond
-         ;; command may #t if we're looking at the page named "c".
-         ((wiliki-action-ref (if (string? command)
-                               (string->symbol command)
-                               'v))
-          => (cut <> pagename param))
-         (else (error "Unknown command" command))
-         ))))
-   :merge-cookies #t
-   :on-error error-page))
+  (set! (port-buffering (current-error-port)) :line)
+  (parameterize ((wiliki self))
+    (cgi-main
+     (lambda (param)
+       (let ((pagename (get-page-name self param))
+             (command  (cgi-get-parameter "c" param))
+             (language (cgi-get-parameter "l" param :convert string->symbol)))
+         (parameterize ((wiliki:lang (or language (language-of self))))
+           (cgi-output-character-encoding (output-charset))
+           (setup-textdomain self language)
+           (cond
+            ;; command may #t if we're looking at the page named "c".
+            ((wiliki-action-ref (if (string? command)
+                                  (string->symbol command)
+                                  'v))
+             => (cut <> pagename param))
+            (else (error "Unknown command" command))
+            ))))
+     :merge-cookies #t
+     :on-error error-page)))
 
 (provide "wiliki")
 
