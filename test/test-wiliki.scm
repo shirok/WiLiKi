@@ -1,7 +1,7 @@
 ;;
 ;; test for wiliki
 ;;
-;; $Id: test-wiliki.scm,v 1.13 2007-05-02 13:02:44 shirok Exp $
+;; $Id: test-wiliki.scm,v 1.14 2007-07-14 05:33:20 shirok Exp $
 
 (use srfi-1)
 (use srfi-13)
@@ -13,11 +13,11 @@
 (use sxml.sxpath)
 (use rfc.822)
 (use util.list)
+(use www.cgi.test)
 
 ;; need some modules that aren't available until later.
 (add-load-path "../util")
 (use sxml.xml-test)
-(use www.cgi-test)
 
 (add-load-path ".")
 
@@ -199,9 +199,9 @@
             (set! mtime-save (x->integer (assq-ref alist '?mtime)))
             alist)))
 
-  (test* "commiting"
+  (test* "committing"
          '(("status" "302 Moved")
-           ("location" "wiliki.cgi?TEST"))
+           ("location" "http://localhost/wiliki.cgi?TEST"))
          (values-ref (run-cgi-script->string
                       *cgi-path*
                       :environment '((REQUEST_METHOD . "GET"))
@@ -235,9 +235,9 @@
        (test-sxml-select-matcher
         '(html head title)))
 
-(test* "commiting"
+(test* "committing"
        '(("status" "302 Moved")
-         ("location" "wiliki.cgi?LINK"))
+         ("location" "http://localhost/wiliki.cgi?LINK"))
        (values-ref (run-cgi-script->string
                     *cgi-path*
                     :environment '((REQUEST_METHOD . "GET"))
@@ -287,7 +287,7 @@
 
   (test* "commit delete"
          '(("status" "302 Moved")
-           ("location" "wiliki.cgi?TEST")) ;; redirected to the top page
+           ("location" "http://localhost/wiliki.cgi?TEST")) ;; redirected to the top page
          (values-ref (run-cgi-script->string
                       *cgi-path*
                       :environment '((REQUEST_METHOD . "GET"))

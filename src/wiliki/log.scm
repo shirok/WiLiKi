@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: log.scm,v 1.11 2006-04-27 06:28:21 shirok Exp $
+;;; $Id: log.scm,v 1.12 2007-07-14 05:33:20 shirok Exp $
 
 (define-module wiliki.log
   (use srfi-1)
@@ -492,6 +492,7 @@
   (if (string? string-or-list)
     (call-with-input-string string-or-list port->string-list)
     string-or-list))
+
 
 (provide "wiliki/log")
 

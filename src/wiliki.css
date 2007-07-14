@@ -73,3 +73,43 @@ span.breadcrumb-links {
 
 span.wiliki-alert { background-color: #ff8080; } /* used to warn internal error */
 
+/*
+ * Comment
+ */
+
+div.comment .comment-input {
+  font-size: 90%;
+}
+
+div.comment .comment-input th {
+  text-align: right;
+  vertical-align: top;
+  font-weight: normal;
+}
+
+div.comment .comment-area {
+  width:  60ex;
+  height: 10ex;
+}
+
+div.comment dl { 
+  padding: 0pt;
+  margin: 0pt;
+}
+
+div.comment dl dt {
+  font-weight: normal;
+  padding: 0pt;
+  margin: 0pt;
+}
+
+div.comment dl dd {
+  padding: 0pt;
+  margin: 0pt;
+}
+
+div.comment dl dd > blockquote {
+  border: none;
+  padding: 0pt;
+  margin: 0pt;
+}

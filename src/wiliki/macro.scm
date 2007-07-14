@@ -23,147 +23,31 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.36 2007-05-02 10:52:55 shirok Exp $
+;;; $Id: macro.scm,v 1.37 2007-07-14 05:33:20 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
   (use srfi-13)
+  (use srfi-19)
   (use gauche.sequence)
   (use text.html-lite)
   (use text.tree)
+  (use text.gettext)
   (use util.list)
   (use text.csv)
   (use wiliki.format)
   (use wiliki.page)
-  (use wiliki.db)
-  (extend wiliki)
+  (use wiliki.core)
   (export define-reader-macro define-writer-macro define-virtual-page
-          handle-reader-macro handle-writer-macro
+          handle-reader-macro handle-writer-macro expand-writer-macros
           handle-virtual-page virtual-page?))
 (select-module wiliki.macro)
-(use srfi-19)
 
-;; Macro alist
-
-(define *reader-macro-alist* '())
-(define *writer-macro-alist* '())
-(define *virtual-page-alist* '())
-
-;; 'Macro' is a procedure that takes arguments, and should return [SXML].
-;; For backward compatibility, it is allowed to return Stree as well.
-
-(define (wrap-macro-output output)
-  (if (and (proper-list? output)
-           (every (lambda (node)
-                    (or (string? node)
-                        (and (pair? node) (symbol? (car node)))))
-                  output))
-    output ;; it's likely an SXML list
-    `((stree ,@output)))) ;;otherwise, wrap it by stree node
-
-;;----------------------------------------------
-;; API called from the main WiLiKi system
-;;
-
-(define (handle-reader-macro name)
-  (or (and-let* ((args (parse-macro-args name)))
-        (handle-expansion name
-                          (lambda () (assoc (car args) *reader-macro-alist*))
-                          (lambda (p) (apply (cdr p) (cdr args)))))
-      (unrecognized name)))
-      
-
-(define (handle-writer-macro name)
-  (or (and-let* ((args (parse-macro-args name)))
-        (handle-expansion name
-                          (lambda () (assoc (car args) *writer-macro-alist*))
-                          (lambda (p) (apply (cdr p) (cdr args)))))
-      (unrecognized name)))
-
-(define (handle-virtual-page name)
-  (make <wiliki-page>
-    :title name
-    :content (handle-expansion name
-                               (lambda () (get-virtual-page name))
-                               (lambda (p) ((cdr p) name)))))
-
-(define (handle-expansion name finder applier)
-  (guard (e
-          (else
-           (if (positive? (debug-level (wiliki)))
-             `((pre (@ (class "macroerror"))
-                    ,#`"Macro error in [[,|name|]]:\n"
-                    ,(call-with-output-string
-                       (cut with-error-to-port <>
-                            (cut report-error e)))))
-             (unrecognized name))))
-    (wrap-macro-output
-     (cond ((finder) => applier)
-           (else (unrecognized name))))))
-
-;;----------------------------------------------
-;; Utility to define macros
-;;
-
-(define (unrecognized name)
-  (list #`"[[,name]]"))
-
-(define-syntax define-reader-macro 
-  (syntax-rules ()
-    ((_ (name . args) . body)
-     (set! *reader-macro-alist*
-           (let ((sname (string-append "$$" (symbol->string 'name))))
-             (acons sname
-                    (lambda p
-                      (if (arity-matches? p 'args)
-                          (apply (lambda args . body) p)
-                          (unrecognized sname)))
-                    *reader-macro-alist*))))
-    ))
-
-(define-syntax define-writer-macro 
-  (syntax-rules ()
-    ((_ (name . args) . body)
-     (set! *writer-macro-alist*
-           (let ((sname (string-append "$" (symbol->string 'name))))
-             (acons sname
-                    (lambda p
-                      (if (arity-matches? p 'args)
-                          (apply (lambda args . body) p)
-                          (unrecognized sname)))
-                    *writer-macro-alist*))))
-    ))
-
-(define-syntax define-virtual-page
-  (syntax-rules ()
-    ((_ (expr (var ...)) . body)
-     (set! *virtual-page-alist*
-	   (acons expr
-		  (lambda p
-		    (rxmatch-if (rxmatch expr (car p)) (var ...)
-                      (apply (lambda args . body) p)
-                      (unrecognized (regexp->string expr))))
-		  *virtual-page-alist*)))
-    ))
-
-(define (get-virtual-page name)
-  (find (lambda (e) (rxmatch (car e) name)) *virtual-page-alist*))
-
-(define (virtual-page? name)
-  (not (not (get-virtual-page name))))
-  
-(define (arity-matches? list formals)
-  (cond ((null? list)
-         (or (null? formals) (not (pair? formals))))
-        ((null? formals) #f)
-        ((pair? formals) (arity-matches? (cdr list) (cdr formals)))
-        (else #t)))
-
-(define parse-macro-args
-  (let1 parser (make-csv-reader #\space)
-    (lambda (name)
-      (guard (e (else #f))
-        (call-with-input-string name parser)))))
+;; Delay loading some modules 
+(autoload srfi-27
+          random-integer  random-source-randomize! default-random-source)
+(autoload wiliki.pasttime how-long-since)
+(autoload wiliki.edit     cmd-edit cmd-preview cmd-commit-edit)
 
 ;;----------------------------------------------
 ;; Writer macro definitions
@@ -203,7 +87,7 @@
 (define-reader-macro (img url . maybe-alt)
   (define (alt) (if (null? maybe-alt) "[image]" (string-join maybe-alt " ")))
   (define (badimg) `((a (@ (href ,url)) ,(alt))))
-  (let loop ((urls (image-urls-of (wiliki))))
+  (let loop ((urls (ref (wiliki)'image-urls)))
     (if (pair? urls)
       (receive (pred action)
           (if (pair? (car urls))
@@ -262,7 +146,7 @@
 
         (define (make-anchor headings)
           (let ((id (wiliki:calculate-heading-id headings)))
-            `(li (a (@ (href ,#`",(wiliki:self-url \"~a\" pagename)#,id"))
+            `(li (a (@ (href ,#`",(wiliki:url \"~a\" pagename)#,id"))
                     ,@(wiliki:format-line-plainly (car headings))))))
 
         (let1 headings
@@ -291,6 +175,95 @@
 
 (define-reader-macro (testerr . x)
   (error (x->string x)))
+
+;;
+;; Comment macro.  This is an example of combining reader macro
+;; and custom command.
+;;
+
+(define-reader-macro (comment . opts)
+  (let-optionals* opts ((id    (ref (wiliki-current-page)'key))
+                        (style "wiliki-comment"))
+    ;; Some ad-hoc spam avoider.  We include three textareas, two of
+    ;; which are hidden by style.  If anything is written in hidden
+    ;; textareas we assume it's an automated spam.
+    (random-source-randomize! default-random-source)
+    (let* ((rkey (+ (random-integer #x10000000) 1)) ; never be 0
+           (answer (modulo (ash rkey -11) 3))
+           (comment-page-name #`",|id|:comments")
+           (comment-page (wiliki-db-get comment-page-name))
+           (mtime  (cond (comment-page => (cut ref <> 'mtime)) (else 0))))
+      (define (st x)
+        (if (= x answer) '(class "comment-area") '(style "display: none")))
+      
+      `((div (@ (class "comment"))
+             (form (@ (action "") (method "POST"))
+                   (input (@ (type hidden) (name "c") (value "post-comment")))
+                   (input (@ (type hidden) (name "p") (value ,comment-page-name)))
+                   (input (@ (type hidden) (name "id") (value ,id)))
+                   (input (@ (type hidden) (name "rkey") (value ,rkey)))
+                   (input (@ (type hidden) (name "mtime") (value ,mtime)))
+                   (table
+                    (@ (class "comment-input"))
+                    (tr (th ,(gettext"Name: "))
+                        (td (input (@ (type text) (name "name")))))
+                    (tr (th ,(gettext"Comment: "))
+                        (td (textarea (@ ,(st 0) (name "c0")))
+                            (textarea (@ ,(st 1) (name "c1")))
+                            (textarea (@ ,(st 2) (name "c2")))))
+                    (tr (td)
+                        (td (input (@ (type submit) (name "submit")
+                                      (value ,(gettext"Submit Comment"))))))
+                    ))
+             ,@(cond (comment-page => wiliki:format-content)
+                     (else '())))
+        ))))
+
+(define-wiliki-action post-comment
+  :write (pagename
+          (id :convert wiliki:cv-in)
+          (rkey :convert x->integer)
+          (mtime :convert x->integer)
+          (name :convert wiliki:cv-in :default "")
+          (c0  :convert wiliki:cv-in :default "")
+          (c1  :convert wiliki:cv-in :default "")
+          (c2  :convert wiliki:cv-in :default ""))
+
+  (define (get-legal-post-content)
+    (and-let* (( (> rkey 0) )
+               (answer (modulo (ash rkey -11) 3)))
+      (fold (lambda (content n r)
+              (cond ((= n answer) content)
+                    ((equal? content "") r)
+                    (else #f)))
+            #f
+            (list c0 c1 c2)
+            (iota 3))))
+  ;; See cmd-commit-edit in edit.scm; probably we should consolidate
+  ;; those heuristic spam filtering into one module.
+  (define (filter-suspicious content)
+    (and (string? content)
+         (not (#/<a\s+href=[\"']?http/i content))
+         content))
+
+  (define (do-post)
+    (and-let* ([ (> (string-length name) 0) ]
+               [content (filter-suspicious (get-legal-post-content))]
+               [ (> (string-length content) 0) ]
+               [orig (wiliki-db-get pagename #t)])
+      (cmd-commit-edit pagename
+                       (string-append (ref orig'content)
+                                      ":"name" ("
+                                      (sys-strftime "%Y/%m/%d %T"
+                                                    (sys-localtime (sys-time)))
+                                      "):\n"
+                                      "<<<\n"
+                                      content
+                                      "\n>>>\n")
+                       mtime "" #t)))
+
+  (do-post)
+  (wiliki:redirect-page id))
 
 ;;----------------------------------------------
 ;; Virtual page definitions

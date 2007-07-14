@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: history.scm,v 1.20 2007-05-02 11:09:03 shirok Exp $
+;;;  $Id: history.scm,v 1.21 2007-07-14 05:33:20 shirok Exp $
 ;;;
 
 (select-module wiliki)
@@ -118,7 +118,7 @@
      :extra-head-elements
      '((meta (@ (name "robots") (content "noindex,nofollow"))))
      :content
-     (or (and-let* ((logfile (log-file-path (wiliki)))
+     (or (and-let* ((logfile (wiliki:log-file-path (wiliki)))
                     (logs (wiliki-log-pick-from-file pagename logfile))
                     (picked (take* (if (= start-count 0)
                                      logs
@@ -175,7 +175,7 @@
      :extra-head-elements
      '((meta (@ (name "robots") (content "noindex,nofollow"))))
      :content
-     (or (and-let* ((logfile (log-file-path (wiliki)))
+     (or (and-let* ((logfile (wiliki:log-file-path (wiliki)))
                     (page    (wiliki-db-get pagename))
                     (picked  (wiliki-log-pick-from-file pagename logfile)))
            (let ((entries  (wiliki-log-entries-after picked old-time)))
@@ -193,7 +193,7 @@
      :extra-head-elements
      '((meta (@ (name "robots") (content "noindex,nofollow"))))
      :content
-     (or (and-let* ((logfile (log-file-path (wiliki)))
+     (or (and-let* ((logfile (wiliki:log-file-path (wiliki)))
                     (page    (wiliki-db-get pagename))
                     (reverted (wiliki-log-recover-content pagename logfile
                                                           (ref page 'content)

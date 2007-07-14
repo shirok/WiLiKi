@@ -1,3 +1,17 @@
+2007-07-13  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/core.scm: Reorganizing the source tree.  Features
+	  needed to build a custom wiliki site is put into wiliki.core.
+	  The main wiliki module is an example implementation on top of
+	  wiliki.core.
+	* src/wiliki/edit.scm: Reorganized to be a separate module
+	  instead of an autoloaded part of wiliki.scm.
+	* src/wiliki/macro.scm: Reorganized to depend only on wiliki.core,
+	  not wiliki.
+	* src/wiliki.scm: Moved fundamental framework stuff into wiliki.core.
+	* src/wiliki/db.scm, src/wiliki/util.scm: integrated to wiliki.core.
+	  These modules are kept just for the compatibility.
+
 2007-06-21  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm (wiliki-main): Sets current-error-port's buffering
