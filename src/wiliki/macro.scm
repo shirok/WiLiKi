@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.37 2007-07-14 05:33:20 shirok Exp $
+;;; $Id: macro.scm,v 1.38 2007-07-14 09:14:09 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
@@ -197,6 +197,7 @@
         (if (= x answer) '(class "comment-area") '(style "display: none")))
       
       `((div (@ (class "comment"))
+             (p ,(gettext "Post a comment"))
              (form (@ (action "") (method "POST"))
                    (input (@ (type hidden) (name "c") (value "post-comment")))
                    (input (@ (type hidden) (name "p") (value ,comment-page-name)))
@@ -205,16 +206,15 @@
                    (input (@ (type hidden) (name "mtime") (value ,mtime)))
                    (table
                     (@ (class "comment-input"))
-                    (tr (th ,(gettext"Name: "))
-                        (td (input (@ (type text) (name "name")))))
-                    (tr (th ,(gettext"Comment: "))
-                        (td (textarea (@ ,(st 0) (name "c0")))
+                    (tr (td ,(gettext"Name: ")
+                            (input (@ (type text) (name "name")))))
+                    (tr (td (textarea (@ ,(st 0) (name "c0")))
                             (textarea (@ ,(st 1) (name "c1")))
                             (textarea (@ ,(st 2) (name "c2")))))
-                    (tr (td)
-                        (td (input (@ (type submit) (name "submit")
+                    (tr (td (input (@ (type submit) (name "submit")
                                       (value ,(gettext"Submit Comment"))))))
                     ))
+             (p ,(gettext "Past comment(s)"))
              ,@(cond (comment-page => wiliki:format-content)
                      (else '())))
         ))))
@@ -253,7 +253,7 @@
                [orig (wiliki-db-get pagename #t)])
       (cmd-commit-edit pagename
                        (string-append (ref orig'content)
-                                      ":"name" ("
+                                      "* "name" ("
                                       (sys-strftime "%Y/%m/%d %T"
                                                     (sys-localtime (sys-time)))
                                       "):\n"

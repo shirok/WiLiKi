@@ -77,14 +77,14 @@ span.wiliki-alert { background-color: #ff8080; } /* used to warn internal error 
  * Comment
  */
 
-div.comment .comment-input {
+div.comment { 
   font-size: 90%;
+  padding: 0pt;
+  margin: 0pt;
 }
 
-div.comment .comment-input th {
-  text-align: right;
-  vertical-align: top;
-  font-weight: normal;
+div.comment .comment-input {
+  margin-left: 20pt;
 }
 
 div.comment .comment-area {
@@ -92,24 +92,26 @@ div.comment .comment-area {
   height: 10ex;
 }
 
-div.comment dl { 
-  padding: 0pt;
-  margin: 0pt;
+div.comment > p {
+  border-left: solid 4px #006655;
+  border-bottom: solid 1px #006655;
+  padding: 0pt 3pt;
 }
 
-div.comment dl dt {
+div.comment > h2 {
+  font-size: 100%;
   font-weight: normal;
   padding: 0pt;
   margin: 0pt;
 }
 
-div.comment dl dd {
-  padding: 0pt;
-  margin: 0pt;
-}
-
-div.comment dl dd > blockquote {
+div.comment > blockquote {
   border: none;
   padding: 0pt;
+  margin: 0pt 0pt 0pt 20pt;
+}
+
+div.comment > blockquote > p{
+  padding: 4pt 0pt;
   margin: 0pt;
 }
