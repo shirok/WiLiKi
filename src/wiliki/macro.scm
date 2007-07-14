@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.39 2007-07-14 09:39:19 shirok Exp $
+;;; $Id: macro.scm,v 1.40 2007-07-14 09:40:24 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
@@ -216,9 +216,9 @@
                     (tr (td (input (@ (type submit) (name "submit")
                                       (value ,(gettext"Submit Comment"))))))
                     ))
-             ,(cond-list
-               ((not (null? existing))
-                `((p ,(gettext "Past comment(s)")) ,@existing)))))
+             ,@(if (null? existing)
+                 '()
+                 `((p ,(gettext "Past comment(s)")) ,@existing))))
       )))
 
 (define-wiliki-action post-comment
