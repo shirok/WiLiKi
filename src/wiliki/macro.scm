@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.38 2007-07-14 09:14:09 shirok Exp $
+;;; $Id: macro.scm,v 1.39 2007-07-14 09:39:19 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
@@ -192,7 +192,9 @@
            (answer (modulo (ash rkey -11) 3))
            (comment-page-name #`",|id|:comments")
            (comment-page (wiliki-db-get comment-page-name))
-           (mtime  (cond (comment-page => (cut ref <> 'mtime)) (else 0))))
+           (mtime  (cond (comment-page => (cut ref <> 'mtime)) (else 0)))
+           (existing (cond (comment-page => wiliki:format-content)
+                           (else '()))))
       (define (st x)
         (if (= x answer) '(class "comment-area") '(style "display: none")))
       
@@ -214,10 +216,10 @@
                     (tr (td (input (@ (type submit) (name "submit")
                                       (value ,(gettext"Submit Comment"))))))
                     ))
-             (p ,(gettext "Past comment(s)"))
-             ,@(cond (comment-page => wiliki:format-content)
-                     (else '())))
-        ))))
+             ,(cond-list
+               ((not (null? existing))
+                `((p ,(gettext "Past comment(s)")) ,@existing)))))
+      )))
 
 (define-wiliki-action post-comment
   :write (pagename
