@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: core.scm,v 1.3 2007-07-17 07:38:10 shirok Exp $
+;;;  $Id: core.scm,v 1.4 2007-07-17 10:29:05 shirok Exp $
 ;;;
 
 ;; Provides core functionality for WiLiKi web application;
@@ -67,7 +67,7 @@
           
           wiliki-with-db
           wiliki-db-exists? wiliki-db-record->page
-          wiliki-db-get wiliki-db-put! wiliki-db-delete!
+          wiliki-db-get wiliki-db-put! wiliki-db-delete! wiliki-db-touch!
           wiliki-db-recent-changes
           wiliki-db-map wiliki-db-fold wiliki-db-for-each
           wiliki-db-search wiliki-db-search-content))
@@ -604,6 +604,16 @@
                     (write-to-string
                      (acons key (ref page 'mtime) (take* r 49))))))
       )))
+
+;; WILIKI-DB-TOUCH! key
+(define (wiliki-db-touch! key)
+  (and-let* ([db (check-db)]
+             [page (wiliki-db-get key)]
+             [r (alist-delete key (read-from-string
+                                   (dbm-get db *recent-changes* "()")))])
+    (dbm-put! db *recent-changes*
+              (write-to-string
+               (acons key (sys-time) (take* r 49))))))
 
 ;; WILIKI-DB-DELETE! key
 (define (wiliki-db-delete! key)

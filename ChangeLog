@@ -1,3 +1,11 @@
+2007-07-17  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/core.scm (wiliki-db-touch!): added.  push the specified
+	  page to RecentChanges.
+
+	* src/wiliki/macro.scm (post-comment): when comment is posted,
+	  pushes the parent page into RecentChanges.
+
 2007-07-16  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/core.scm: make macro alists parameters, so that

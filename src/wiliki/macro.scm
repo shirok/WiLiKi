@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.42 2007-07-17 07:38:10 shirok Exp $
+;;; $Id: macro.scm,v 1.43 2007-07-17 10:29:05 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
@@ -296,6 +296,7 @@
                        t "" #t)))
 
   (do-post)
+  (wiliki-db-touch! pagename)
   (wiliki:redirect-page pagename))
 
 ;;----------------------------------------------
