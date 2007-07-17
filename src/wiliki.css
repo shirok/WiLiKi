@@ -79,7 +79,7 @@ span.wiliki-alert { background-color: #ff8080; } /* used to warn internal error 
 
 div.comment { 
   font-size: 90%;
-  padding: 0pt;
+  padding: 0pt 3em;
   margin: 0pt;
 }
 
@@ -105,11 +105,34 @@ div.comment > div.comment-past > h2 {
   margin: 0pt;
 }
 
-div.comment > div.comment-past h2, h3, h4, h5 {
+div.comment > div.comment-past h2 {
   font-size: 100%;
   font-weight: normal;
-  padding: 0pt;
-  margin: 0pt;
+  padding: 0pt; margin: 0pt;
+}
+
+div.comment > div.comment-past h3 {
+  font-size: 100%;
+  font-weight: normal;
+  padding: 0pt; margin: 0pt;
+}
+
+div.comment > div.comment-past h4 {
+  font-size: 100%;
+  font-weight: normal;
+  padding: 0pt; margin: 0pt;
+}
+
+div.comment > div.comment-past h5 {
+  font-size: 100%;
+  font-weight: normal;
+  padding: 0pt; margin: 0pt;
+}
+
+div.comment > div.comment-past h6 {
+  font-size: 100%;
+  font-weight: normal;
+  padding: 0pt; margin: 0pt;
 }
 
 div.comment > div.comment-past > blockquote {
@@ -118,7 +141,7 @@ div.comment > div.comment-past > blockquote {
   margin: 0pt;
 }
 
-div.comment > div.comment-past > blockquote p, pre, blockquote {
+div.comment > div.comment-past > blockquote * {
   padding: 0pt;
   margin-top: 0pt;
   margin-bottom: 5pt;
