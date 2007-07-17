@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: core.scm,v 1.2 2007-07-17 04:18:41 shirok Exp $
+;;;  $Id: core.scm,v 1.3 2007-07-17 07:38:10 shirok Exp $
 ;;;
 
 ;; Provides core functionality for WiLiKi web application;
@@ -60,6 +60,7 @@
           
           wiliki-action-ref define-wiliki-action
 
+          wiliki:reader-macros wiliki:writer-macros wiliki:virtual-pages
           define-reader-macro define-writer-macro define-virtual-page
           handle-reader-macro handle-writer-macro expand-writer-macros
           handle-virtual-page virtual-page?
@@ -355,9 +356,9 @@
 
 ;; Macro alist
 
-(define *reader-macro-alist* '())
-(define *writer-macro-alist* '())
-(define *virtual-page-alist* '())
+(define wiliki:reader-macros (make-parameter '()))
+(define wiliki:writer-macros (make-parameter '()))
+(define wiliki:virtual-pages (make-parameter '()))
 
 ;; 'Macro' is a procedure that takes arguments, and should return [SXML].
 ;; For backward compatibility, it is allowed to return Stree as well.
@@ -378,17 +379,17 @@
 (define (handle-reader-macro name)
   (or (and-let* ((args (parse-macro-args name)))
         (handle-expansion name
-                          (lambda () (assoc (car args) *reader-macro-alist*))
+                          (lambda () (assoc (car args) (wiliki:reader-macros)))
                           (lambda (p) (apply (cdr p) (cdr args)))))
-      (unrecognized name)))
+      (unrecognized-macro name)))
       
 
 (define (handle-writer-macro name)
   (or (and-let* ((args (parse-macro-args name)))
         (handle-expansion name
-                          (lambda () (assoc (car args) *writer-macro-alist*))
+                          (lambda () (assoc (car args) (wiliki:writer-macros)))
                           (lambda (p) (apply (cdr p) (cdr args)))))
-      (unrecognized name)))
+      (unrecognized-macro name)))
 
 (define (handle-virtual-page name)
   (make <wiliki-page>
@@ -406,10 +407,10 @@
                     ,(call-with-output-string
                        (cut with-error-to-port <>
                             (cut report-error e)))))
-             (unrecognized name))))
+             (unrecognized-macro name))))
     (wrap-macro-output
      (cond ((finder) => applier)
-           (else (unrecognized name))))))
+           (else (unrecognized-macro name))))))
 
 (define (expand-writer-macros content)
 
@@ -442,48 +443,49 @@
 ;; Utility to define macros
 ;;
 
-(define (unrecognized name)
+(define (unrecognized-macro name)
   (list #`"[[,name]]"))
 
 (define-syntax define-reader-macro 
   (syntax-rules ()
     ((_ (name . args) . body)
-     (push! *reader-macro-alist*
-            (let ((sname (string-append "$$" (symbol->string 'name))))
+     (wiliki:reader-macros
+      (cons (let ((sname (string-append "$$" (symbol->string 'name))))
               (cons sname
                     (lambda p
                       (if (arity-matches? p 'args)
                         (apply (lambda args . body) p)
-                        (unrecognized sname)))))))
+                        (unrecognized-macro sname)))))
+            (wiliki:reader-macros))))
     ))
 
 (define-syntax define-writer-macro 
   (syntax-rules ()
     ((_ (name . args) . body)
-     (set! *writer-macro-alist*
-           (let ((sname (string-append "$" (symbol->string 'name))))
-             (acons sname
-                    (lambda p
-                      (if (arity-matches? p 'args)
-                          (apply (lambda args . body) p)
-                          (unrecognized sname)))
-                    *writer-macro-alist*))))
+     (wiliki:writer-macros
+      (let ((sname (string-append "$" (symbol->string 'name))))
+        (acons sname
+               (lambda p
+                 (if (arity-matches? p 'args)
+                   (apply (lambda args . body) p)
+                   (unrecognized-macro sname)))
+               (wiliki:writer-macros)))))
     ))
 
 (define-syntax define-virtual-page
   (syntax-rules ()
     ((_ (expr (var ...)) . body)
-     (set! *virtual-page-alist*
-	   (acons expr
-		  (lambda p
-		    (rxmatch-if (rxmatch expr (car p)) (var ...)
-                      (apply (lambda args . body) p)
-                      (unrecognized (regexp->string expr))))
-		  *virtual-page-alist*)))
+     (wiliki:virtual-pages
+      (acons expr
+             (lambda p
+               (rxmatch-if (rxmatch expr (car p)) (var ...)
+                 (apply (lambda args . body) p)
+                 (unrecognized-macro (regexp->string expr))))
+             (wiliki:virtual-pages))))
     ))
 
 (define (get-virtual-page name)
-  (find (lambda (e) (rxmatch (car e) name)) *virtual-page-alist*))
+  (find (lambda (e) (rxmatch (car e) name)) (wiliki:virtual-pages)))
 
 (define (virtual-page? name)
   (not (not (get-virtual-page name))))

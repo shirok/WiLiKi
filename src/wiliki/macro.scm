@@ -23,13 +23,14 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.41 2007-07-17 04:18:41 shirok Exp $
+;;; $Id: macro.scm,v 1.42 2007-07-17 07:38:10 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
   (use srfi-13)
   (use srfi-19)
   (use gauche.sequence)
+  (use gauche.parameter)
   (use text.html-lite)
   (use text.tree)
   (use text.gettext)
@@ -38,9 +39,7 @@
   (use wiliki.format)
   (use wiliki.page)
   (use wiliki.core)
-  (export define-reader-macro define-writer-macro define-virtual-page
-          handle-reader-macro handle-writer-macro expand-writer-macros
-          handle-virtual-page virtual-page?))
+  )
 (select-module wiliki.macro)
 
 ;; Delay loading some modules 
@@ -212,8 +211,9 @@
            (timestamp (sys-time))
            )
       (define (past-comments)
-        (append-map (lambda (p) (wiliki:get-formatted-page-content (car p)))
-                    comment-pages))
+        (parameterize ((wiliki:reader-macros '()))
+          (append-map (lambda (p) (wiliki:get-formatted-page-content (car p)))
+                      comment-pages)))
       (define (st x)
         (if (= x answer) '(class "comment-area") '(style "display: none")))
       

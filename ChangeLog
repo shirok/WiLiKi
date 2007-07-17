@@ -1,5 +1,9 @@
 2007-07-16  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki/core.scm: make macro alists parameters, so that
+	  the renderer can control macro interpretation (e.g. prohibit
+	  reader macros while rendering exiting comments).
+
 	* src/wiliki/macro.scm: changed comment store form; use one page
 	  per a comment, so that we can avoid unclosed markups from
 	  messing up the rest of the page.
