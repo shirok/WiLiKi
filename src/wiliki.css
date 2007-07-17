@@ -105,8 +105,22 @@ div.comment > div.comment-past > h2 {
   margin: 0pt;
 }
 
-div.comment > div.comment-past > p {
+div.comment > div.comment-past h2, h3, h4, h5 {
+  font-size: 100%;
+  font-weight: normal;
   padding: 0pt;
   margin: 0pt;
+}
+
+div.comment > div.comment-past > blockquote {
+  border: none;
+  padding: 0pt 20pt;
+  margin: 0pt;
+}
+
+div.comment > div.comment-past > blockquote p, pre, blockquote {
+  padding: 0pt;
+  margin-top: 0pt;
+  margin-bottom: 5pt;
 }
 
