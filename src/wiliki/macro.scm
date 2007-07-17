@@ -1,7 +1,7 @@
 ;;;
-;;; wiliki/macro.scm - macro handling (to be autoloaded)
+;;; wiliki/macro.scm - built-in macro definitions
 ;;;
-;;;  Copyright (c) 2000-2004 Shiro Kawai, All rights reserved.
+;;;  Copyright (c) 2000-2007 Shiro Kawai, All rights reserved.
 ;;;
 ;;;  Permission is hereby granted, free of charge, to any person
 ;;;  obtaining a copy of this software and associated documentation
@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.40 2007-07-14 09:40:24 shirok Exp $
+;;; $Id: macro.scm,v 1.41 2007-07-17 04:18:41 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
@@ -176,10 +176,26 @@
 (define-reader-macro (testerr . x)
   (error (x->string x)))
 
-;;
 ;; Comment macro.  This is an example of combining reader macro
 ;; and custom command.
 ;;
+;; We store each individual comment to a separate page, so that
+;; the incomplete markup won't mess up the rest of the page.
+;; The comment pages are named as <id>:comment:<number>, where
+;; <id> identifies the comment chunk; the default of <id> is the
+;; name of the page the comment macro is attached.  To put more than
+;; one comment form on a page, unique id must be provided by the
+;; macro argument.
+;;
+;; We also take some caution to the dumb automated spammers.
+;; First, we place multiple textareas in the form, all but one
+;; of which is hidden by CSS.  If anything is written in the hidden
+;; textarea we just discard the post.  This might not be friendly
+;; to non-CSS-aware browsers, though; if it becomes a problem, we might
+;; consider putting a message.  We also includes a timestamp in the
+;; form and check if its value is in reasonable range.  These can be
+;; easily broken for determined spammers, but I bet almost all of them
+;; won't bother to do that much.
 
 (define-reader-macro (comment . opts)
   (let-optionals* opts ((id    (ref (wiliki-current-page)'key))
@@ -190,47 +206,54 @@
     (random-source-randomize! default-random-source)
     (let* ((rkey (+ (random-integer #x10000000) 1)) ; never be 0
            (answer (modulo (ash rkey -11) 3))
-           (comment-page-name #`",|id|:comments")
-           (comment-page (wiliki-db-get comment-page-name))
-           (mtime  (cond (comment-page => (cut ref <> 'mtime)) (else 0)))
-           (existing (cond (comment-page => wiliki:format-content)
-                           (else '()))))
+           (comment-prefix #`",|id|:comments:")
+           (comment-pages (wiliki-db-search
+                           (lambda (k v) (string-prefix? comment-prefix k))))
+           (timestamp (sys-time))
+           )
+      (define (past-comments)
+        (append-map (lambda (p) (wiliki:get-formatted-page-content (car p)))
+                    comment-pages))
       (define (st x)
         (if (= x answer) '(class "comment-area") '(style "display: none")))
       
       `((div (@ (class "comment"))
-             (p ,(gettext "Post a comment"))
+             (p (@(class "comment-caption")) ,(gettext "Post a comment"))
              (form (@ (action "") (method "POST"))
                    (input (@ (type hidden) (name "c") (value "post-comment")))
-                   (input (@ (type hidden) (name "p") (value ,comment-page-name)))
-                   (input (@ (type hidden) (name "id") (value ,id)))
+                   (input (@ (type hidden) (name "p") (value ,(ref (wiliki-current-page)'key))))
+                   (input (@ (type hidden) (name "cid") (value ,id)))
                    (input (@ (type hidden) (name "rkey") (value ,rkey)))
-                   (input (@ (type hidden) (name "mtime") (value ,mtime)))
+                   (input (@ (type hidden) (name "t") (value ,timestamp)))
                    (table
                     (@ (class "comment-input"))
+
                     (tr (td ,(gettext"Name: ")
-                            (input (@ (type text) (name "name")))))
+                            (input (@ (type text) (name "n")))))
                     (tr (td (textarea (@ ,(st 0) (name "c0")))
                             (textarea (@ ,(st 1) (name "c1")))
                             (textarea (@ ,(st 2) (name "c2")))))
                     (tr (td (input (@ (type submit) (name "submit")
                                       (value ,(gettext"Submit Comment"))))))
                     ))
-             ,@(if (null? existing)
+             ,@(if (null? comment-pages)
                  '()
-                 `((p ,(gettext "Past comment(s)")) ,@existing))))
+                 `((p (@(class"comment-caption")),(gettext "Past comment(s)"))
+                   (div (@(class"comment-past")) ,@(past-comments))))))
       )))
 
 (define-wiliki-action post-comment
   :write (pagename
-          (id :convert wiliki:cv-in)
+          (cid :convert wiliki:cv-in)
           (rkey :convert x->integer)
-          (mtime :convert x->integer)
-          (name :convert wiliki:cv-in :default "")
+          (t   :convert x->integer) ; timestamp
+          (n   :convert wiliki:cv-in :default "") ; name
           (c0  :convert wiliki:cv-in :default "")
           (c1  :convert wiliki:cv-in :default "")
           (c2  :convert wiliki:cv-in :default ""))
 
+  ;; Pick the valid textarea contents.  If there's any text in the
+  ;; dummy textarea, we assume it is from automated spammer.
   (define (get-legal-post-content)
     (and-let* (( (> rkey 0) )
                (answer (modulo (ash rkey -11) 3)))
@@ -241,6 +264,7 @@
             #f
             (list c0 c1 c2)
             (iota 3))))
+
   ;; See cmd-commit-edit in edit.scm; probably we should consolidate
   ;; those heuristic spam filtering into one module.
   (define (filter-suspicious content)
@@ -248,24 +272,31 @@
          (not (#/<a\s+href=[\"']?http/i content))
          content))
 
+  ;; Find maximum comment count
+  (define (max-comment-count)
+    (let1 rx (string->regexp #`",|cid|:comments:(\\d+)")
+      (wiliki-db-fold (lambda (k v maxval)
+                        (cond [(rx k)
+                               => (lambda (m) (max maxval (x->integer (m 1))))]
+                              [else maxval]))
+                      -1)))
+
   (define (do-post)
-    (and-let* ([ (> (string-length name) 0) ]
+    (and-let* ([ (> (string-length n) 0) ]
+               [now (sys-time)]
+               [ (< (- now 7200) t now) ]
                [content (filter-suspicious (get-legal-post-content))]
                [ (> (string-length content) 0) ]
-               [orig (wiliki-db-get pagename #t)])
-      (cmd-commit-edit pagename
-                       (string-append (ref orig'content)
-                                      "* "name" ("
-                                      (sys-strftime "%Y/%m/%d %T"
-                                                    (sys-localtime (sys-time)))
-                                      "):\n"
-                                      "<<<\n"
-                                      content
-                                      "\n>>>\n")
-                       mtime "" #t)))
+               [cnt (+ (max-comment-count) 1)])
+      (cmd-commit-edit (format "~a:comments:~3'0d" cid cnt)
+                       (string-append
+                        "* "n" ("
+                        (sys-strftime "%Y/%m/%d %T" (sys-localtime now))
+                        "):\n<<<\n"content"\n>>>\n")
+                       t "" #t)))
 
   (do-post)
-  (wiliki:redirect-page id))
+  (wiliki:redirect-page pagename))
 
 ;;----------------------------------------------
 ;; Virtual page definitions

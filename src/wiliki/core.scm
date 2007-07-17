@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: core.scm,v 1.1 2007-07-14 05:33:20 shirok Exp $
+;;;  $Id: core.scm,v 1.2 2007-07-17 04:18:41 shirok Exp $
 ;;;
 
 ;; Provides core functionality for WiLiKi web application;
@@ -623,7 +623,7 @@
               (if (string-prefix? " " k)
                 seed
                 (proc k v seed)))
-            '()))
+            seed))
 
 (define (wiliki-db-map proc)
   (reverse! (wiliki-db-fold (lambda (k v seed) (cons (proc k v) seed)) '())))

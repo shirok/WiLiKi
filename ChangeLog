@@ -1,3 +1,9 @@
+2007-07-16  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/macro.scm: changed comment store form; use one page
+	  per a comment, so that we can avoid unclosed markups from
+	  messing up the rest of the page.
+
 2007-07-13  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/core.scm: Reorganizing the source tree.  Features

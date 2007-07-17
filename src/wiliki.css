@@ -92,26 +92,21 @@ div.comment .comment-area {
   height: 10ex;
 }
 
-div.comment > p {
+div.comment > p.comment-caption {
   border-left: solid 4px #006655;
   border-bottom: solid 1px #006655;
   padding: 0pt 3pt;
 }
 
-div.comment > h2 {
+div.comment > div.comment-past > h2 {
   font-size: 100%;
   font-weight: normal;
+  padding: 8pt 0pt 0pt 0pt;
+  margin: 0pt;
+}
+
+div.comment > div.comment-past > p {
   padding: 0pt;
   margin: 0pt;
 }
 
-div.comment > blockquote {
-  border: none;
-  padding: 0pt;
-  margin: 0pt 0pt 0pt 20pt;
-}
-
-div.comment > blockquote > p{
-  padding: 4pt 0pt;
-  margin: 0pt;
-}
