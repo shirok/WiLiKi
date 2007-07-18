@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.45 2007-07-18 03:09:30 shirok Exp $
+;;; $Id: macro.scm,v 1.46 2007-07-18 03:10:12 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
@@ -213,7 +213,7 @@
          ;; NB: sort procedure assumes we have up to 1000 comments.
          (comment-pages (wiliki-db-search
                          (lambda (k v) (string-prefix? comment-prefix k))
-                         (lambda (a b) (string<? (car a) (car b)))))
+                         (lambda (a b) (string>? (car a) (car b)))))
          (timestamp (sys-time))
          )
     (define (past-comments)
