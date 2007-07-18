@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.43 2007-07-17 10:29:05 shirok Exp $
+;;; $Id: macro.scm,v 1.44 2007-07-18 02:55:02 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
@@ -35,6 +35,7 @@
   (use text.tree)
   (use text.gettext)
   (use util.list)
+  (use util.match)
   (use text.csv)
   (use wiliki.format)
   (use wiliki.page)
@@ -197,50 +198,71 @@
 ;; won't bother to do that much.
 
 (define-reader-macro (comment . opts)
-  (let-optionals* opts ((id    (ref (wiliki-current-page)'key))
-                        (style "wiliki-comment"))
-    ;; Some ad-hoc spam avoider.  We include three textareas, two of
-    ;; which are hidden by style.  If anything is written in hidden
-    ;; textareas we assume it's an automated spam.
-    (random-source-randomize! default-random-source)
-    (let* ((rkey (+ (random-integer #x10000000) 1)) ; never be 0
-           (answer (modulo (ash rkey -11) 3))
-           (comment-prefix #`",|id|:comments:")
-           (comment-pages (wiliki-db-search
-                           (lambda (k v) (string-prefix? comment-prefix k))))
-           (timestamp (sys-time))
-           )
-      (define (past-comments)
-        (parameterize ((wiliki:reader-macros '()))
-          (append-map (lambda (p) (wiliki:get-formatted-page-content (car p)))
-                      comment-pages)))
-      (define (st x)
-        (if (= x answer) '(class "comment-area") '(style "display: none")))
-      
-      `((div (@ (class "comment"))
-             (p (@(class "comment-caption")) ,(gettext "Post a comment"))
-             (form (@ (action "") (method "POST"))
-                   (input (@ (type hidden) (name "c") (value "post-comment")))
-                   (input (@ (type hidden) (name "p") (value ,(ref (wiliki-current-page)'key))))
-                   (input (@ (type hidden) (name "cid") (value ,id)))
-                   (input (@ (type hidden) (name "rkey") (value ,rkey)))
-                   (input (@ (type hidden) (name "t") (value ,timestamp)))
-                   (table
-                    (@ (class "comment-input"))
+  (let-optionals* opts ((id (ref (wiliki-current-page)'key)))
+    ;; If the page that contains $$comment macro is included in another page,
+    ;; we only show the summary.
+    (match (wiliki-page-stack)
+      ((_)  (comment-input-and-display id))
+      (else (comment-summary id)))))
 
-                    (tr (td ,(gettext"Name: ")
-                            (input (@ (type text) (name "n")))))
-                    (tr (td (textarea (@ ,(st 0) (name "c0")))
-                            (textarea (@ ,(st 1) (name "c1")))
-                            (textarea (@ ,(st 2) (name "c2")))))
-                    (tr (td (input (@ (type submit) (name "submit")
-                                      (value ,(gettext"Submit Comment"))))))
-                    ))
-             ,@(if (null? comment-pages)
-                 '()
-                 `((p (@(class"comment-caption")),(gettext "Past comment(s)"))
-                   (div (@(class"comment-past")) ,@(past-comments))))))
-      )))
+(define (comment-input-and-display id)
+  (random-source-randomize! default-random-source)
+  (let* ((rkey (+ (random-integer #x10000000) 1)) ; never be 0
+         (answer (modulo (ash rkey -11) 3))
+         (comment-prefix #`",|id|:comments:")
+         (comment-pages (wiliki-db-search
+                         (lambda (k v) (string-prefix? comment-prefix k))
+                         (lambda (a b) (string<? (ref a'key) (ref b'key)))))
+         (timestamp (sys-time))
+         )
+    (define (past-comments)
+      (parameterize ((wiliki:reader-macros '()))
+        (append-map (lambda (p) (wiliki:get-formatted-page-content (car p)))
+                    comment-pages)))
+    (define (st x)
+      (if (= x answer) '(class "comment-area") '(style "display: none")))
+    
+    `((div (@ (class "comment"))
+           (p (@(class "comment-caption")) ,(gettext "Post a comment"))
+           (a (@(name ,comment-prefix)))
+           (form (@ (action "") (method "POST"))
+                 (input (@ (type hidden) (name "c") (value "post-comment")))
+                 (input (@ (type hidden) (name "p") (value ,(ref (wiliki-current-page)'key))))
+                 (input (@ (type hidden) (name "cid") (value ,id)))
+                 (input (@ (type hidden) (name "rkey") (value ,rkey)))
+                 (input (@ (type hidden) (name "t") (value ,timestamp)))
+                 (table
+                  (@ (class "comment-input"))
+
+                  (tr (td ,(gettext"Name: ")
+                          (input (@ (type text) (name "n")))))
+                  (tr (td (textarea (@ ,(st 0) (name "c0")))
+                          (textarea (@ ,(st 1) (name "c1")))
+                          (textarea (@ ,(st 2) (name "c2")))))
+                  (tr (td (input (@ (type submit) (name "submit")
+                                    (value ,(gettext"Submit Comment"))))))
+                  ))
+           ,@(if (null? comment-pages)
+               '()
+               `((p (@(class"comment-caption")),(gettext "Past comment(s)"))
+                 (div (@(class"comment-past")) ,@(past-comments))))))
+    ))
+
+(define (comment-summary id)
+  (let* ((comment-prefix #`",|id|:comments:")
+         (num-comments (length
+                        (wiliki-db-search
+                         (lambda (k v) (string-prefix? comment-prefix k)))))
+         )
+    `((div (@ (class "comment"))
+           ,(format "~s" (map (cut ref <>'key) (wiliki-page-stack)))
+           (p (@ (class "comment-summary"))
+              (a (@ (href ,(wiliki:url "~a#~a" (ref (wiliki-current-page)'key)
+                                       comment-prefix)))
+                 ,(format "Comment~a (~a)"
+                          (if (= num-comments 1) "" "s")
+                          num-comments)))))
+    ))
 
 (define-wiliki-action post-comment
   :write (pagename

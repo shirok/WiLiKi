@@ -5,6 +5,8 @@
 
 	* src/wiliki/macro.scm (post-comment): when comment is posted,
 	  pushes the parent page into RecentChanges.
+	  (comment): Only show summary if $$comment macro appears in the
+	  included page.
 
 2007-07-16  Shiro Kawai  <shiro@acm.org>
 
