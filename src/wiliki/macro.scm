@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.44 2007-07-18 02:55:02 shirok Exp $
+;;; $Id: macro.scm,v 1.45 2007-07-18 03:09:30 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
@@ -210,9 +210,10 @@
   (let* ((rkey (+ (random-integer #x10000000) 1)) ; never be 0
          (answer (modulo (ash rkey -11) 3))
          (comment-prefix #`",|id|:comments:")
+         ;; NB: sort procedure assumes we have up to 1000 comments.
          (comment-pages (wiliki-db-search
                          (lambda (k v) (string-prefix? comment-prefix k))
-                         (lambda (a b) (string<? (ref a'key) (ref b'key)))))
+                         (lambda (a b) (string<? (car a) (car b)))))
          (timestamp (sys-time))
          )
     (define (past-comments)
@@ -255,7 +256,6 @@
                          (lambda (k v) (string-prefix? comment-prefix k)))))
          )
     `((div (@ (class "comment"))
-           ,(format "~s" (map (cut ref <>'key) (wiliki-page-stack)))
            (p (@ (class "comment-summary"))
               (a (@ (href ,(wiliki:url "~a#~a" (ref (wiliki-current-page)'key)
                                        comment-prefix)))
