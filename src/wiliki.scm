@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.136 2007-07-17 18:58:16 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.137 2007-07-19 01:28:09 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -552,7 +552,7 @@
            (setup-textdomain self language)
            (cond
             ;; command may #t if we're looking at the page named "c".
-            ((wiliki-action-ref (if (string? command)
+            ((wiliki:action-ref (if (string? command)
                                   (string->symbol command)
                                   'v))
              => (cut <> pagename param))

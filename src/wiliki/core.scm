@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: core.scm,v 1.4 2007-07-17 10:29:05 shirok Exp $
+;;;  $Id: core.scm,v 1.5 2007-07-19 01:28:09 shirok Exp $
 ;;;
 
 ;; Provides core functionality for WiLiKi web application;
@@ -58,13 +58,14 @@
           wiliki:log-file-path
           wiliki:std-page
           
-          wiliki-action-ref define-wiliki-action
+          wiliki:action-ref define-wiliki-action
 
           wiliki:reader-macros wiliki:writer-macros wiliki:virtual-pages
           define-reader-macro define-writer-macro define-virtual-page
           handle-reader-macro handle-writer-macro expand-writer-macros
           handle-virtual-page virtual-page?
-          
+
+          ;; for compatibility
           wiliki-with-db
           wiliki-db-exists? wiliki-db-record->page
           wiliki-db-get wiliki-db-put! wiliki-db-delete! wiliki-db-touch!
@@ -155,7 +156,7 @@
 (define wiliki:actions (make-parameter '())) ;action list (internal)
 
 ;; Symbol -> (Pagename, Params -> HtmlPage)
-(define (wiliki-action-ref cmd)
+(define (wiliki:action-ref cmd)
   (assq-ref (wiliki:actions) cmd))
 
 ;; Symbol, (Pagename, Params -> HtmlPage) -> ()
@@ -295,22 +296,6 @@
 ;;  (wiliki:url :full), (wiliki:url :full string),
 ;;  (wiliki:url :full fmtstr arg ...) => like above, but returns
 ;;     absolute url.
-
-; (define (cgi-name-of wiliki)
-;   (and wiliki (sys-basename (ref wiliki'script-name))))
-
-; (define (full-script-path-of wiliki)
-;   (and wiliki
-;        (format "~a://~a~a~a"
-;                (protocol-of wiliki)
-;                (server-name-of wiliki)
-;                (if (or (and (= (server-port-of wiliki) 80)
-;                             (string=? (protocol-of wiliki) "http"))
-;                        (and (= (server-port-of wiliki) 443)
-;                             (string=? (protocol-of wiliki) "https")))
-;                  ""
-;                  #`":,(server-port-of wiliki)")
-;                (ref wiliki'script-name))))
 
 (define (wiliki:url . args)
   (define (rel-base w)

@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.46 2007-07-18 03:10:12 shirok Exp $
+;;; $Id: macro.scm,v 1.47 2007-07-19 01:28:09 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
@@ -49,21 +49,31 @@
 (autoload wiliki.pasttime how-long-since)
 (autoload wiliki.edit     cmd-edit cmd-preview cmd-commit-edit)
 
-;;----------------------------------------------
+;;===============================================================
 ;; Writer macro definitions
 ;;
 
+;;---------------------------------------------------------------
+;; $date
+;;
 (define-writer-macro (date)
   (list (wiliki:format-time (sys-time))))
 
-;; sample
+;;---------------------------------------------------------------
+;; $srfi
+;;
+
+;; (this is a kind of sample)
 (define-writer-macro (srfi n)
   (format "[http://srfi.schemers.org/srfi-~a/srfi-~a.html srfi-~a]" n n n))
 
-;;----------------------------------------------
+;;===============================================================
 ;; Reader macro definitions
 ;;
 
+;;---------------------------------------------------------------
+;; $$index and $$cindex
+;;
 (define-reader-macro (index prefix)
   `((ul
      ,@(map (lambda (key) `(li ,(wiliki:wikiname-anchor (car key))))
@@ -80,10 +90,16 @@
                      (lambda (a b)
                        (string<? (car a) (car b)))))))
 
+;;---------------------------------------------------------------
+;; $$include
+;;
 (define-reader-macro (include page)
   (cond ((wiliki-db-get page) => wiliki:format-content)
         (else (list #`"[[$$include ,page]]"))))
 
+;;---------------------------------------------------------------
+;; $$img
+;;
 (define-reader-macro (img url . maybe-alt)
   (define (alt) (if (null? maybe-alt) "[image]" (string-join maybe-alt " ")))
   (define (badimg) `((a (@ (href ,url)) ,(alt))))
@@ -100,6 +116,9 @@
           (loop (cdr urls))))
       (badimg))))
 
+;;---------------------------------------------------------------
+;; $$toc
+;;
 (define-reader-macro (toc . maybe-page)
   (let* ((name (get-optional maybe-page #f))
          (page (if name (wiliki-db-get name #f) (wiliki-current-page))))
@@ -163,6 +182,9 @@
           (make-ul headings 1 '() (lambda (_ ul) (list ul))))
         ))))
 
+;;---------------------------------------------------------------
+;; $$breadcrumb-links
+;;
 (define-reader-macro (breadcrumb-links . opts)
   (let-optionals* opts ((name #f)
                         (delim ":"))
@@ -173,8 +195,15 @@
           (list "[[$$breadcrumb-links]]"))
         (wiliki:breadcrumb-links page delim)))))
 
+;;---------------------------------------------------------------
+;; $$testerr
+;;
 (define-reader-macro (testerr . x)
   (error (x->string x)))
+
+;;---------------------------------------------------------------
+;; $$comment
+;;
 
 ;; Comment macro.  This is an example of combining reader macro
 ;; and custom command.
@@ -187,6 +216,8 @@
 ;; one comment form on a page, unique id must be provided by the
 ;; macro argument.
 ;;
+;; The 'type' argument 
+;;
 ;; We also take some caution to the dumb automated spammers.
 ;; First, we place multiple textareas in the form, all but one
 ;; of which is hidden by CSS.  If anything is written in the hidden
@@ -198,7 +229,8 @@
 ;; won't bother to do that much.
 
 (define-reader-macro (comment . opts)
-  (let-optionals* opts ((id (ref (wiliki-current-page)'key)))
+  (let-optionals* opts ((type "")
+                        (id   (ref (wiliki-current-page)'key)))
     ;; If the page that contains $$comment macro is included in another page,
     ;; we only show the summary.
     (match (wiliki-page-stack)
@@ -209,10 +241,10 @@
   (random-source-randomize! default-random-source)
   (let* ((rkey (+ (random-integer #x10000000) 1)) ; never be 0
          (answer (modulo (ash rkey -11) 3))
-         (comment-prefix #`",|id|:comments:")
+         (prefix (comment-prefix id))
          ;; NB: sort procedure assumes we have up to 1000 comments.
          (comment-pages (wiliki-db-search
-                         (lambda (k v) (string-prefix? comment-prefix k))
+                         (lambda (k v) (string-prefix? prefix k))
                          (lambda (a b) (string>? (car a) (car b)))))
          (timestamp (sys-time))
          )
@@ -224,8 +256,8 @@
       (if (= x answer) '(class "comment-area") '(style "display: none")))
     
     `((div (@ (class "comment"))
+           (a (@(name ,prefix)))
            (p (@(class "comment-caption")) ,(gettext "Post a comment"))
-           (a (@(name ,comment-prefix)))
            (form (@ (action "") (method "POST"))
                  (input (@ (type hidden) (name "c") (value "post-comment")))
                  (input (@ (type hidden) (name "p") (value ,(ref (wiliki-current-page)'key))))
@@ -250,19 +282,21 @@
     ))
 
 (define (comment-summary id)
-  (let* ((comment-prefix #`",|id|:comments:")
+  (let* ((prefix (comment-prefix id))
          (num-comments (length
                         (wiliki-db-search
-                         (lambda (k v) (string-prefix? comment-prefix k)))))
+                         (lambda (k v) (string-prefix? prefix k)))))
          )
     `((div (@ (class "comment"))
            (p (@ (class "comment-summary"))
               (a (@ (href ,(wiliki:url "~a#~a" (ref (wiliki-current-page)'key)
-                                       comment-prefix)))
+                                       prefix)))
                  ,(format "Comment~a (~a)"
                           (if (= num-comments 1) "" "s")
                           num-comments)))))
     ))
+
+(define (comment-prefix id) #`"|comments:,|id|::")
 
 (define-wiliki-action post-comment
   :write (pagename
@@ -296,7 +330,7 @@
 
   ;; Find maximum comment count
   (define (max-comment-count)
-    (let1 rx (string->regexp #`",|cid|:comments:(\\d+)")
+    (let1 rx (string->regexp #`"^,(regexp-quote (comment-prefix cid))(\\d+)$")
       (wiliki-db-fold (lambda (k v maxval)
                         (cond [(rx k)
                                => (lambda (m) (max maxval (x->integer (m 1))))]
@@ -310,7 +344,7 @@
                [content (filter-suspicious (get-legal-post-content))]
                [ (> (string-length content) 0) ]
                [cnt (+ (max-comment-count) 1)])
-      (cmd-commit-edit (format "~a:comments:~3'0d" cid cnt)
+      (cmd-commit-edit (format "~a~3'0d" (comment-prefix cid) cnt)
                        (string-append
                         "* "n" ("
                         (sys-strftime "%Y/%m/%d %T" (sys-localtime now))
@@ -321,11 +355,9 @@
   (wiliki-db-touch! pagename)
   (wiliki:redirect-page pagename))
 
-;;----------------------------------------------
+;;===============================================================
 ;; Virtual page definitions
 ;;
-
-;; These are just samples.
 
 (define-virtual-page (#/^RecentChanges$/ (_))
   `((table
@@ -334,5 +366,8 @@
                    (td "(" ,(how-long-since (cdr p)) " ago)")
                    (td ,(wiliki:wikiname-anchor (car p)))))
             (wiliki-db-recent-changes)))))
+
+(define-virtual-page (#/^\|comments:(.*)(?!::\d+$)/ (_ p))
+  `((p "See " ,@(wiliki:format-wikiname p))))
 
 (provide "wiliki/macro")
