@@ -1,5 +1,8 @@
 2007-07-18  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki/page.scm: A bit of API fix.  Planning to make all
+	  wiliki-related APIs named 'wiliki:foo', not 'wiliki-foo'.
+
 	* src/wiliki/macro.scm (comment): Changed comment page name so that
 	  they won't appear in $$index macros which intend to pick the parent
 	  pages.  Also added a virtual page to navigate clicks from the

@@ -23,24 +23,22 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: page.scm,v 1.3 2005-09-05 01:00:22 shirok Exp $
+;;; $Id: page.scm,v 1.4 2007-07-19 06:55:41 shirok Exp $
 
 (define-module wiliki.page
   (use srfi-1)
   (use gauche.parameter)
+  (use util.match)
   (export <wiliki-page>
-          wiliki-page-stack
-          wiliki-current-page
-          wiliki-page-circular?
+          wiliki:current-page wiliki:page-circular?
+          wiliki:current-page-being-included?
+          wiliki:current-root-page wiliki:page-stack
+
+          ;; for backward compatibility
+          wiliki-page-stack wiliki-current-page wiliki-page-circular?
           )
   )
 (select-module wiliki.page)
-
-(define wiliki-page-stack (make-parameter '()))
-
-(define (wiliki-current-page)
-  (let1 hist (wiliki-page-stack)
-    (if (null? hist) #f (car hist))))
 
 ;;==================================================================
 ;; Class <wiliki-page>
@@ -74,11 +72,44 @@
    (muser   :init-value #f :init-keyword :muser)
    ))
 
-(define (wiliki-page-circular? page)
-  (member page (wiliki-page-stack)
+;;==================================================================
+;; Page rendering tracking
+;;
+
+(define wiliki:page-stack (make-parameter '()))
+
+;; Returns the <wiliki-page> currently being rendered.  Note that it is
+;; only effective during wiliki:format-content.
+(define (wiliki:current-page)
+  (let1 hist (wiliki:page-stack)
+    (if (null? hist) #f (car hist))))
+
+;; Returns true if rendering PAGE would cause an infinite loop.
+(define (wiliki:page-circular? page)
+  (member page (wiliki:page-stack)
           (lambda (p1 p2)
             (and (ref p1 'key) (ref p2 'key)
                  (string=? (ref p1 'key) (ref p2 'key))))))
+
+;; Returns if the current page is rendered because it is included
+;; by some other page.
+(define (wiliki:current-page-being-included?)
+  (let1 hist (wiliki:page-stack)
+    (and (pair? hist) (pair? (cdr hist)))))
+
+;; Returns the current 'root' page, i.e. the outermost page being
+;; rendered.  If no $$include is happening, the current page is the
+;; current root page.
+(define (wiliki:current-root-page)
+  (let1 hist (wiliki:page-stack)
+    (if (null? hist) #f (car (last-pair hist)))))
+
+;;
+;; For backward compatibility
+;;
+(define wiliki-page-stack wiliki:page-stack)
+(define wiliki-current-page wiliki:current-page)
+(define wiliki-page-circular? wiliki:page-circular?)
 
 (provide "wiliki/page")
 

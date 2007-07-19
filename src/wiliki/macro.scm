@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.47 2007-07-19 01:28:09 shirok Exp $
+;;; $Id: macro.scm,v 1.48 2007-07-19 06:55:41 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
@@ -229,13 +229,12 @@
 ;; won't bother to do that much.
 
 (define-reader-macro (comment . opts)
-  (let-optionals* opts ((type "")
-                        (id   (ref (wiliki-current-page)'key)))
+  (let-optionals* opts ((id   (ref (wiliki-current-page)'key)))
     ;; If the page that contains $$comment macro is included in another page,
     ;; we only show the summary.
-    (match (wiliki-page-stack)
-      ((_)  (comment-input-and-display id))
-      (else (comment-summary id)))))
+    (if (wiliki:current-page-being-included?)
+      (comment-summary id)
+      (comment-input-and-display id))))
 
 (define (comment-input-and-display id)
   (random-source-randomize! default-random-source)
@@ -245,7 +244,7 @@
          ;; NB: sort procedure assumes we have up to 1000 comments.
          (comment-pages (wiliki-db-search
                          (lambda (k v) (string-prefix? prefix k))
-                         (lambda (a b) (string>? (car a) (car b)))))
+                         (lambda (a b) (string<? (car a) (car b)))))
          (timestamp (sys-time))
          )
     (define (past-comments)
