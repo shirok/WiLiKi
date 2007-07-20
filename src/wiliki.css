@@ -79,7 +79,7 @@ span.wiliki-alert { background-color: #ff8080; } /* used to warn internal error 
 
 div.comment { 
   font-size: 90%;
-  padding: 0pt 3em;
+  padding: 0pt 3em 2em 3em;
   margin: 0pt;
 }
 
@@ -95,55 +95,46 @@ div.comment .comment-area {
 div.comment > p.comment-caption {
   border-left: solid 4px #006655;
   border-bottom: solid 1px #006655;
-  padding: 0pt 3pt;
+  padding: 0px 3px; margin: 8px 0px;
 }
 
 div.comment > div.comment-past > h2 {
-  font-size: 100%;
-  font-weight: normal;
-  padding: 8pt 0pt 0pt 0pt;
-  margin: 0pt;
+  font-size: 100%; font-weight: normal;
+  padding: 0pt; margin: 0pt;
 }
 
 div.comment > div.comment-past h2 {
-  font-size: 100%;
-  font-weight: normal;
+  font-size: 100%; font-weight: normal;
   padding: 0pt; margin: 0pt;
 }
 
 div.comment > div.comment-past h3 {
-  font-size: 100%;
-  font-weight: normal;
+  font-size: 100%; font-weight: normal;
   padding: 0pt; margin: 0pt;
 }
 
 div.comment > div.comment-past h4 {
-  font-size: 100%;
-  font-weight: normal;
+  font-size: 100%; font-weight: normal;
   padding: 0pt; margin: 0pt;
 }
 
 div.comment > div.comment-past h5 {
-  font-size: 100%;
-  font-weight: normal;
+  font-size: 100%; font-weight: normal;
   padding: 0pt; margin: 0pt;
 }
 
 div.comment > div.comment-past h6 {
-  font-size: 100%;
-  font-weight: normal;
+  font-size: 100%; font-weight: normal;
   padding: 0pt; margin: 0pt;
 }
 
 div.comment > div.comment-past > blockquote {
   border: none;
   padding: 0pt 20pt;
-  margin: 0pt;
+  margin: 0pt 0pt 5pt 0pt;
 }
 
 div.comment > div.comment-past > blockquote * {
-  padding: 0pt;
-  margin-top: 0pt;
-  margin-bottom: 5pt;
+  padding: 0pt; margin-top: 0pt; margin-bottom: 0pt;
 }
 
