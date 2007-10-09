@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.137 2007-07-19 01:28:09 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.138 2007-10-09 23:41:42 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -125,7 +125,7 @@
 (define wiliki:self-url  url)
 
 ;;;==================================================================
-;;; D-find-minmaxfult "ctions
+;;; Actions
 ;;;
 
 ;;
