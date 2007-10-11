@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.44 2007-05-18 11:14:26 shirok Exp $
+;;; $Id: format.scm,v 1.45 2007-10-11 21:52:26 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -185,7 +185,9 @@
            (parameterize
                ((wiliki-page-stack (cons page (wiliki-page-stack))))
              (if (string? (ref page 'content))
-               (do-fmt (ref page 'content))
+               (let1 sxml (do-fmt (ref page 'content))
+                 (set! (ref page'content) sxml)
+                 sxml)
                (ref page 'content)))))
         (else page)))
 

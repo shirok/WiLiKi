@@ -1,3 +1,18 @@
+2007-10-11  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/core.scm (wiliki-with-db): when rwmode is :write and
+	  the db has already been open with :read, we reopen the db in write
+	  mode.  (The permission check should be done in the caller).
+	  This is needed to create top page automatically within 'v'-command.
+	  (define-wiliki-action): Allow to add authentication procedure.
+	  This is experimental.  API may change.
+	* src/wiliki.scm: removed autoloading of wiliki.util, for it is no
+	  longer used (the functions have been moved to wiliki.core).
+	* src/wiliki/format.scm (wiliki:format-content): cache the formatted
+	  SXML result to the page's content slot.  It allows calling
+	  wiliki:format-content multiple times during page creation without
+	  cost.
+
 2007-07-18  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/page.scm: A bit of API fix.  Planning to make all

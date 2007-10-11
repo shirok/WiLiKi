@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.138 2007-10-09 23:41:42 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.139 2007-10-11 21:52:26 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -78,10 +78,6 @@
 (autoload "wiliki/history" cmd-history cmd-diff cmd-viewold)
 (autoload wiliki.edit      cmd-edit cmd-preview cmd-commit-edit)
 (autoload "wiliki/version" wiliki:version)
-
-(autoload "wiliki/util"    wiliki:page-lines-fold
-                           wiliki:recent-changes-alist
-                           wiliki:get-formatted-page-content)
 
 ;; Some constants
 

@@ -1,7 +1,7 @@
 ;;;
 ;;; wiliki/page.scm - wiliki page structure
 ;;;
-;;;  Copyright (c) 2003-2005 Shiro Kawai, All rights reserved.
+;;;  Copyright (c) 2003-2007 Shiro Kawai, All rights reserved.
 ;;;
 ;;;  Permission is hereby granted, free of charge, to any person
 ;;;  obtaining a copy of this software and associated documentation
@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: page.scm,v 1.4 2007-07-19 06:55:41 shirok Exp $
+;;; $Id: page.scm,v 1.5 2007-10-11 21:52:26 shirok Exp $
 
 (define-module wiliki.page
   (use srfi-1)
@@ -64,6 +64,7 @@
    ;;           Useful to add meta info in the auto-generated pages.
    (extra-head-elements :init-value '() :init-keyword :extra-head-elements)
    ;; content - Either a wiliki-marked-up string or SXML.
+   ;;           wiliki:format-content may replace a marked-up string for SXML.
    (content :init-value "" :init-keyword :content)
    ;; creation and modification times, and users (users not used now).
    (ctime   :init-value (sys-time) :init-keyword :ctime)

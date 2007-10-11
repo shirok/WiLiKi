@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: core.scm,v 1.5 2007-07-19 01:28:09 shirok Exp $
+;;;  $Id: core.scm,v 1.6 2007-10-11 21:52:26 shirok Exp $
 ;;;
 
 ;; Provides core functionality for WiLiKi web application;
@@ -165,18 +165,23 @@
 
 (define-syntax define-wiliki-action
   (syntax-rules ()
-    ((_ name rwmode (pagename (arg . opts) ...) . body)
+    ((_ "common" name rwmode auth (pagename (arg . opts) ...) body)
      (wiliki-action-add!
       'name
       (lambda (pagename params)
-        (wiliki-with-db (db-path-of (wiliki))
-                        (db-type-of (wiliki))
-                        (lambda ()
-                          (let ((arg (cgi-get-parameter (x->string 'arg)
-                                                        params . opts))
-                                ...)
-                            . body))
-                        :rwmode rwmode))))
+        (or (and auth (auth pagename params))
+            (wiliki-with-db (db-path-of (wiliki))
+                            (db-type-of (wiliki))
+                            (lambda ()
+                              (let ((arg (cgi-get-parameter (x->string 'arg)
+                                                            params . opts))
+                                    ...)
+                                . body))
+                            :rwmode rwmode)))))
+    ((_ name rwmode args . body)
+     (define-wiliki-action "common" name rwmode #f args body))
+    ((_ name rwmode args :auth auth . body)
+     (define-wiliki-action "common" name rwmode auth args body))
     ))
 
 ;;;==================================================================
@@ -505,18 +510,15 @@
   ;; Try to open the database.  If it receives EAVAIL error, wait for
   ;; one second and try again, up to *retry-limit* times.
   (define (try retry mode)
-    (with-error-handler
-        (lambda (e)
-          (cond ((>= retry *retry-limit*) (raise e))
-                ((string-contains-ci (ref e 'message) *EAVAIL-message*)
-                 (sys-sleep 1) (try (+ retry 1) mode))
-                (else
-                 ;; we don't want to show the path of db to unknown
-                 ;; visitors
-                 (raise
-                  (make <error> :message #`"Couldn't open database file to ,|rwmode|.")))))
-      (lambda ()
-        (dbm-open dbtype :path dbpath :rw-mode mode))))
+    (guard (e
+            [(>= retry *retry-limit*) (raise e)]
+            [(string-contains-ci (ref e 'message) *EAVAIL-message*)
+             (sys-sleep 1) (try (+ retry 1) mode)]
+            [else
+             ;; we don't want to show the path of db to unknown
+             ;; visitors
+             (error #`"Couldn't open database file to ,|rwmode|.")])
+      (dbm-open dbtype :path dbpath :rw-mode mode)))
 
   ;; If db file does not exist, we open it with :write mode,
   ;; regardless of rwmode arg, so that the empty DB is created.
@@ -535,17 +537,27 @@
 ;;; External API
 ;;;
 
+;; Call thunk with opening the db specified by path.  If the db is already
+;; open, we just call thunk, EXCEPT that the opened db is in read-only mode
+;; and we're requested to reopen it in write mode.
 (define (wiliki-with-db path type thunk . opts)
   (let-keywords* opts ((rwmode :read))
-    (if (the-db)
-      (thunk)
-      (parameterize ((the-db (db-try-open path type rwmode)))
-        (dynamic-wind
-         (lambda () #f)
-         thunk
-         (lambda ()
-           (unless (dbm-closed? (the-db))
-             (dbm-close (the-db)))))))))
+    (cond [(the-db)
+           => (lambda (db)
+                (when (and (eq? rwmode :write)
+                           (eq? (ref db'rw-mode) :read))
+                  ; we should reopen the db
+                  (dbm-close db)
+                  (the-db (db-try-open path type rwmode)))
+                (thunk))]
+          [else
+           (parameterize ((the-db (db-try-open path type rwmode)))
+             (dynamic-wind
+                 (lambda () #f)
+                 thunk
+                 (lambda ()
+                   (unless (dbm-closed? (the-db))
+                     (dbm-close (the-db))))))])))
 
 ;; All other wiliki-db APIs implicitly uses the-db.
 
