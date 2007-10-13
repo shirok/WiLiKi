@@ -1,3 +1,13 @@
+2007-10-12  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/core.scm (let-macro-keywords*): Added a macro to handle
+	  named argument handling for macro arguments.  Named arguments can
+	  be given in the form of key:arg (note: there's no space around
+	  colon).
+	* src/wiliki/macro.scm (comment): Allowed to specify comment sort
+	  order and the position of textarea using named arguments,
+	  'order:' and 'textarea:', respectively.
+
 2007-10-11  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/core.scm (wiliki-with-db): when rwmode is :write and

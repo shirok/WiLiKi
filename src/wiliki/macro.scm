@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.48 2007-07-19 06:55:41 shirok Exp $
+;;; $Id: macro.scm,v 1.49 2007-10-13 01:45:35 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
@@ -210,41 +210,57 @@
 ;;
 ;; We store each individual comment to a separate page, so that
 ;; the incomplete markup won't mess up the rest of the page.
-;; The comment pages are named as <id>:comment:<number>, where
+;; The comment pages are named as "|comment:<id>::<number>", where
 ;; <id> identifies the comment chunk; the default of <id> is the
 ;; name of the page the comment macro is attached.  To put more than
 ;; one comment form on a page, unique id must be provided by the
 ;; macro argument.
-;;
-;; The 'type' argument 
 ;;
 ;; We also take some caution to the dumb automated spammers.
 ;; First, we place multiple textareas in the form, all but one
 ;; of which is hidden by CSS.  If anything is written in the hidden
 ;; textarea we just discard the post.  This might not be friendly
 ;; to non-CSS-aware browsers, though; if it becomes a problem, we might
-;; consider putting a message.  We also includes a timestamp in the
+;; consider putting a message.  We also include a timestamp in the
 ;; form and check if its value is in reasonable range.  These can be
-;; easily broken for determined spammers, but I bet almost all of them
+;; easily beaten by determined spammers, but I bet almost all of them
 ;; won't bother to do that much.
+;;
+;; The optional arguments can be provided in key:value form, like this:
+;; [[$$comment id:foo order:new->old textarea:bottom]]
+;; The accepted keys:
+;;   id:  Specifies the alternate id to group the comment.  The default
+;;        is the key value of the page where the macro is put.
+;;   order:  Specifies the sort order of existing comments.  Either
+;;        old->new (chronologically) or new->old (reverse chronologically).
+;;   textarea:  The position of the textarea to post the new comments.
+;;        Either "top", "bottom", or "none" (do not allow adding comments).
 
 (define-reader-macro (comment . opts)
-  (let-optionals* opts ((id   (ref (wiliki-current-page)'key)))
+  (let-macro-keywords* opts ((id (ref (wiliki-current-page)'key))
+                             (order "old->new")
+                             (textarea "bottom"))
+    ;; argument check
+    (unless (member order '("old->new" "new->old"))
+      (error "$$comment: Invalid 'order' argument (must be either old->new or new->old):" order))
+    (unless (member textarea '("bottom" "top" "none"))
+      (error "$$comment: Invalid 'textarea' argument (must be either one of bottom, top or none):" textarea))
     ;; If the page that contains $$comment macro is included in another page,
     ;; we only show the summary.
     (if (wiliki:current-page-being-included?)
       (comment-summary id)
-      (comment-input-and-display id))))
+      (comment-input-and-display id order textarea))))
 
-(define (comment-input-and-display id)
+(define (comment-input-and-display id order textarea)
   (random-source-randomize! default-random-source)
   (let* ((rkey (+ (random-integer #x10000000) 1)) ; never be 0
          (answer (modulo (ash rkey -11) 3))
          (prefix (comment-prefix id))
+         (sorter (if (equal? order "old->new") string<? string>?))
          ;; NB: sort procedure assumes we have up to 1000 comments.
          (comment-pages (wiliki-db-search
                          (lambda (k v) (string-prefix? prefix k))
-                         (lambda (a b) (string<? (car a) (car b)))))
+                         (lambda (a b) (sorter (car a) (car b)))))
          (timestamp (sys-time))
          )
     (define (past-comments)
@@ -253,31 +269,36 @@
                     comment-pages)))
     (define (st x)
       (if (= x answer) '(class "comment-area") '(style "display: none")))
+    (define (show-textarea)
+      `((p (@(class "comment-caption")) ,(gettext "Post a comment"))
+        (form (@ (action "") (method "POST"))
+              (input (@ (type hidden) (name "c") (value "post-comment")))
+              (input (@ (type hidden) (name "p") (value ,(ref (wiliki-current-page)'key))))
+              (input (@ (type hidden) (name "cid") (value ,id)))
+              (input (@ (type hidden) (name "rkey") (value ,rkey)))
+              (input (@ (type hidden) (name "t") (value ,timestamp)))
+              (table
+               (@ (class "comment-input"))
+
+               (tr (td ,(gettext"Name: ")
+                       (input (@ (type text) (name "n")))))
+               (tr (td (textarea (@ ,(st 0) (name "c0")))
+                       (textarea (@ ,(st 1) (name "c1")))
+                       (textarea (@ ,(st 2) (name "c2")))))
+               (tr (td (input (@ (type submit) (name "submit")
+                                 (value ,(gettext"Submit Comment"))))))
+               ))))
+    (define (show-past-comments)
+      (if (null? comment-pages)
+        '()
+        `((p (@(class"comment-caption")),(gettext "Past comment(s)"))
+          (div (@(class"comment-past")) ,@(past-comments)))))
     
     `((div (@ (class "comment"))
            (a (@(name ,prefix)))
-           (p (@(class "comment-caption")) ,(gettext "Post a comment"))
-           (form (@ (action "") (method "POST"))
-                 (input (@ (type hidden) (name "c") (value "post-comment")))
-                 (input (@ (type hidden) (name "p") (value ,(ref (wiliki-current-page)'key))))
-                 (input (@ (type hidden) (name "cid") (value ,id)))
-                 (input (@ (type hidden) (name "rkey") (value ,rkey)))
-                 (input (@ (type hidden) (name "t") (value ,timestamp)))
-                 (table
-                  (@ (class "comment-input"))
-
-                  (tr (td ,(gettext"Name: ")
-                          (input (@ (type text) (name "n")))))
-                  (tr (td (textarea (@ ,(st 0) (name "c0")))
-                          (textarea (@ ,(st 1) (name "c1")))
-                          (textarea (@ ,(st 2) (name "c2")))))
-                  (tr (td (input (@ (type submit) (name "submit")
-                                    (value ,(gettext"Submit Comment"))))))
-                  ))
-           ,@(if (null? comment-pages)
-               '()
-               `((p (@(class"comment-caption")),(gettext "Past comment(s)"))
-                 (div (@(class"comment-past")) ,@(past-comments))))))
+           ,@(if (equal? textarea "top") (show-textarea) '())
+           ,@(show-past-comments)
+           ,@(if (equal? textarea "bottom") (show-textarea) '())))
     ))
 
 (define (comment-summary id)

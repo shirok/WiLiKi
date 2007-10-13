@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: core.scm,v 1.6 2007-10-11 21:52:26 shirok Exp $
+;;;  $Id: core.scm,v 1.7 2007-10-13 01:45:35 shirok Exp $
 ;;;
 
 ;; Provides core functionality for WiLiKi web application;
@@ -63,7 +63,7 @@
           wiliki:reader-macros wiliki:writer-macros wiliki:virtual-pages
           define-reader-macro define-writer-macro define-virtual-page
           handle-reader-macro handle-writer-macro expand-writer-macros
-          handle-virtual-page virtual-page?
+          handle-virtual-page virtual-page? let-macro-keywords*
 
           ;; for compatibility
           wiliki-with-db
@@ -492,6 +492,17 @@
     (lambda (name)
       (guard (e (else #f))
         (call-with-input-string name parser)))))
+
+(define-macro (let-macro-keywords* args binds . body)
+  (define (get-macro-arg-with-key key default args)
+    (cond [(find (cut string-prefix? key <>) args)
+           => (cut string-drop <> (string-length key))]
+          [else default]))
+  `(let* ,(map (match-lambda
+                 [(var default)
+                  `(,var (,get-macro-arg-with-key ,#`",|var|:" ,default ,args))])
+               binds)
+     ,@body))
 
 ;;===================================================================
 ;; Database layer
