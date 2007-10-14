@@ -1,3 +1,12 @@
+2007-10-13  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/wiliki.scm, src/wiliki/core.scm (wiliki-main):
+	  Moved wiliki-main from wiliki to wiliki.core.
+	* src/wiliki/core.scm (wiliki:run-action): Wrapped the action body
+	  by a generic function wiliki:run-action.  This allows the application
+	  to do preprocess/postprocess request handling by subclassing
+	  <wiliki> and specializing wiliki:run-action.
+
 2007-10-12  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/core.scm (let-macro-keywords*): Added a macro to handle

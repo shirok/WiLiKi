@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: core.scm,v 1.7 2007-10-13 01:45:35 shirok Exp $
+;;;  $Id: core.scm,v 1.8 2007-10-14 10:35:43 shirok Exp $
 ;;;
 
 ;; Provides core functionality for WiLiKi web application;
@@ -44,9 +44,10 @@
   (use text.tree)
   (use text.html-lite)
   (use text.csv)
+  (use text.gettext)
   (use dbm)
   (extend wiliki.format) ;; temporary
-  (export <wiliki>
+  (export <wiliki> wiliki-main
           wiliki wiliki:lang
           
           wiliki:output-charset wiliki:cv-in wiliki:cv-out
@@ -58,7 +59,7 @@
           wiliki:log-file-path
           wiliki:std-page
           
-          wiliki:action-ref define-wiliki-action
+          wiliki:action-ref define-wiliki-action wiliki:run-action
 
           wiliki:reader-macros wiliki:writer-macros wiliki:virtual-pages
           define-reader-macro define-writer-macro define-virtual-page
@@ -150,6 +151,117 @@
    ))
 
 ;;;==================================================================
+;;; CGI processing entry
+;;;
+
+;; Main entry of processing
+(define-method wiliki-main ((self <wiliki>))
+  (set! (port-buffering (current-error-port)) :line)
+  (parameterize ((wiliki self))
+    (cgi-main
+     (lambda (param)
+       (let ((pagename (get-page-name self param))
+             (command  (cgi-get-parameter "c" param))
+             (language (cgi-get-parameter "l" param :convert string->symbol)))
+         (parameterize ((wiliki:lang (or language (ref self'language))))
+           (cgi-output-character-encoding (wiliki:output-charset))
+           (setup-textdomain self language)
+           (cond
+            ;; command may #t if we're looking at the page named "c".
+            ((wiliki:action-ref (if (string? command)
+                                  (string->symbol command)
+                                  'v))
+             => (cut <> pagename param))
+            (else (error "Unknown command" command))
+            ))))
+     :merge-cookies #t
+     :on-error error-page)))
+
+;; aux routines for wiliki-main
+
+;; Setting up the textdomain.
+;;  1. If language is explicitly set (by 'l' parameter) we use it.
+;;  2. Otherwise, we look at HTTP_ACCEPT_LANGUAGE.  If it is set,
+;;     we just take the first one.
+;;  3. Otherwise, we take the language slot of <wiliki>.
+
+;; NB: HTTP_ACCEPT_LANGUAGE sends language-range (language-tag), 
+;; which has rather complicated syntax & semantics.  We just cheat
+;; by taking primary tag and first sub tag (if any), and assumes 
+;; they are language and country code.
+
+(define (setup-textdomain wiliki param-lang)
+  (let1 lang (cond
+              (param-lang
+               (if (eq? param-lang 'jp) 'ja param-lang)) ; kluge for compatibility
+              ((cgi-get-metavariable "HTTP_ACCEPT_LANGUAGE")
+               => (lambda (v)
+                    (rxmatch-case v
+                      [#/^\s*([a-zA-Z]+)(?:-([a-zA-Z]+))?/ (_ pri sec)
+                        (if sec #`",|pri|_,|sec|" pri)]
+                      [else #f])))
+              (else (ref wiliki 'language)))
+    (textdomain "WiLiKi" (x->string lang) (ref wiliki 'gettext-paths))))
+
+;; Retrieve requested page name.
+;; The pagename can be specified in one of the following ways:
+;;
+;;  * Using request path
+;;      http://foo.net/wiliki.cgi/PageName
+;;  * Using cgi 'p' parameter
+;;      http://foo.net/wiliki.cgi?l=jp&p=PageName
+;;  * Using cgi parameter - in this case, PageName must be the
+;;    first parameter before any other CGI parameters.
+;;      http://foo.net/wiliki.cgi?PageName
+;;
+;; The url is tested in the order above.  So the following URL points
+;; the page "Foo".
+;;      http://foo.net/wiliki.cgi/Foo?Bar&p=Baz
+;;
+;; If no page is given, the top page of WiLiKi is used.
+;; If the url main component ends with '/', it is regareded as a
+;; top page, e.g. the following points to the toppage.
+;;      http://foo.net/wiliki.cgi/?Bar&p=Baz
+
+(define (get-page-name wiki param)
+
+  ;; Extract the extra components of PATH_INFO
+  (define (get-path-info)
+    (and-let* ((path (cgi-get-metavariable "PATH_INFO"))
+               ((string-prefix? "/" path))
+               (conv (wiliki:cv-in (uri-decode-string (string-drop path 1)))))
+      conv))
+
+  (let1 pg
+      (cond ((get-path-info))
+            ((cgi-get-parameter "p" param :default #f :convert wiliki:cv-in))
+            ((and (pair? param) (pair? (car param)) (eq? (cadar param) #t))
+             (wiliki:cv-in (caar param)))
+            (else ""))
+    (if (equal? pg "")
+      (top-page-of wiki)
+      pg))
+  )
+
+(define (error-page e)
+  (wiliki-with-db
+   (ref (wiliki)'db-path)
+   (ref (wiliki)'db-type)
+   (lambda ()
+     (wiliki:std-page
+      (make <wiliki-page>
+        :title #`",(title-of (wiliki)) : Error"
+        :content
+        `((p ,(ref e 'message))
+          ,@(if (positive? (debug-level (wiliki)))
+              `((pre ,(call-with-output-string
+                        (cut with-error-to-port <>
+                             (cut report-error e)))))
+              '())))
+      ))
+   :rwmode :read))
+
+;;;==================================================================
 ;;; Action framework
 ;;;
 
@@ -165,24 +277,29 @@
 
 (define-syntax define-wiliki-action
   (syntax-rules ()
-    ((_ "common" name rwmode auth (pagename (arg . opts) ...) body)
+    [(_ name rwmode (pagename (arg . opts) ...) . body)
      (wiliki-action-add!
       'name
       (lambda (pagename params)
-        (or (and auth (auth pagename params))
-            (wiliki-with-db (db-path-of (wiliki))
-                            (db-type-of (wiliki))
-                            (lambda ()
-                              (let ((arg (cgi-get-parameter (x->string 'arg)
-                                                            params . opts))
-                                    ...)
-                                . body))
-                            :rwmode rwmode)))))
-    ((_ name rwmode args . body)
-     (define-wiliki-action "common" name rwmode #f args body))
-    ((_ name rwmode args :auth auth . body)
-     (define-wiliki-action "common" name rwmode auth args body))
+        (let1 action (lambda (arg ...) . body)
+          (wiliki-with-db (ref (wiliki)'db-path)
+                          (ref (wiliki)'db-type)
+                          (lambda ()
+                            (let1 args-alist
+                                (list
+                                 (cons 'arg
+                                       (cgi-get-parameter (x->string 'arg)
+                                                          params . opts))
+                                 ...)
+                              (wiliki:run-action (wiliki) 'name action
+                                                 pagename params
+                                                 args-alist)))
+                          :rwmode rwmode))))]
     ))
+
+(define-method wiliki:run-action
+    ((wiliki <wiliki>) name action pagename params args-alist)
+  (apply action (map cdr args-alist)))
 
 ;;;==================================================================
 ;;; Character set conversions

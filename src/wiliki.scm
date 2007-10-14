@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.139 2007-10-11 21:52:26 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.140 2007-10-14 10:35:43 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -453,109 +453,7 @@
 
 ;; CGI processing ---------------------------------
 
-(define html-page wiliki:std-page)
-
-(define (error-page e)
-  (html-page
-   (make <wiliki-page>
-     :title #`",(title-of (wiliki)) : Error"
-     :content
-     `((p ,(ref e 'message))
-       ,@(if (positive? (debug-level (wiliki)))
-           `((pre ,(call-with-output-string
-                     (cut with-error-to-port <>
-                          (cut report-error e)))))
-           '())))
-   ))
-
-
-;; Retrieve requested page name.
-;; The pagename can be specified in one of the following ways:
-;;
-;;  * Using request path
-;;      http://foo.net/wiliki.cgi/PageName
-;;  * Using cgi 'p' parameter
-;;      http://foo.net/wiliki.cgi?l=jp&p=PageName
-;;  * Using cgi parameter - in this case, PageName must be the
-;;    first parameter before any other CGI parameters.
-;;      http://foo.net/wiliki.cgi?PageName
-;;
-;; The url is tested in the order above.  So the following URL points
-;; the page "Foo".
-;;      http://foo.net/wiliki.cgi/Foo?Bar&p=Baz
-;;
-;; If no page is given, the top page of WiLiKi is used.
-;; If the url main component ends with '/', it is regareded as a
-;; top page, e.g. the following points to the toppage.
-;;      http://foo.net/wiliki.cgi/?Bar&p=Baz
-
-(define (get-page-name wiki param)
-
-  ;; Extract the extra components of PATH_INFO
-  (define (get-path-info)
-    (and-let* ((path (cgi-get-metavariable "PATH_INFO"))
-               ((string-prefix? "/" path))
-               (conv (cv-in (uri-decode-string (string-drop path 1)))))
-      conv))
-
-  (let1 pg
-      (cond ((get-path-info))
-            ((cgi-get-parameter "p" param :default #f :convert cv-in))
-            ((and (pair? param) (pair? (car param)) (eq? (cadar param) #t))
-             (cv-in (caar param)))
-            (else ""))
-    (if (equal? pg "")
-      (top-page-of wiki)
-      pg))
-  )
-
-;; Setting up the textdomain.
-;;  1. If language is explicitly set (by 'l' parameter) we use it.
-;;  2. Otherwise, we look at HTTP_ACCEPT_LANGUAGE.  If it is set,
-;;     we just take the first one.
-;;  3. Otherwise, we take the language slot of <wiliki>.
-
-;; NB: HTTP_ACCEPT_LANGUAGE sends language-range (language-tag), 
-;; which has rather complicated syntax & semantics.  We just cheat
-;; by taking primary tag and first sub tag (if any), and assumes 
-;; they are language and country code.
-
-(define (setup-textdomain wiliki param-lang)
-  (let1 lang (cond
-              (param-lang
-               (if (eq? param-lang 'jp) 'ja param-lang)) ; kluge for compatibility
-              ((cgi-get-metavariable "HTTP_ACCEPT_LANGUAGE")
-               => (lambda (v)
-                    (rxmatch-case v
-                      [#/^\s*([a-zA-Z]+)(?:-([a-zA-Z]+))?/ (_ pri sec)
-                        (if sec #`",|pri|_,|sec|" pri)]
-                      [else #f])))
-              (else (ref wiliki 'language)))
-    (textdomain "WiLiKi" (x->string lang) (ref wiliki 'gettext-paths))))
-
-;; Entry ------------------------------------------
-
-(define-method wiliki-main ((self <wiliki>))
-  (set! (port-buffering (current-error-port)) :line)
-  (parameterize ((wiliki self))
-    (cgi-main
-     (lambda (param)
-       (let ((pagename (get-page-name self param))
-             (command  (cgi-get-parameter "c" param))
-             (language (cgi-get-parameter "l" param :convert string->symbol)))
-         (parameterize ((wiliki:lang (or language (language-of self))))
-           (cgi-output-character-encoding (output-charset))
-           (setup-textdomain self language)
-           (cond
-            ;; command may #t if we're looking at the page named "c".
-            ((wiliki:action-ref (if (string? command)
-                                  (string->symbol command)
-                                  'v))
-             => (cut <> pagename param))
-            (else (error "Unknown command" command))
-            ))))
-     :merge-cookies #t
-     :on-error error-page)))
+(define html-page wiliki:std-page) ; for backward compatibility
 
 (provide "wiliki")
 
