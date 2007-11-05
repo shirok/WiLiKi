@@ -1,3 +1,13 @@
+2007-11-05  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/core.scm: changed wiliki-db-* API to wiliki:db-* API.
+	  Made wiliki:db-record->page a method to take wiliki instance, so
+	  that it can be specialized by subclassing wiliki.  Added
+	  wiliki:page->db-record and wiliki:page-class methods for more
+	  customization.
+	* src/wiliki/db.scm: Compatibility functions (wiliki-db-*) are
+	  moved to here.
+
 2007-10-13  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/wiliki.scm, src/wiliki/core.scm (wiliki-main):

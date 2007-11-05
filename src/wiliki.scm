@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: wiliki.scm,v 1.140 2007-10-14 10:35:43 shirok Exp $
+;;;  $Id: wiliki.scm,v 1.141 2007-11-05 22:26:40 shirok Exp $
 ;;;
 
 (define-module wiliki
@@ -130,7 +130,7 @@
 (define-wiliki-action v :read (pagename)
   ;; NB: see the comment in format-wikiname about the order of
   ;; wiliki-db-get and virtual-page? check.
-  (cond ((wiliki-db-get pagename) => html-page)
+  (cond ((wiliki:db-get pagename) => html-page)
         ((virtual-page? pagename)
          (html-page (handle-virtual-page pagename)))
         ((equal? pagename (top-page-of (wiliki)))
@@ -139,10 +139,9 @@
            ;; Top page is non-existent, or its name may be changed.
            ;; create it automatically.  We need to ensure db is writable.
            (if (editable? (wiliki))
-             (wiliki-with-db (db-path-of (wiliki))
-                             (db-type-of (wiliki))
+             (wiliki:with-db (wiliki)
                              (lambda ()
-                               (wiliki-db-put! (top-page-of (wiliki)) toppage)
+                               (wiliki:db-put! (ref (wiliki)'top-page) toppage)
                                (html-page toppage))
                              :rwmode :write)
              (errorf"Top-page #f (~a) doesn't exist, and the database is read-only" toppage))))
@@ -159,7 +158,7 @@
         ))
 
 (define-wiliki-action lv :read (pagename)
-  (let ((page (wiliki-db-get pagename #f)))
+  (let ((page (wiliki:db-get pagename #f)))
     `(,(cgi-header
         :content-type #`"text/plain; charset=,(output-charset)")
       ,#`"title: ,|pagename|\n"
@@ -182,7 +181,7 @@
      :content `((ul
                  ,@(map (lambda (k)
                           `(li ,(wiliki:wikiname-anchor k)))
-                        (sort (wiliki-db-map (lambda (k v) k)) string<?))))
+                        (sort (wiliki:db-map (lambda (k v) k)) string<?))))
      )))
 
 (define-wiliki-action r :read (_)
@@ -197,7 +196,7 @@
                    (td ,(wiliki:format-time (cdr p)))
                    (td "(" ,(how-long-since (cdr p)) " ago)")
                    (td ,(wiliki:wikiname-anchor (car p)))))
-               (wiliki-db-recent-changes))))
+               (wiliki:db-recent-changes))))
      )))
 
 (define-wiliki-action rss :read (_)
@@ -221,7 +220,7 @@
                    ,(or (and-let* ((mtime (get-keyword :mtime (cdr p) #f)))
                           #`"(,(how-long-since mtime))")
                         "")))
-               (wiliki-db-search-content key))))
+               (wiliki:db-search-content key))))
      )))
 
 ;;
@@ -383,7 +382,7 @@
 
 (define (default-format-wikiname name)
   (define (inter-wikiname-prefix head)
-    (and-let* ((page (wiliki-db-get "InterWikiName"))
+    (and-let* ((page (wiliki:db-get "InterWikiName"))
                (rx   (string->regexp #`"^:,|head|:\\s*")))
       (call-with-input-string (ref page 'content)
         (lambda (p)
@@ -427,7 +426,7 @@
               ;; page shadow an existing page, or an existing page shadow a
               ;; virtual one?  Note also the order of this check must match
               ;; the order in cmd-view.
-              ((or (wiliki-db-exists? real-name) (virtual-page? real-name))
+              ((or (wiliki:db-exists? real-name) (virtual-page? real-name))
                (list (wiliki:wikiname-anchor real-name)))
               (else
                `(,real-name

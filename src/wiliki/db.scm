@@ -23,12 +23,34 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: db.scm,v 1.14 2007-07-14 05:33:20 shirok Exp $
+;;; $Id: db.scm,v 1.15 2007-11-05 22:26:40 shirok Exp $
 
 ;; NB: The wiliki.db feature is merged into wiliki.core.
 ;; This module is only kept for the compatibility.
 
 (define-module wiliki.db
-  (extend wiliki.core))
+  (use wiliki.core)
+  (export wiliki-db-exists? wiliki-db-record->page
+          wiliki-db-get wiliki-db-put! wiliki-db-delete! wiliki-db-touch!
+          wiliki-db-recent-changes
+          wiliki-db-map wiliki-db-fold wiliki-db-for-each
+          wiliki-db-search wiliki-db-search-content))
+
+
+; backward compatibility
+(define (wiliki-db-record->page key record)
+  (wiliki:db-record->page (wiliki) key record))
+
+(define wiliki-db-exists? wiliki:db-exists?)
+(define wiliki-db-get     wiliki:db-get)
+(define wiliki-db-put!    wiliki:db-put!)
+(define wiliki-db-touch!  wiliki:db-touch!)
+(define wiliki-db-delete! wiliki:db-delete!)
+(define wiliki-db-recent-changes wiliki:db-recent-changes)
+(define wiliki-db-fold    wiliki:db-fold)
+(define wiliki-db-map     wiliki:db-map)
+(define wiliki-db-for-each wiliki:db-for-each)
+(define wiliki-db-search  wiliki:db-search)
+(define wiliki-db-search-content wiliki:db-search-content)
 
 (provide "wiliki/db")

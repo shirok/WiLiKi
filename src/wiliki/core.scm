@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: core.scm,v 1.8 2007-10-14 10:35:43 shirok Exp $
+;;;  $Id: core.scm,v 1.9 2007-11-05 22:26:40 shirok Exp $
 ;;;
 
 ;; Provides core functionality for WiLiKi web application;
@@ -66,13 +66,13 @@
           handle-reader-macro handle-writer-macro expand-writer-macros
           handle-virtual-page virtual-page? let-macro-keywords*
 
-          ;; for compatibility
-          wiliki-with-db
-          wiliki-db-exists? wiliki-db-record->page
-          wiliki-db-get wiliki-db-put! wiliki-db-delete! wiliki-db-touch!
-          wiliki-db-recent-changes
-          wiliki-db-map wiliki-db-fold wiliki-db-for-each
-          wiliki-db-search wiliki-db-search-content))
+          wiliki:with-db wiliki:page-class
+          wiliki:db-record->page wiliki:page->db-record
+          wiliki:db-exists? wiliki:db-get wiliki:db-put! wiliki:db-touch!
+          wiliki:db-delete! wiliki:db-recent-changes
+          wiliki:db-fold wiliki:db-map wiliki:db-for-each
+          wiliki:db-search wiliki:db-search-content
+          ))
 (select-module wiliki.core)
 
 (autoload dbm.gdbm <gdbm>)
@@ -244,22 +244,20 @@
   )
 
 (define (error-page e)
-  (wiliki-with-db
-   (ref (wiliki)'db-path)
-   (ref (wiliki)'db-type)
-   (lambda ()
-     (wiliki:std-page
-      (make <wiliki-page>
-        :title #`",(title-of (wiliki)) : Error"
-        :content
-        `((p ,(ref e 'message))
-          ,@(if (positive? (debug-level (wiliki)))
-              `((pre ,(call-with-output-string
-                        (cut with-error-to-port <>
-                             (cut report-error e)))))
-              '())))
-      ))
-   :rwmode :read))
+  (wiliki:with-db (wiliki)
+                  (lambda ()
+                    (wiliki:std-page
+                     (make <wiliki-page>
+                       :title #`",(title-of (wiliki)) : Error"
+                       :content
+                       `((p ,(ref e 'message))
+                         ,@(if (positive? (debug-level (wiliki)))
+                             `((pre ,(call-with-output-string
+                                       (cut with-error-to-port <>
+                                            (cut report-error e)))))
+                             '())))
+                     ))
+                  :rwmode :read))
 
 ;;;==================================================================
 ;;; Action framework
@@ -282,8 +280,7 @@
       'name
       (lambda (pagename params)
         (let1 action (lambda (arg ...) . body)
-          (wiliki-with-db (ref (wiliki)'db-path)
-                          (ref (wiliki)'db-type)
+          (wiliki:with-db (wiliki)
                           (lambda ()
                             (let1 args-alist
                                 (list
@@ -356,7 +353,7 @@
 
     (define (handle-include pagename after seed)
       (content-fold (if (string-null? after) (read-line) after)
-                    (handle-page (wiliki-db-get pagename #f) seed)))
+                    (handle-page (wiliki:db-get pagename #f) seed)))
 
     (define (handle-page page seed)
       (if (or (not (is-a? page <wiliki-page>))
@@ -379,11 +376,13 @@
 
 ;; Returns recent changes
 (define (wiliki:recent-changes-alist . keys)
-  (take* (wiliki-db-recent-changes) (get-keyword :length keys 50)))
+  (cond [(get-keyword :length keys #f)
+         => (cut take* (wiliki:db-recent-changes) <>)]
+        [else (wiliki:db-recent-changes)]))
 
 ;; Returns [SXML]
 (define (wiliki:get-formatted-page-content pagename)
-  (wiliki:format-content (wiliki-db-get pagename #t)))
+  (wiliki:format-content (wiliki:db-get pagename #t)))
 
 ;; Redirect to the given wiliki page
 (define (wiliki:redirect-page key)
@@ -661,6 +660,12 @@
   (or (the-db)
       (error "WiLiKi: database is not open")))
 
+(define (read-recent-changes db)
+  (read-from-string (dbm-get db *recent-changes* "()")))
+
+(define (write-recent-changes db r)
+  (dbm-put! db *recent-changes* (write-to-string (take* r 50))))
+
 ;;;
 ;;; External API
 ;;;
@@ -668,93 +673,88 @@
 ;; Call thunk with opening the db specified by path.  If the db is already
 ;; open, we just call thunk, EXCEPT that the opened db is in read-only mode
 ;; and we're requested to reopen it in write mode.
-(define (wiliki-with-db path type thunk . opts)
+
+(define (wiliki:with-db thunk . opts)
   (let-keywords* opts ((rwmode :read))
-    (cond [(the-db)
-           => (lambda (db)
-                (when (and (eq? rwmode :write)
-                           (eq? (ref db'rw-mode) :read))
-                  ; we should reopen the db
-                  (dbm-close db)
-                  (the-db (db-try-open path type rwmode)))
-                (thunk))]
-          [else
-           (parameterize ((the-db (db-try-open path type rwmode)))
-             (dynamic-wind
-                 (lambda () #f)
-                 thunk
-                 (lambda ()
-                   (unless (dbm-closed? (the-db))
-                     (dbm-close (the-db))))))])))
+    (let ((path (ref (wiliki)'db-path))
+          (type (ref (wiliki)'db-type)))
+      (cond [(the-db)
+             => (lambda (db)
 
-;; All other wiliki-db APIs implicitly uses the-db.
+                  (when (and (eq? rwmode :write)
+                             (eq? (ref db'rw-mode) :read))
+                    ;; we should reopen the db
+                    (dbm-close db)
+                    (the-db (db-try-open path type rwmode)))
+                  (thunk))]
+            [else
+             (parameterize ((the-db (db-try-open path type rwmode)))
+               (dynamic-wind
+                   (lambda () #f)
+                   thunk
+                   (lambda ()
+                     (unless (dbm-closed? (the-db))
+                       (dbm-close (the-db))))))]))))
 
-(define (wiliki-db-record->page key record)
+;; Returns the class to represent the page
+(define-method wiliki:page-class ((self <wiliki>)) <wiliki-page>)
+
+;; All other wiliki:db APIs implicitly uses the-db.
+
+(define-method wiliki:db-record->page ((self <wiliki>) key record)
   (call-with-input-string record
     (lambda (p)
       (let* ((params  (read p))
              (content (port->string p)))
-        (apply make <wiliki-page>
+        (apply make (wiliki:page-class self)
                :title key :key key :content content params)))))
 
-;; WILIKI-DB-EXISTS? key
-(define (wiliki-db-exists? key)
+(define-method wiliki:page->db-record ((self <wiliki>) (page <wiliki-page>))
+  (with-output-to-string
+    (lambda ()
+      (write (list :ctime (ref page 'ctime)
+                   :cuser (ref page 'cuser)
+                   :mtime (ref page 'mtime)
+                   :muser (ref page 'muser)))
+      (display (ref page 'content)))))
+  
+(define (wiliki:db-exists? key)
   (dbm-exists? (check-db) key))
 
-;; WILIKI-DB-GET key &optional create-new
-(define (wiliki-db-get key . opts)
+(define (wiliki:db-get key . opts)
   (let-optionals* opts ((create? #f))
     (let1 db (check-db)
-      (cond ((dbm-get db key #f) => (cut wiliki-db-record->page key <>))
-            (create? (make <wiliki-page> :title key :key key))
-            (else #f)))))
+      (cond [(dbm-get db key #f)
+             => (cut wiliki:db-record->page (wiliki) key <>)]
+            [create? (make (wiliki:page-class (wiliki)) :title key :key key)]
+            [else #f]))))
 
-;; WILIKI-DB-PUT! key page
-(define (wiliki-db-put! key page . keys)
-  (let-keywords* keys ((donttouch #f))
+(define-method wiliki:db-put! (key (page <wiliki-page>) . opts)
+  (let-keywords* opts ((donttouch #f))
     (let ((db (check-db))
-          (s (with-output-to-string
-               (lambda ()
-                 (write (list :ctime (ref page 'ctime)
-                              :cuser (ref page 'cuser)
-                              :mtime (ref page 'mtime)
-                              :muser (ref page 'muser)))
-                 (display (ref page 'content))))))
+          (s  (wiliki:page->db-record (wiliki) page)))
       (dbm-put! db key s)
       (unless donttouch
-        (let1 r (alist-delete key
-                              (read-from-string
-                               (dbm-get db *recent-changes* "()")))
-          (dbm-put! db *recent-changes*
-                    (write-to-string
-                     (acons key (ref page 'mtime) (take* r 49))))))
+        (let1 r (alist-delete key (read-recent-changes db))
+          (write-recent-changes (acons key (ref page 'mtime) r))))
       )))
 
-;; WILIKI-DB-TOUCH! key
-(define (wiliki-db-touch! key)
+(define (wiliki:db-touch! key)
   (and-let* ([db (check-db)]
-             [page (wiliki-db-get key)]
-             [r (alist-delete key (read-from-string
-                                   (dbm-get db *recent-changes* "()")))])
-    (dbm-put! db *recent-changes*
-              (write-to-string
-               (acons key (sys-time) (take* r 49))))))
+             [page (wiliki:db-get key)]
+             [r (alist-delete key (read-recent-changes db))])
+    (write-recent-changes db (acons key (sys-time) r))))
 
-;; WILIKI-DB-DELETE! key
-(define (wiliki-db-delete! key)
+(define (wiliki:db-delete! key)
   (let* ((db (check-db))
-         (r (alist-delete key
-                          (read-from-string
-                           (dbm-get db *recent-changes* "()")))))
+         (r (alist-delete key (read-recent-changes db))))
     (dbm-delete! db key)
-    (dbm-put! db *recent-changes* (write-to-string r))))
+    (write-recent-changes db r)))
 
-;; WILIKI-DB-RECENT-CHANGES
-(define (wiliki-db-recent-changes)
-  (read-from-string (dbm-get (check-db) *recent-changes* "()"))  )
+(define (wiliki:db-recent-changes)
+  (read-recent-changes (check-db)))
 
-;; higher-order ops
-(define (wiliki-db-fold proc seed)
+(define (wiliki:db-fold proc seed)
   (dbm-fold (check-db)
             (lambda (k v seed)
               (if (string-prefix? " " k)
@@ -762,13 +762,13 @@
                 (proc k v seed)))
             seed))
 
-(define (wiliki-db-map proc)
-  (reverse! (wiliki-db-fold (lambda (k v seed) (cons (proc k v) seed)) '())))
+(define (wiliki:db-map proc)
+  (wiliki:db-fold (lambda (k v seed) (cons (proc k v) seed)) '()))
 
-(define (wiliki-db-for-each proc)
-  (wiliki-db-fold (lambda (k v seed) (proc k v) #f) #f))
+(define (wiliki:db-for-each proc)
+  (wiliki:db-fold (lambda (k v seed) (proc k v) #f) #f))
 
-(define (wiliki-db-search pred . maybe-sorter)
+(define (wiliki:db-search pred . maybe-sorter)
   (sort
    (dbm-fold (check-db)
              (lambda (k v r)
@@ -779,16 +779,14 @@
                    (> (get-keyword :mtime (cdr a) 0)
                       (get-keyword :mtime (cdr b) 0))))))
 
-(define (wiliki-db-search-content key . maybe-sorter)
-  (apply wiliki-db-search
-         (lambda (k v)
-           (and (not (string-prefix? " " k))
-                (string-contains-ci
-                 (ref (wiliki-db-record->page key v) 'content)
-                 key)))
-         maybe-sorter))
-
-
-
+(define (wiliki:db-search-content key . maybe-sorter)
+  (let1 w (wiliki)
+    (apply wiliki:db-search
+           (lambda (k v)
+             (and (not (string-prefix? " " k))
+                  (string-contains-ci
+                   (ref (wiliki:db-record->page w key v) 'content)
+                   key)))
+           maybe-sorter)))
 
 (provide "wiliki/core")

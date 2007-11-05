@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: macro.scm,v 1.49 2007-10-13 01:45:35 shirok Exp $
+;;; $Id: macro.scm,v 1.50 2007-11-05 22:26:40 shirok Exp $
 
 (define-module wiliki.macro
   (use srfi-1)
@@ -77,7 +77,7 @@
 (define-reader-macro (index prefix)
   `((ul
      ,@(map (lambda (key) `(li ,(wiliki:wikiname-anchor (car key))))
-            (wiliki-db-search
+            (wiliki:db-search
              (lambda (k v) (string-prefix? prefix k))
              (lambda (a b)
                (string<? (car a) (car b))))))))
@@ -85,7 +85,7 @@
 (define-reader-macro (cindex prefix . maybe-delim)
   (intersperse (get-optional maybe-delim " ")
                (map (lambda (key) (wiliki:wikiname-anchor (car key)))
-                    (wiliki-db-search
+                    (wiliki:db-search
                      (lambda (k v) (string-prefix? prefix k))
                      (lambda (a b)
                        (string<? (car a) (car b)))))))
@@ -94,7 +94,7 @@
 ;; $$include
 ;;
 (define-reader-macro (include page)
-  (cond ((wiliki-db-get page) => wiliki:format-content)
+  (cond ((wiliki:db-get page) => wiliki:format-content)
         (else (list #`"[[$$include ,page]]"))))
 
 ;;---------------------------------------------------------------
@@ -121,7 +121,7 @@
 ;;
 (define-reader-macro (toc . maybe-page)
   (let* ((name (get-optional maybe-page #f))
-         (page (if name (wiliki-db-get name #f) (wiliki-current-page))))
+         (page (if name (wiliki:db-get name #f) (wiliki-current-page))))
     (if (not page)
       (if (pair? maybe-page)
         (list #`"[[$$toc ,(car maybe-page)]]")
@@ -188,7 +188,7 @@
 (define-reader-macro (breadcrumb-links . opts)
   (let-optionals* opts ((name #f)
                         (delim ":"))
-    (let1 page (if name (wiliki-db-get name #f) (wiliki-current-page))
+    (let1 page (if name (wiliki:db-get name #f) (wiliki-current-page))
       (if (not page)
         (if name
           (list #`"[[$$breadcrumb-links ,(car opts)]]")
@@ -258,7 +258,7 @@
          (prefix (comment-prefix id))
          (sorter (if (equal? order "old->new") string<? string>?))
          ;; NB: sort procedure assumes we have up to 1000 comments.
-         (comment-pages (wiliki-db-search
+         (comment-pages (wiliki:db-search
                          (lambda (k v) (string-prefix? prefix k))
                          (lambda (a b) (sorter (car a) (car b)))))
          (timestamp (sys-time))
@@ -304,7 +304,7 @@
 (define (comment-summary id)
   (let* ((prefix (comment-prefix id))
          (num-comments (length
-                        (wiliki-db-search
+                        (wiliki:db-search
                          (lambda (k v) (string-prefix? prefix k)))))
          )
     `((div (@ (class "comment"))
@@ -351,7 +351,7 @@
   ;; Find maximum comment count
   (define (max-comment-count)
     (let1 rx (string->regexp #`"^,(regexp-quote (comment-prefix cid))(\\d+)$")
-      (wiliki-db-fold (lambda (k v maxval)
+      (wiliki:db-fold (lambda (k v maxval)
                         (cond [(rx k)
                                => (lambda (m) (max maxval (x->integer (m 1))))]
                               [else maxval]))
@@ -372,7 +372,7 @@
                        t "" #t)))
 
   (do-post)
-  (wiliki-db-touch! pagename)
+  (wiliki:db-touch! pagename)
   (wiliki:redirect-page pagename))
 
 ;;===============================================================
@@ -385,7 +385,7 @@
               `(tr (td ,(wiliki:format-time (cdr p)))
                    (td "(" ,(how-long-since (cdr p)) " ago)")
                    (td ,(wiliki:wikiname-anchor (car p)))))
-            (wiliki-db-recent-changes)))))
+            (wiliki:db-recent-changes)))))
 
 (define-virtual-page (#/^\|comments:(.*)(?!::\d+$)/ (_ p))
   `((p "See " ,@(wiliki:format-wikiname p))))

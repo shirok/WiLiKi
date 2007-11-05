@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: edit.scm,v 1.21 2007-07-14 05:33:20 shirok Exp $
+;;;  $Id: edit.scm,v 1.22 2007-11-05 22:26:40 shirok Exp $
 ;;;
 
 (define-module wiliki.edit
@@ -131,7 +131,7 @@
       (string-join lines "\n")))
   (unless (ref (wiliki)'editable?)
     (errorf "Can't edit the page ~s: the database is read-only" pagename))
-  (let* ((page (wiliki-db-get pagename #t))
+  (let* ((page (wiliki:db-get pagename #t))
          (content (or (get-old-content page) (ref page 'content)))
          )
     (wiliki:std-page
@@ -141,7 +141,7 @@
        (edit-form #f pagename content (ref page 'mtime) "" #f)))))
 
 (define (cmd-preview pagename content mtime logmsg donttouch)
-  (let ((page (wiliki-db-get pagename #t)))
+  (let ((page (wiliki:db-get pagename #t)))
     (wiliki:std-page
      (make <wiliki-page>
        :title (format #f ($$ "Preview of ~a") pagename)
@@ -150,13 +150,13 @@
                   pagename content mtime logmsg donttouch)))))
 
 (define (cmd-commit-edit pagename content mtime logmsg donttouch)
-  (let ((p   (wiliki-db-get pagename #t))
+  (let ((p   (wiliki:db-get pagename #t))
         (now (sys-time)))
 
     (define (erase-page)
       (write-log (wiliki) pagename (ref p 'content) "" now logmsg)
       (set! (ref p 'content) "")
-      (wiliki-db-delete! pagename)
+      (wiliki:db-delete! pagename)
       (wiliki:redirect-page (ref (wiliki)'top-page)))
 
     (define (update-page content)
@@ -165,7 +165,7 @@
           (write-log (wiliki) pagename (ref p 'content) new-content now logmsg)
           (set! (ref p 'mtime) now)
           (set! (ref p 'content) new-content)
-          (wiliki-db-put! pagename p :donttouch donttouch)))
+          (wiliki:db-put! pagename p :donttouch donttouch)))
       (wiliki:redirect-page pagename))
 
     ;; check if page has been changed.  we should ignore the difference
