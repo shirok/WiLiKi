@@ -1,7 +1,7 @@
 ;;
 ;; test for wiliki
 ;;
-;; $Id: test-wiliki.scm,v 1.14 2007-07-14 05:33:20 shirok Exp $
+;; $Id: test-wiliki.scm,v 1.15 2007-11-05 21:38:00 shirok Exp $
 
 (use srfi-1)
 (use srfi-13)
@@ -29,7 +29,7 @@
   (with-output-to-file *cgi-path*
     (lambda ()
       (print #`"#!,*gosh-path*")
-      (write '(add-load-path "../src"))
+      (write '(add-load-path "../../src"))
       (write '(use wiliki))
       (write `(define (main args)
                 (wiliki-main
