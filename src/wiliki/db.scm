@@ -1,7 +1,7 @@
 ;;;
-;;; wiliki/db.scm - database access layer
+;;; wiliki/db.scm - database access layer (COMPATIBILITY MODULE)
 ;;;
-;;;  Copyright (c) 2003-2004 Shiro Kawai, All rights reserved.
+;;;  Copyright (c) 2003-2007 Shiro Kawai, All rights reserved.
 ;;;
 ;;;  Permission is hereby granted, free of charge, to any person
 ;;;  obtaining a copy of this software and associated documentation
@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: db.scm,v 1.15 2007-11-05 22:26:40 shirok Exp $
+;;; $Id: db.scm,v 1.16 2007-12-21 11:56:43 shirok Exp $
 
 ;; NB: The wiliki.db feature is merged into wiliki.core.
 ;; This module is only kept for the compatibility.
@@ -36,8 +36,6 @@
           wiliki-db-map wiliki-db-fold wiliki-db-for-each
           wiliki-db-search wiliki-db-search-content))
 
-
-; backward compatibility
 (define (wiliki-db-record->page key record)
   (wiliki:db-record->page (wiliki) key record))
 
