@@ -23,9 +23,10 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: core.scm,v 1.9 2007-11-05 22:26:40 shirok Exp $
+;;;  $Id: core.scm,v 1.10 2007-12-21 12:00:36 shirok Exp $
 ;;;
 
+;;
 ;; Provides core functionality for WiLiKi web application;
 ;; will be referred by internal submodules, such as wiliki.macro.
 ;; 
@@ -68,6 +69,7 @@
 
           wiliki:with-db wiliki:page-class
           wiliki:db-record->page wiliki:page->db-record
+          wiliki:db-raw-get wiliki:db-raw-put!
           wiliki:db-exists? wiliki:db-get wiliki:db-put! wiliki:db-touch!
           wiliki:db-delete! wiliki:db-recent-changes
           wiliki:db-fold wiliki:db-map wiliki:db-for-each
@@ -717,6 +719,13 @@
                    :mtime (ref page 'mtime)
                    :muser (ref page 'muser)))
       (display (ref page 'content)))))
+
+;; Raw acessors
+(define (wiliki:db-raw-get key . maybe-default)
+  (apply dbm-get (check-db) key maybe-default))
+
+(define (wiliki:db-raw-put! key val)
+  (dbm-put! (check-db) key val))
   
 (define (wiliki:db-exists? key)
   (dbm-exists? (check-db) key))

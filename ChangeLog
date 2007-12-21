@@ -1,3 +1,9 @@
+2007-12-21  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/core.scm: added wiliki:db-raw-get and wiliki:db-raw-put!
+	  for accesses without using <wiliki-page>.  Mainly for the apps
+	  that want to keep raw data other than pages in the db.
+
 2007-11-05  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/core.scm: changed wiliki-db-* API to wiliki:db-* API.
