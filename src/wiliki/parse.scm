@@ -23,13 +23,15 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: parse.scm,v 1.6 2007-05-02 10:37:17 shirok Exp $
+;;; $Id: parse.scm,v 1.7 2007-12-22 00:05:06 shirok Exp $
 
 (define-module wiliki.parse
   (use srfi-1)
   (use srfi-13)
   (use text.tree)
-  (export wiliki-parse wiliki-parse-string))
+  (use util.match)
+  (export wiliki-parse wiliki-parse-string
+          wiliki-remove-markup))
 (select-module wiliki.parse)
 
 ;; This module provides basic procedues to parse Wiki markup text
@@ -54,6 +56,23 @@
 ;; wiliki-parse-string :: String -> [SXML]
 (define (wiliki-parse-string string)
   (call-with-input-string string wiliki-parse))
+
+;; An utility to remove wiki markup stuff and returns a plain text Stree.
+;; newlines are also removed.
+(define (wiliki-remove-markup text)
+  (reverse! ((rec (tree-fold tree seed)
+               (match tree
+                 ["\n" seed]  ;; skip newline
+                 [(? string?) (cons tree seed)]
+                 [('@ . _)  seed]  ;; skip attr node
+                 [('@@ . _) seed]  ;; skip aux node
+                 [('wiki-name name) (cons name seed)]
+                 [('wiki-macro . _) seed]
+                 [(name . nodes) 
+                  (fold tree-fold seed nodes)]
+                 [else seed]))
+             `(x ,@(wiliki-parse-string text))
+             '())))
 
 ;;----------------------------------------------------------
 ;; Parser body

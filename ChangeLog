@@ -1,5 +1,9 @@
 2007-12-21  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki/format.scm, src/wiliki/parse.scm: moved wiliki.format's
+	  wiliki:format-line-plainly to wiliki.parse as wiliki-remove-markup.
+	  The old binding is kept for the compatibility.
+
 	* src/wiliki/core.scm: added wiliki:db-raw-get and wiliki:db-raw-put!
 	  for accesses without using <wiliki-page>.  Mainly for the apps
 	  that want to keep raw data other than pages in the db.

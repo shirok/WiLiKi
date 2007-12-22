@@ -23,7 +23,7 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.45 2007-10-11 21:52:26 shirok Exp $
+;;; $Id: format.scm,v 1.46 2007-12-22 00:05:06 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)
@@ -156,21 +156,8 @@
 (define (wiliki:calculate-heading-id headings)
   (string-append "H-" (number->string (hash headings) 36)))
 
-;; utility : strips wiki markup and returns a plaintext line.
-(define (wiliki:format-line-plainly line)
-  (reverse! ((rec (tree-fold tree seed)
-               (match tree
-                 ("\n" seed)  ;; skip newline
-                 ((? string?) (cons tree seed))
-                 (('@ . _)  seed)  ;; skip attr node
-                 (('@@ . _) seed)  ;; skip aux node
-                 (('wiki-name name) (cons name seed))
-                 (('wiki-macro . _) seed)
-                 ((name . nodes) 
-                  (fold tree-fold seed nodes))
-                 (else seed)))
-             `(x ,@(wiliki-parse-string line))
-             '())))
+;; Backward compatibility
+(define wiliki:format-line-plainly wiliki-remove-markup)
   
 ;; Page ======================================================
 
