@@ -1,3 +1,7 @@
+2008-01-11  Shiro Kawai  <shiro@acm.org>
+
+	* Migrated repository to Subversion.
+
 2007-12-21  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/format.scm, src/wiliki/parse.scm: moved wiliki.format's
