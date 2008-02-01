@@ -8,6 +8,9 @@ prefix      = @prefix@
 exec_prefix = @exec_prefix@
 bindir      = @bindir@
 libdir      = @libdir@
+srcdir      = @srcdir@
+datadir     = @datadir@
+datarootdir = @datarootdir@
 VPATH       = $(srcdir)
 
 # These may be overridden by make invocators

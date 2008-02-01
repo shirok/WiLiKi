@@ -40,6 +40,8 @@
                    :description "Test wiliki"
                    :debug-level 1
                    :language 'en
+                   :charsets '((jp . euc-jp) (en . euc-jp))
+                   :image-urls '((#/^http:\/\/sourceforge.net\/sflogo/ allow))
                    ,@params))))
       ))
   (sys-chmod *cgi-path* #o700))
