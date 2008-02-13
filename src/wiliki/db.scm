@@ -35,6 +35,7 @@
           wiliki-db-recent-changes
           wiliki-db-map wiliki-db-fold wiliki-db-for-each
           wiliki-db-search wiliki-db-search-content))
+(select-module wiliki.db)
 
 (define (wiliki-db-record->page key record)
   (wiliki:db-record->page (wiliki) key record))

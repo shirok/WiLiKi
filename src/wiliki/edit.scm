@@ -261,16 +261,16 @@
 ;; is locked, so we don't do any locking here.
 (define (write-log wiliki pagename old new timestamp logmsg)
   (and-let* ((logfile (wiliki:log-file-path wiliki)))
-    (let ((content (wiliki-log-create
-                    pagename new old
-                    :timestamp timestamp
-                    :remote-addr (or (cgi-get-metavariable "REMOTE_ADDR") "")
-                    :remote-user (or (cgi-get-metavariable "REMOTE_USER") "")
-                    :message logmsg)))
+    (let1 content (wiliki-log-create
+                   pagename new old
+                   :timestamp timestamp
+                   :remote-addr (or (cgi-get-metavariable "REMOTE_ADDR") "")
+                   :remote-user (or (cgi-get-metavariable "REMOTE_USER") "")
+                   :message (or logmsg ""))
       (call-with-output-file logfile
         (lambda (p) (display content p) (flush p))
-        :if-exists :append)
-      )))
+        :if-exists :append))
+    ))
 
 (provide "wiliki/edit")
 

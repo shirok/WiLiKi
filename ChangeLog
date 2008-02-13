@@ -1,3 +1,9 @@
+2008-02-12  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/db.scm: added missing select-module that caused
+	  mysterious failures.
+	* src/wiliki/core.scm, src/wiliki.scm: some fixes
+
 2008-01-11  Shiro Kawai  <shiro@acm.org>
 
 	* Migrated repository to Subversion.

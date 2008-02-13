@@ -246,8 +246,7 @@
   )
 
 (define (error-page e)
-  (wiliki:with-db (wiliki)
-                  (lambda ()
+  (wiliki:with-db (lambda ()
                     (wiliki:std-page
                      (make <wiliki-page>
                        :title #`",(title-of (wiliki)) : Error"
@@ -282,8 +281,7 @@
       'name
       (lambda (pagename params)
         (let1 action (lambda (arg ...) . body)
-          (wiliki:with-db (wiliki)
-                          (lambda ()
+          (wiliki:with-db (lambda ()
                             (let1 args-alist
                                 (list
                                  (cons 'arg
@@ -745,7 +743,7 @@
       (dbm-put! db key s)
       (unless donttouch
         (let1 r (alist-delete key (read-recent-changes db))
-          (write-recent-changes (acons key (ref page 'mtime) r))))
+          (write-recent-changes db (acons key (ref page 'mtime) r))))
       )))
 
 (define (wiliki:db-touch! key)

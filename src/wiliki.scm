@@ -139,8 +139,7 @@
            ;; Top page is non-existent, or its name may be changed.
            ;; create it automatically.  We need to ensure db is writable.
            (if (editable? (wiliki))
-             (wiliki:with-db (wiliki)
-                             (lambda ()
+             (wiliki:with-db (lambda ()
                                (wiliki:db-put! (ref (wiliki)'top-page) toppage)
                                (html-page toppage))
                              :rwmode :write)
@@ -264,8 +263,8 @@
   (and-let* ((target (or (ref page 'command) (ref page 'key))))
     (receive (language label)
         (case (wiliki:lang)
-          ((jp) (values 'en "->English"))
-          (else (values 'jp "->Japanese")))
+          [(jp) (values 'en "->English")]
+          [else (values 'jp "->Japanese")])
       `(a (@ (href ,(string-append (cgi-name-of (wiliki)) "?" target
                                    (lang-spec language '&))))
           "[" ,label "]"))))
@@ -275,7 +274,7 @@
   `(form (@ (method GET) (action ,(cgi-name-of (wiliki)))
             (style "margin:0pt; padding:0pt"))
          ,@(map (match-lambda
-                  ((n v) `(input (@ (type hidden) (name ,n) (value ,v)))))
+                  [(n v) `(input (@ (type hidden) (name ,n) (value ,v)))])
                 params)
          (input (@ (type submit) (class "navi-button") (value ,content)))))
 

@@ -29,7 +29,7 @@
   (with-output-to-file *cgi-path*
     (lambda ()
       (print #`"#!,*gosh-path*")
-      (write '(add-load-path "../../src"))
+      (write '(add-load-path "../src"))
       (write '(use wiliki))
       (write `(define (main args)
                 (wiliki-main
@@ -42,6 +42,7 @@
                    :language 'en
                    :charsets '((jp . euc-jp) (en . euc-jp))
                    :image-urls '((#/^http:\/\/sourceforge.net\/sflogo/ allow))
+                   :log-file "testdata.log"
                    ,@params))))
       ))
   (sys-chmod *cgi-path* #o700))

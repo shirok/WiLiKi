@@ -98,17 +98,16 @@
                        (remote-user "")
                        (info      ""))
     (with-output-to-string
-      (lambda ()
-        (with-port-locking (current-output-port)
-          (lambda ()
-            (format #t "C ~s ~s ~s ~s~%"
-                    pagename timestamp remote-addr remote-user)
-            (for-each (cut print "L " <>)
-                      (call-with-input-string message port->string-list))
-            (emit-edit-list new old)
-            (print "."))
-          )))
+      (cut with-port-locking (current-output-port)
+           (lambda ()
+             (format #t "C ~s ~s ~s ~s~%"
+                     pagename timestamp remote-addr remote-user)
+             (for-each (cut print "L " <>)
+                       (call-with-input-string message port->string-list))
+             (emit-edit-list new old)
+             (print "."))))
     ))
+
 
 ;; Emit an edit list
 (define (emit-edit-list new old)
