@@ -1,3 +1,7 @@
+2008-02-13  Shiro Kawai  <shiro@acm.org>
+
+	* release 0.6
+
 2008-02-12  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/db.scm: added missing select-module that caused
