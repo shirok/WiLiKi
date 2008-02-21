@@ -25,7 +25,7 @@
 
 (define-reader-macro (srfi-implementors-map)
   (let1 tab (make-hash-table 'eqv?)
-    (wiliki-db-for-each
+    (wiliki:db-for-each
      (lambda (pagename record)
        (cond ((pick-srfis-macro record)
               => (cut map (cut hash-table-push! tab <> pagename) <>)))))
@@ -64,7 +64,7 @@
                                               (m (#/SRFI-(\d+)/ t)))
                                      (m 1))
                                    "-1"))))
-         (impls (sort (wiliki-db-fold
+         (impls (sort (wiliki:db-fold
                        (lambda (pagename record seed)
                          (cond ((pick-srfis-macro record)
                                 => (lambda (srfis)

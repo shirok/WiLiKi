@@ -1,3 +1,8 @@
+2008-02-20  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/scr-macros.scm (srfi-implementors-map): updated the
+	  use of old api wiliki-db-* for the new api wiliki:db-*.
+
 2008-02-13  Shiro Kawai  <shiro@acm.org>
 
 	* release 0.6
