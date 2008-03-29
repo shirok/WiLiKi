@@ -369,10 +369,10 @@
                         "* "n" ("
                         (sys-strftime "%Y/%m/%d %T" (sys-localtime now))
                         "):\n<<<\n"content"\n>>>\n")
-                       t "" #t)))
+                       t "" #t)
+      (wiliki:db-touch! pagename)))
 
   (do-post)
-  (wiliki:db-touch! pagename)
   (wiliki:redirect-page pagename))
 
 ;;===============================================================
