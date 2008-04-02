@@ -1,7 +1,12 @@
+2008-04-01  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/macro.scm (post-comment): Filter more suspicious
+	  spams.
+
 2008-03-29  Shiro Kawai  <shiro@acm.org>
 
-	* src/wiliki/macro.scm (post-comment): Avoid touching the page
-	  if the comment is rejected.
+	* src/wiliki/macro.scm (post-comment): Avoid touching a page
+	  when the comment is rejected.
 
 2008-02-20  Shiro Kawai  <shiro@acm.org>
 

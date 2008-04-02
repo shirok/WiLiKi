@@ -345,7 +345,7 @@
   ;; those heuristic spam filtering into one module.
   (define (filter-suspicious content)
     (and (string? content)
-         (not (#/<a\s+href=[\"']?http/i content))
+         (not (#/<a\s+href=[\"'\s]*http/i content))
          content))
 
   ;; Find maximum comment count
