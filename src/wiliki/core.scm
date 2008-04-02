@@ -616,7 +616,7 @@
           [else default]))
   `(let* ,(map (match-lambda
                  [(var default)
-                  `(,var (,get-macro-arg-with-key ,#`",|var|:" ,default ,args))])
+                  `(,var (,get-macro-arg-with-key ,#`",|var|=" ,default ,args))])
                binds)
      ,@body))
 

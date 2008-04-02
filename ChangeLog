@@ -1,5 +1,9 @@
 2008-04-01  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki/core.scm (let-macro-keywords*): Changed keyword argument
+	  syntax from key:val to key=val, for ':' is more likely to be in
+	  VAL and confusing.
+
 	* src/wiliki/macro.scm (post-comment): Filter more suspicious
 	  spams.
 
