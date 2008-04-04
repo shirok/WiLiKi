@@ -1,7 +1,7 @@
 ;;;
 ;;; www.cgi-test - framework to test CGI scripts
 ;;;
-;;;   Copyright (c) 2003 Shiro Kawai, All rights reserved.
+;;;   Copyright (c) 2003-2008  Shiro Kawai  <shiro@acm.org>
 ;;;   
 ;;;   Redistribution and use in source and binary forms, with or without
 ;;;   modification, are permitted provided that the following conditions

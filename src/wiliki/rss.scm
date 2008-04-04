@@ -1,7 +1,7 @@
 ;;;
 ;;; wiliki/rss - an ad-hoc RSS generation routine for WiLiKi
 ;;;
-;;;  Copyright (c) 2000-2003 Shiro Kawai, All rights reserved.
+;;;  Copyright (c) 2000-2008  Shiro Kawai  <shiro@acm.org>
 ;;;
 ;;;  Permission is hereby granted, free of charge, to any person
 ;;;  obtaining a copy of this software and associated documentation
