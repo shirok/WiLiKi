@@ -1,3 +1,9 @@
+2008-07-15  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/edit.scm (cmd-commit-edit): Set wiliki:page-stack during
+	  expanding writer macros so that the writer macro can obtain the
+	  current page via wiliki:current-page.
+
 2008-05-05  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/edit.scm (cmd-commit-edit): slightly changed ad-hoc spam

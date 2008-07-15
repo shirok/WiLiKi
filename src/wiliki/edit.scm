@@ -27,6 +27,7 @@
 ;;;
 
 (define-module wiliki.edit
+  (use gauche.parameter)
   (use srfi-13)
   (use text.gettext)
   (use text.diff)
@@ -161,7 +162,9 @@
 
     (define (update-page content)
       (when (page-changed? content (ref p 'content))
-        (let1 new-content (expand-writer-macros content)
+        (let1 new-content
+            (parameterize ([wiliki:page-stack (list p)])
+              (expand-writer-macros content))
           (write-log (wiliki) pagename (ref p 'content) new-content now logmsg)
           (set! (ref p 'mtime) now)
           (set! (ref p 'content) new-content)
