@@ -142,8 +142,21 @@ div.comment > div.comment-past > blockquote * {
  * Tag
  */
 
-span.tag-anchor {
+div.tag-form {
+  text-align: right;
+  margin-left: auto;
+  margin-right: 2pt;
+}
+
+input.tag-form-input {
+  margin: 0pt;
+  padding: 0pt;
   background-color: #ffdddd;
+  border: none;
   font-size: 90%;
   font-style: italic;
+}
+
+input.tag-form-input:hover {
+  background-color: #ffffdd;
 }

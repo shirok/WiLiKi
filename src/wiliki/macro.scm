@@ -120,8 +120,12 @@
 ;; $$tag
 ;;
 (define-reader-macro (tag tagname)
-  `((span (@ (class tag-anchor))
-          ,@(wiliki:format-wikiname #`"Tag:,tagname"))))
+  `((div (@ (class tag-form))
+         (form (@ (method POST))
+               (input (@ (type hidden) (name p) (value ,#`"Tag:,tagname")))
+               (input (@ (type hidden) (name l) (value ,(wiliki:lang))))
+               (input (@ (class tag-form-input) (type submit) (name submit)
+                         (value ,#`"Tag:,tagname")))))))
 
 (define-virtual-page (#/^Tag:(.*)/ (_ tagname))
   (let ((rx (string->regexp
