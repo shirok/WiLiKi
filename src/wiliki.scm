@@ -236,7 +236,7 @@
                                 (logmsg  :convert cv-in)
                                 (donttouch :default #f))
   ((if commit cmd-commit-edit cmd-preview)
-   pagename content mtime logmsg donttouch))
+   pagename content mtime logmsg donttouch #f))
 
 ;;
 ;; History
@@ -283,7 +283,7 @@
        (wiliki:make-navi-button '() ($$ "Top"))))
 
 (define (wiliki:edit-link page)
-  (and (ref (wiliki) 'editable?)
+  (and (eq? (ref (wiliki) 'editable?) #t)
        (wiliki:persistent-page? page)
        (wiliki:make-navi-button `((p ,(ref page 'key)) (c e)) ($$ "Edit"))))
 

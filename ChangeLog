@@ -1,3 +1,18 @@
+2008-07-24  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/core.scm (db-try-open): Fixed db-open retry for less
+	  'cannot open database for write' error.
+
+	* src/wiliki/edit.scm (cmd-preview, cmd-commit-edit): Allow 'limited
+	  in editable? slot of wiliki, which allows limited kind of editing
+	  (e.g. comments).
+	* src/wiliki.scm: Changed accordingly.
+	* src/wiliki/macro.scm (comment-input-and-display): Hide comment
+	  input area if wiliki is read-only.
+	
+	* src/wiliki/history.scm: Hide link to 'edit' if the wiliki is not
+	  editable.
+
 2008-07-23  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/macro.scm (tag): Added simple tagging interface.

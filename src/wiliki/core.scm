@@ -112,6 +112,7 @@
    (charsets    :accessor charsets-of    :init-keyword :charsets
                 :init-value '())
    ;; editable?
+   ;;   can be #f, #t or 'limited.
    (editable?   :accessor editable?      :init-keyword :editable?
                 :init-value #t)
    ;; style-sheet path
@@ -276,6 +277,7 @@
 (define (wiliki-action-add! cmd action)
   (wiliki:actions (acons cmd action (wiliki:actions))))
 
+;; Add new action.  Action can be invoked by 'c' CGI paramter.
 (define-syntax define-wiliki-action
   (syntax-rules ()
     [(_ name rwmode (pagename (arg . opts) ...) . body)
@@ -628,7 +630,6 @@
 
 ;; some constants
 (define-constant *retry-limit* 5)
-(define-constant *EAVAIL-message* "resource temporarily unavailable")
 (define-constant *recent-changes* " %recent-changes")
 
 ;; private parameter
@@ -636,19 +637,12 @@
 
 ;; private procedures
 (define (db-try-open dbpath dbtype rwmode)
-  ;; Try to open the database.  If it receives EAVAIL error, wait for
-  ;; one second and try again, up to *retry-limit* times.
+  ;; Try to open the database.  We retry up to *retry-limit* times.
   (define (try retry mode)
     (guard (e
             [(>= retry *retry-limit*) (raise e)]
-            [(string-contains-ci (ref e 'message) *EAVAIL-message*)
-             (sys-sleep 2) (try (+ retry 1) mode)]
-            [else
-             ;; we don't want to show the path of db to unknown
-             ;; visitors
-             (error #`"Couldn't open database file to ,|rwmode|.")])
+            [else (sys-sleep 2) (try (+ retry 1) mode)])
       (dbm-open dbtype :path dbpath :rw-mode mode)))
-
   ;; If db file does not exist, we open it with :write mode,
   ;; regardless of rwmode arg, so that the empty DB is created.
   ;; Note that race condition will not happen here.  If there's no
@@ -700,7 +694,7 @@
 ;; Returns the class to represent the page
 (define-method wiliki:page-class ((self <wiliki>)) <wiliki-page>)
 
-;; All other wiliki:db APIs implicitly uses the-db.
+;;; All other wiliki:db APIs implicitly uses the-db.
 
 ;; 'Record' is a serialized page data.  By default, it is a string
 ;; with concatenation of kv-list of metadata plus raw content.
@@ -745,7 +739,7 @@
 
 (define (wiliki:db-raw-put! key val)
   (dbm-put! (check-db) key val))
-  
+
 (define (wiliki:db-exists? key)
   (dbm-exists? (check-db) key))
 

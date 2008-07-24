@@ -130,7 +130,7 @@
                                                   (ref page 'content)
                                                   time)))
       (string-join lines "\n")))
-  (unless (ref (wiliki)'editable?)
+  (unless (eq? (ref (wiliki)'editable?) #t)
     (errorf "Can't edit the page ~s: the database is read-only" pagename))
   (let* ((page (wiliki:db-get pagename #t))
          (content (or (get-old-content page) (ref page 'content)))
@@ -141,7 +141,7 @@
        :content
        (edit-form #f pagename content (ref page 'mtime) "" #f)))))
 
-(define (cmd-preview pagename content mtime logmsg donttouch)
+(define (cmd-preview pagename content mtime logmsg donttouch restricted)
   (let ((page (wiliki:db-get pagename #t)))
     (wiliki:std-page
      (make <wiliki-page>
@@ -150,7 +150,11 @@
        (edit-form (preview-box (wiliki:format-content content))
                   pagename content mtime logmsg donttouch)))))
 
-(define (cmd-commit-edit pagename content mtime logmsg donttouch)
+;; DONTTOUCH - If #t, don't update RecentChanges.
+;; LIMITED - #t indicates this edit is generated procedurally, like comment
+;;           feature.  It is allowed if EDITABLE? == limited.
+
+(define (cmd-commit-edit pagename content mtime logmsg donttouch limited)
   (let ((p   (wiliki:db-get pagename #t))
         (now (sys-time)))
 
@@ -211,8 +215,10 @@
     ;; The body of cmd-commit-edit
     ;; If content is empty and the page is not the top page, we erase
     ;; the page.
-    (unless (ref (wiliki)'editable?)
-      (errorf "Can't edit the page ~s: the database is read-only" pagename))
+    (let1 editable (ref (wiliki)'editable?)
+      (when (or (not editable)
+                (and (not limited) (eq? editable 'limited)))
+        (errorf"Can't edit the page ~s: the database is read-only" pagename)))
     (cond
      ;; A very ad-hoc filter for mechanical spams.  Normal wiliki content
      ;; never includes explicit HTML tags (strictly speaking, the content

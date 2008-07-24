@@ -70,10 +70,13 @@
                                          (cv-out pagename)
                                          (ref entry 'timestamp))))
                           "View")
-                  "|" `(a (@ (href ,(url "p=~a&c=e&t=~a"
-                                         (cv-out pagename)
-                                         (ref entry 'timestamp))))
-                          "Edit")
+                  `(span
+                    ,@(cond-list
+                       [(eq? (ref (wiliki)'editable?) #t)
+                        `(span "|" (a (@ (href ,(url "p=~a&c=e&t=~a"
+                                                     (cv-out pagename)
+                                                     (ref entry 'timestamp))))
+                                      "Edit"))]))
                   " this version] "
                   (if (and (zero? start-count) (eq? first entry))
                     `("[Diff to ",(diff-to-prev entry prev-timestamp)"]")
@@ -205,10 +208,12 @@
                 (a (@ (href ,(url "~a&c=hd&t=~a"
                                   (cv-out pagename) old-time)))
                    ,($$ "View diff from current version")))
-             (p (@ (style "text-align:right"))
-                (a (@ (href ,(url "~a&c=e&t=~a"
-                                  (cv-out pagename) old-time)))
-                   ,($$ "Edit this version")))
+             ,@(cond-list
+                [(eq? (ref (wiliki)'editable?) #t)
+                 `(p (@ (style "text-align:right"))
+                     (a (@ (href ,(url "~a&c=e&t=~a"
+                                       (cv-out pagename) old-time)))
+                        ,($$ "Edit this version")))])
              ,(return-to-edit-history pagename)
              ,(wiliki:format-diff-pre reverted)))
          (no-history-info pagename)))
