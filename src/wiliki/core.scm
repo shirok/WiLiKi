@@ -69,6 +69,7 @@
 
           wiliki:with-db wiliki:page-class
           wiliki:db-record->page wiliki:page->db-record
+          wiliki:db-record-content-find
           wiliki:db-raw-get wiliki:db-raw-put!
           wiliki:db-exists? wiliki:db-get wiliki:db-put! wiliki:db-touch!
           wiliki:db-delete! wiliki:db-recent-changes
@@ -701,6 +702,10 @@
 
 ;; All other wiliki:db APIs implicitly uses the-db.
 
+;; 'Record' is a serialized page data.  By default, it is a string
+;; with concatenation of kv-list of metadata plus raw content.
+;; To change record representation, the following three methods
+;; needs to be overridden.
 (define-method wiliki:db-record->page ((self <wiliki>) key record)
   (call-with-input-string record
     (lambda (p)
@@ -708,6 +713,22 @@
              (content (port->string p)))
         (apply make (wiliki:page-class self)
                :title key :key key :content content params)))))
+
+;; internal; to save overhead of making <wiliki-page>
+(define-method wiliki:db-record-content-find ((self <wiliki>) record pred)
+  (call-with-input-string record
+    (lambda (p)
+      (read p) ; skip metadata
+      (let loop ((line (read-line p)) (out-verb? #t))
+        (cond [(eof-object? line) #f]
+              [(and out-verb? (string-prefix? ";;" line))
+               (loop (read-line p) #t)]
+              [(pred line) #t]
+              [else
+               (loop (read-line p)
+                     (cond [(and (not out-verb?) (string=? "{{{" line)) #f]
+                           [(string=? "}}}" line) #t]
+                           [else out-verb?]))])))))
 
 (define-method wiliki:page->db-record ((self <wiliki>) (page <wiliki-page>))
   (with-output-to-string
@@ -791,9 +812,8 @@
     (apply wiliki:db-search
            (lambda (k v)
              (and (not (string-prefix? " " k))
-                  (string-contains-ci
-                   (ref (wiliki:db-record->page w key v) 'content)
-                   key)))
+                  (wiliki:db-record-content-find
+                   w v (cut string-contains-ci <> key))))
            maybe-sorter)))
 
 (provide "wiliki/core")
