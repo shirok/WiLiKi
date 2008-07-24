@@ -119,29 +119,68 @@
 ;;---------------------------------------------------------------
 ;; $$tag
 ;;
-(define-reader-macro (tag tagname)
-  `((div (@ (class tag-form))
-         (form (@ (method POST))
-               (input (@ (type hidden) (name p) (value ,#`"Tag:,tagname")))
-               (input (@ (type hidden) (name l) (value ,(wiliki:lang))))
-               (input (@ (class tag-form-input) (type submit) (name submit)
-                         (value ,#`"Tag:,tagname")))))))
 
-(define-virtual-page (#/^Tag:(.*)/ (_ tagname))
-  (let ((rx (string->regexp
-             #`"\\[\\[$$tag\\s+\\\"?,(regexp-quote tagname)\\\"?\\]\\]"))
-        (w (wiliki)))
-    `((h2 ,(format (gettext "Page(s) with tag ~s") tagname))
-      (ul
-       ,@(map (lambda (key&attr)
-                `(li ,@(wiliki:format-wikiname (car key&attr))
-                     "(" ,(how-long-since (get-keyword :mtime (cdr key&attr)))
-                     " ago)"))
-              (wiliki:db-search (lambda (key content)
-                                  (and (not (string-prefix? " " key))
-                                       (wiliki:db-record-content-find
-                                        w content rx))))))
-      )))
+(define-reader-macro (tag . tagnames)
+  `((span (@ (class tag-anchor))
+          ,(format "Tag~a: " (match tagnames [(_) ""] [else "s"]))
+          ,@(intersperse
+             ", "
+             (map (lambda (tagname)
+                    `(a (@ (href ,(wiliki:url "p=Tag:~a" tagname))) ,tagname))
+                  tagnames)))
+    ))
+
+;; We cache tag search results for 1 hour, to reduce the load in case
+;; the virtual page is hit by crawlers.
+(define-virtual-page (#/^Tag:(.*)/ (pagename tagname))
+  (define (get-pages)
+    (or (and-let* ([cache (wiliki:db-raw-get (%tag-cache-name tagname) #f)]
+                   [now (sys-time)])
+          (match (read-from-string cache)
+            [(timestamp . pages)
+             (and (integer? timestamp) (> (+ timestamp 3600) now) pages)]
+            [else #f]))
+        (%tag-update-cache tagname)))
+  
+  `((h2 ,(format (gettext "Page(s) with tag ~s") tagname))
+    (ul
+     ,@(map (lambda (key&attr)
+              `(li ,@(wiliki:format-wikiname (car key&attr))
+                   "(" ,(how-long-since (get-keyword :mtime (cdr key&attr)))
+                   " ago)"))
+            (get-pages)))
+    (form (@ (method POST) (action ,(wiliki:url)))
+          ,(gettext "The list is cached and updated occasionally.")
+          (input (@ (type hidden) (name p) (value ,pagename)))
+          (input (@ (type hidden) (name c) (value tag-rescan)))
+          (input (@ (type submit) (name submit)
+                    (value ,(gettext "Update cache now")))))
+    ))
+
+(define-wiliki-action tag-rescan :write (pagename)
+  (rxmatch-case pagename
+    [#/^Tag:(.*)/ (_ tagname) (%tag-update-cache tagname)]
+    [else #f])
+  (wiliki:redirect-page pagename))
+
+(define (%tag-cache-name tagname) #`" %Tag:,tagname")
+
+(define (%tag-update-cache tagname)
+  (define (find-tag line)
+    (rxmatch-case line
+      [#/\[\[$$tag\s+(.*?)\]\]/ (_ args)
+       (member tagname (or (wiliki:parse-macro-args args) '()))]
+      [else #f]))
+  (let* ((w (wiliki))
+         (pages (wiliki:db-search (lambda (key content)
+                                    (and (not (string-prefix? " " key))
+                                         (wiliki:db-record-content-find
+                                          w content find-tag))))))
+    (wiliki:with-db 
+     (cut wiliki:db-raw-put! (%tag-cache-name tagname)
+          (write-to-string (cons (sys-time) pages)))
+     :rwmode :write)
+    pages))
 
 ;;---------------------------------------------------------------
 ;; $$toc

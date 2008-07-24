@@ -1,8 +1,10 @@
 2008-07-23  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/macro.scm (tag): Added simple tagging interface.
-	  [[$$tag name]] creates a link to a virtual page `Tag:name',
+	  [[$$tag name ...]] creates links to a virtual page `Tag:name',
 	  which lists all pages that include '[[$$tag name]]'.
+	  The virtual page caches the search result, in order to avoid
+	  excessive load from crawlers.
 
 	* src/wiliki/core.scm (wiliki:db-search-content,
 	  wiliki:db-record-content-find): Exclude comments from search.

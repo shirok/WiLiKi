@@ -66,6 +66,7 @@
           define-reader-macro define-writer-macro define-virtual-page
           handle-reader-macro handle-writer-macro expand-writer-macros
           handle-virtual-page virtual-page? let-macro-keywords*
+          wiliki:parse-macro-args
 
           wiliki:with-db wiliki:page-class
           wiliki:db-record->page wiliki:page->db-record
@@ -484,7 +485,7 @@
 ;;
 
 (define (handle-reader-macro name)
-  (or (and-let* ((args (parse-macro-args name)))
+  (or (and-let* ((args (wiliki:parse-macro-args name)))
         (handle-expansion name
                           (lambda () (assoc (car args) (wiliki:reader-macros)))
                           (lambda (p) (apply (cdr p) (cdr args)))))
@@ -492,7 +493,7 @@
       
 
 (define (handle-writer-macro name)
-  (or (and-let* ((args (parse-macro-args name)))
+  (or (and-let* ((args (wiliki:parse-macro-args name)))
         (handle-expansion name
                           (lambda () (assoc (car args) (wiliki:writer-macros)))
                           (lambda (p) (apply (cdr p) (cdr args)))))
@@ -604,7 +605,7 @@
         ((pair? formals) (arity-matches? (cdr list) (cdr formals)))
         (else #t)))
 
-(define parse-macro-args
+(define wiliki:parse-macro-args
   (let1 parser (make-csv-reader #\space)
     (lambda (name)
       (guard (e (else #f))
@@ -641,7 +642,7 @@
     (guard (e
             [(>= retry *retry-limit*) (raise e)]
             [(string-contains-ci (ref e 'message) *EAVAIL-message*)
-             (sys-sleep 1) (try (+ retry 1) mode)]
+             (sys-sleep 2) (try (+ retry 1) mode)]
             [else
              ;; we don't want to show the path of db to unknown
              ;; visitors
@@ -681,7 +682,6 @@
           (type (ref (wiliki)'db-type)))
       (cond [(the-db)
              => (lambda (db)
-
                   (when (and (eq? rwmode :write)
                              (eq? (ref db'rw-mode) :read))
                     ;; we should reopen the db
