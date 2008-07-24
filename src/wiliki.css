@@ -138,3 +138,12 @@ div.comment > div.comment-past > blockquote * {
   padding: 0pt; margin-top: 0pt; margin-bottom: 0pt;
 }
 
+/*
+ * Tag
+ */
+
+span.tag-anchor {
+  background-color: #ffdddd;
+  font-size: 90%;
+  font-style: italic;
+}

@@ -117,6 +117,29 @@
       (badimg))))
 
 ;;---------------------------------------------------------------
+;; $$tag
+;;
+(define-reader-macro (tag tagname)
+  `((span (@ (class tag-anchor))
+          ,@(wiliki:format-wikiname #`"Tag:,tagname"))))
+
+(define-virtual-page (#/^Tag:(.*)/ (_ tagname))
+  (let ((rx (string->regexp
+             #`"\\[\\[$$tag\\s+\\\"?,(regexp-quote tagname)\\\"?\\]\\]"))
+        (w (wiliki)))
+    `((h2 ,(format (gettext "Page(s) with tag ~s") tagname))
+      (ul
+       ,@(map (lambda (key&attr)
+                `(li ,@(wiliki:format-wikiname (car key&attr))
+                     "(" ,(how-long-since (get-keyword :mtime (cdr key&attr)))
+                     " ago)"))
+              (wiliki:db-search (lambda (key content)
+                                  (and (not (string-prefix? " " key))
+                                       (wiliki:db-record-content-find
+                                        w content rx))))))
+      )))
+
+;;---------------------------------------------------------------
 ;; $$toc
 ;;
 (define-reader-macro (toc . maybe-page)
