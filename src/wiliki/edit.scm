@@ -232,6 +232,14 @@
      ((and (not (equal? content ""))
            (equal? content logmsg))
       (wiliki:redirect-page (ref (wiliki)'top-page)))
+     ;; Another ad-hoc filter: if the content has some amount and
+     ;; consists entirely of a bunch of URLs, it's likely a spam.
+     ((and (> (string-size content) 300)
+           (< (string-size (regexp-replace-all* content
+                                                #/http:\/\/[\w\/&?=.-]/ ""
+                                                #/\s/ "")
+                           10)))
+      (wiliki:redirect-page (ref (wiliki)'top-page)))      
      ((or (not (ref p 'mtime)) (eqv? (ref p 'mtime) mtime))
       (if (and (not (equal? pagename (ref (wiliki)'top-page)))
                (string-every #[\s] content))

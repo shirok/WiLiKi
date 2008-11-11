@@ -1,3 +1,7 @@
+2008-11-10  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/edit.scm (cmd-commit-edit): some more ad-hoc spam filters.
+
 2008-07-24  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/core.scm (db-try-open): Fixed db-open retry for less
@@ -9,7 +13,7 @@
 	* src/wiliki.scm: Changed accordingly.
 	* src/wiliki/macro.scm (comment-input-and-display): Hide comment
 	  input area if wiliki is read-only.
-	
+
 	* src/wiliki/history.scm: Hide link to 'edit' if the wiliki is not
 	  editable.
 
