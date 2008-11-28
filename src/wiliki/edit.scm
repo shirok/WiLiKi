@@ -236,10 +236,10 @@
      ;; consists entirely of a bunch of URLs, it's likely a spam.
      ((and (> (string-size content) 300)
            (< (/. (string-size (regexp-replace-all* content
-                                                    #/http:\/\/[:\w\/&?=.,+-]+/ ""
+                                                    #/http:\/\/[:\w\/%&?=.,+-]+/ ""
                                                     #/\s/ ""))
                   (string-size content))
-              0.1))
+              0.12))
       (wiliki:redirect-page (ref (wiliki)'top-page)))      
      ((or (not (ref p 'mtime)) (eqv? (ref p 'mtime) mtime))
       (if (and (not (equal? pagename (ref (wiliki)'top-page)))
