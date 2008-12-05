@@ -124,9 +124,9 @@
 (define (rdf-link link) (rdf-simple-1 "link" link))
 (define (rdf-description desc) (rdf-simple-1 "description" desc))
 (define (rdf-content content)
-  `("<content:content><![CDATA["
+  `("<content:encoded><![CDATA["
     ,(regexp-replace-all #/\]\]>/ content "&93;]>")
-    "]]></content:content>"))
+    "]]></content:encoded>"))
 
 (define (dc-date secs)
   (rdf-simple-1 "dc:date"
