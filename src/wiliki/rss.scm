@@ -63,8 +63,8 @@
                               ""))]
                 [(html) (lambda (e)
                           (or (and-let* ([page  (wiliki:db-get e)])
-                                ($ rdf-description $ html-escape-string
-                                   $ tree->string $ map wiliki:sxml->stree
+                                ($ rdf-content $ tree->string
+                                   $ map wiliki:sxml->stree
                                    $ wiliki:format-content page))
                               ""))]
                 [else (lambda (e) "")])))
@@ -78,6 +78,7 @@
        xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"
        xmlns=\"http://purl.org/rss/1.0/\"
        xmlns:dc=\"http://purl.org/dc/elements/1.1/\"
+       xmlns:content=\"http://purl.org/rss/1.0/modules/content/\"
       >\n"
       ,(rdf-channel
         full-url
@@ -123,6 +124,7 @@
 (define (rdf-title title) (rdf-simple-1 "title" title))
 (define (rdf-link link) (rdf-simple-1 "link" link))
 (define (rdf-description desc) (rdf-simple-1 "description" desc))
+(define (rdf-content content) (rdf-simple-1 "content:content" content))
 
 (define (dc-date secs)
   (rdf-simple-1 "dc:date"
