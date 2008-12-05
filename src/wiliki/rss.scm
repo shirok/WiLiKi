@@ -57,14 +57,15 @@
   (rss-format (wiliki:recent-changes-alist :length count)
               (case item-description
                 [(raw)  (lambda (e)
-                          (or (and-let* ([content (wiliki:db-get e)])
-                                (rdf-description (html-escape-string content)))
+                          (or (and-let* ([page (wiliki:db-get e)])
+                                ($ rdf-description $ html-escape-string
+                                   $ ref page 'content))
                               ""))]
                 [(html) (lambda (e)
-                          (or (and-let* ([content (wiliki:db-get e)])
+                          (or (and-let* ([page  (wiliki:db-get e)])
                                 ($ rdf-description $ html-escape-string
-                                   $ tree->string $ wiliki:sxml->stree
-                                   $ wiliki:get-formatted-page-content e))
+                                   $ tree->string $ map wiliki:sxml->stree
+                                   $ wiliki:format-content page))
                               ""))]
                 [else (lambda (e) "")])))
 
