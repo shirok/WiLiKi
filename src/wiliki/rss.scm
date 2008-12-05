@@ -58,9 +58,9 @@
 ;; Main entry
 (define (rss-page :key
                   (count (rss-item-count))
-                  (item-description (rss-item-description)))
+                  (item-description #f))
   (rss-format (wiliki:recent-changes-alist :length count)
-              (case item-description
+              (case (or item-description (rss-item-description))
                 [(raw)          (cut raw-content <> #f)]
                 [(raw-partial)  (cut raw-content <> #t)]
                 [(html)         (cut html-content <> #f)]
