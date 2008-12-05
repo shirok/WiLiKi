@@ -36,7 +36,8 @@
   (use util.list)
   (use text.html-lite)
   (use text.tree)
-  (export rss-page rss-item-count rss-item-description))
+  (export rss-page rss-item-count rss-item-description
+          rss-partial-content-lines))
 (select-module wiliki.rss)
 
 ;; Parameters
