@@ -30,22 +30,21 @@
 ;; for now, I use an ad-hoc approach.
 
 (define-module wiliki.rss
-  (use wiliki.db)
+  (use wiliki.core)
   (use util.list)
   (use text.html-lite)
-  (extend wiliki)
   (export rss-page))
 (select-module wiliki.rss)
 
 ;; API
 (define (rss-page)
-  (rss-format (take* (wiliki-db-recent-changes) 15)))
+  (rss-format (wiliki:recent-changes-alist 15)))
 
 (define (rss-format entries)
   (let* ((self (wiliki))
-         (full-url (full-script-path-of self)))
+         (full-url (wiliki:url :full)))
     `("Content-type: text/xml\n\n"
-      "<?xml version=\"1.0\" encoding=\"" ,(output-charset) "\" ?>\n"
+      "<?xml version=\"1.0\" encoding=\"" ,(wiliki:output-charset) "\" ?>\n"
       "<rdf:RDF
        xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"
        xmlns=\"http://purl.org/rss/1.0/\"
@@ -53,14 +52,15 @@
       >\n"
       ,(rdf-channel
         full-url
-        (rdf-title (title-of self))
+        (rdf-title (ref self'title))
         (rdf-link  full-url)
-        (rdf-description (description-of self))
+        (rdf-description (ref self'description))
         (rdf-items-seq
-         (map (lambda (entry) (rdf-li (url-full "~a" (cv-out (car entry)))))
+         (map (lambda (entry)
+                (rdf-li (wiliki:url :full "~a" (wiliki:cv-out (car entry)))))
               entries)))
       ,(map (lambda (entry)
-              (let1 url (url-full "~a" (cv-out (car entry)))
+              (let1 url (wiliki:url :full "~a" (wiliki:cv-out (car entry)))
                 (rdf-item url
                           (rdf-title (car entry))
                           (rdf-link url)

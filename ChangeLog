@@ -1,3 +1,8 @@
+2008-12-05  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/rss.scm (rss-format): Updated for new wiliki.core API.
+	* test/rss.scm: added.
+
 2008-11-10  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/edit.scm (cmd-commit-edit): some more ad-hoc spam filters.
