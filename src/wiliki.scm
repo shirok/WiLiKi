@@ -198,8 +198,13 @@
                (wiliki:db-recent-changes))))
      )))
 
-(define-wiliki-action rss :read (_)
-  (rss-page))
+(define-wiliki-action rss :read (_
+                                 (type :default #f))
+  (rss-page :item-description (cond
+                               [(equal? type "html") 'html]
+                               [(equal? type "raw") 'raw]
+                               [(equal? type "none") 'none]
+                               [else #f])))
 
 ;;
 ;; Search

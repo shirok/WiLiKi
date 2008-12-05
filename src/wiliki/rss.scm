@@ -30,17 +30,45 @@
 ;; for now, I use an ad-hoc approach.
 
 (define-module wiliki.rss
+  (use gauche.parameter)
+  (use gauche.experimental.app)
   (use wiliki.core)
   (use util.list)
   (use text.html-lite)
-  (export rss-page))
+  (use text.tree)
+  (export rss-page rss-item-count rss-item-description))
 (select-module wiliki.rss)
 
-;; API
-(define (rss-page)
-  (rss-format (wiliki:recent-changes-alist :length 15)))
+;; Parameters
 
-(define (rss-format entries)
+;; # of items included in the RSS
+(define rss-item-count (make-parameter 15))
+
+;; What to include in the 'rdf:description' of each item.
+;;  none - omit rdf:description
+;;  raw  - raw wiki-marked up text.
+;;  html - html rendered text.   (heavy)
+(define rss-item-description (make-parameter 'none))
+
+;; API
+(define (rss-page :key
+                  (count (rss-item-count))
+                  (item-description (rss-item-description)))
+  (rss-format (wiliki:recent-changes-alist :length count)
+              (case item-description
+                [(raw)  (lambda (e)
+                          (or (and-let* ([content (wiliki:db-get e)])
+                                (rdf-description (html-escape-string content)))
+                              ""))]
+                [(html) (lambda (e)
+                          (or (and-let* ([content (wiliki:db-get e)])
+                                ($ rdf-description $ html-escape-string
+                                   $ tree->string $ wiliki:sxml->stree
+                                   $ wiliki:get-formatted-page-content e))
+                              ""))]
+                [else (lambda (e) "")])))
+
+(define (rss-format entries item-description-proc)
   (let* ((self (wiliki))
          (full-url (wiliki:url :full)))
     `("Content-type: text/xml\n\n"
@@ -64,6 +92,7 @@
                 (rdf-item url
                           (rdf-title (car entry))
                           (rdf-link url)
+                          (item-description-proc (car entry))
                           (dc-date  (cdr entry)))))
             entries)
       "</rdf:RDF>\n")))

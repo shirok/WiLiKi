@@ -1,6 +1,7 @@
 2008-12-05  Shiro Kawai  <shiro@acm.org>
 
-	* src/wiliki/rss.scm (rss-format): Updated for new wiliki.core API.
+	* src/wiliki/rss.scm: Updated for new wiliki.core API.  Added ability
+	  to generate per-item 'description' field.
 	* test/rss.scm: added.
 
 2008-11-10  Shiro Kawai  <shiro@acm.org>
