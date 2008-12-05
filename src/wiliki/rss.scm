@@ -38,7 +38,7 @@
 
 ;; API
 (define (rss-page)
-  (rss-format (wiliki:recent-changes-alist 15)))
+  (rss-format (wiliki:recent-changes-alist :length 15)))
 
 (define (rss-format entries)
   (let* ((self (wiliki))
