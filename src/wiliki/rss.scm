@@ -126,7 +126,7 @@
 (define (rdf-content content)
   `("<content:content><![CDATA["
     ,(regexp-replace-all #/\]\]>/ content "&93;]>")
-    "</content:content>"))
+    "]]></content:content>"))
 
 (define (dc-date secs)
   (rdf-simple-1 "dc:date"
