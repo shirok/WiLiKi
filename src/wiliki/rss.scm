@@ -58,8 +58,7 @@
               (case item-description
                 [(raw)  (lambda (e)
                           (or (and-let* ([page (wiliki:db-get e)])
-                                ($ rdf-description $ html-escape-string
-                                   $ ref page 'content))
+                                (rdf-description (ref page 'content)))
                               ""))]
                 [(html) (lambda (e)
                           (or (and-let* ([page  (wiliki:db-get e)])
@@ -124,7 +123,10 @@
 (define (rdf-title title) (rdf-simple-1 "title" title))
 (define (rdf-link link) (rdf-simple-1 "link" link))
 (define (rdf-description desc) (rdf-simple-1 "description" desc))
-(define (rdf-content content) (rdf-simple-1 "content:content" content))
+(define (rdf-content content)
+  `("<content:content><![CDATA["
+    ,(regexp-replace-all #/\]\]>/ content "&93;]>")
+    "</content:content>"))
 
 (define (dc-date secs)
   (rdf-simple-1 "dc:date"
