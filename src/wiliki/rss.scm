@@ -50,22 +50,20 @@
 ;;  html - html rendered text.   (heavy)
 (define rss-item-description (make-parameter 'none))
 
-;; API
+;; # of maximum lines in the original wiki format to be included
+;; in the partial content (raw-partial, html-partial).
+(define rss-partial-content-lines (make-parameter 20))
+
+;; Main entry
 (define (rss-page :key
                   (count (rss-item-count))
                   (item-description (rss-item-description)))
   (rss-format (wiliki:recent-changes-alist :length count)
               (case item-description
-                [(raw)  (lambda (e)
-                          (or (and-let* ([page (wiliki:db-get e)])
-                                (rdf-description (ref page 'content)))
-                              ""))]
-                [(html) (lambda (e)
-                          (or (and-let* ([page  (wiliki:db-get e)])
-                                ($ rdf-content $ tree->string
-                                   $ map wiliki:sxml->stree
-                                   $ wiliki:format-content page))
-                              ""))]
+                [(raw)          (cut raw-content <> #f)]
+                [(raw-partial)  (cut raw-content <> #t)]
+                [(html)         (cut html-content <> #f)]
+                [(html-partial) (cut html-content <> #t)]
                 [else (lambda (e) "")])))
 
 (define (rss-format entries item-description-proc)
@@ -98,6 +96,25 @@
             entries)
       "</rdf:RDF>\n")))
 
+(define (raw-content entry partial?)
+  (or (and-let* ([page (wiliki:db-get entry)])
+        (rdf-description (trim-content (ref page 'content) partial?)))
+      ""))
+
+(define (html-content entry partial?)
+  (or (and-let* ([page (wiliki:db-get entry)])
+        ($ rdf-content $ tree->string $ map wiliki:sxml->stree
+           $ wiliki:format-content (trim-content (ref page'content) partial?)))
+      ""))  
+
+(define (trim-content raw-text partial?)
+  (if partial?
+    (string-join (take* (string-split raw-text "\n")
+                        (rss-partial-content-lines))
+                 "\n")
+    raw-text))
+
+;; RDF rendering utilities.
 ;; NB: these should be implemented within xml framework
 (define (rdf-channel about . content)
   `("<channel rdf:about=\"" ,(html-escape-string about) "\">"
