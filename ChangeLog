@@ -1,3 +1,7 @@
+2009-03-09  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/edit.scm (cmd-commit-edit): small tweak against spams.
+
 2008-12-05  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/rss.scm: Updated for new wiliki.core API.  Added ability
