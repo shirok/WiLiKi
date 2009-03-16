@@ -1,3 +1,7 @@
+2009-03-16  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/core.scm (db-try-open): more retries when db is busy.
+
 2009-03-15  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm ('e' action): Redirect to normal view if the

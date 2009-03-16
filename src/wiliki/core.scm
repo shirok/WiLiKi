@@ -629,7 +629,7 @@
 ;;
 
 ;; some constants
-(define-constant *retry-limit* 5)
+(define-constant *retry-limit* 15)
 (define-constant *recent-changes* " %recent-changes")
 
 ;; private parameter
@@ -641,7 +641,7 @@
   (define (try retry mode)
     (guard (e
             [(>= retry *retry-limit*) (raise e)]
-            [else (sys-sleep 2) (try (+ retry 1) mode)])
+            [else (sys-nanosleep #e15e8) (try (+ retry 1) mode)])
       (dbm-open dbtype :path dbpath :rw-mode mode)))
   ;; If db file does not exist, we open it with :write mode,
   ;; regardless of rwmode arg, so that the empty DB is created.
