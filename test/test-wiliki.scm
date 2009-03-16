@@ -130,7 +130,7 @@
          (head (!contain (title "Nonexistent page: ZZZ")))
          (body (!contain
                 (p "Create a new page: ZZZ"
-                   (a (@ (href "wiliki.cgi?p=ZZZ&c=e")) "?")))))
+                   (a (@ (href "wiliki.cgi?p=ZZZ&c=n")) "?")))))
        (values-ref (run-cgi-script->sxml
                     *cgi-path*
                     :environment '((REQUEST_METHOD . "GET")
@@ -143,7 +143,7 @@
          (head (!contain (title "Nonexistent page: ZZZ")))
          (body (!contain
                 (p "Create a new page: ZZZ"
-                   (a (@ (href "wiliki.cgi?p=ZZZ&c=e")) "?")))))
+                   (a (@ (href "wiliki.cgi?p=ZZZ&c=n")) "?")))))
        (values-ref (run-cgi-script->sxml
                     *cgi-path*
                     :environment '((REQUEST_METHOD . "GET")
@@ -156,7 +156,7 @@
          (head (!contain (title "Nonexistent page: ZZZ")))
          (body (!contain
                 (p "Create a new page: ZZZ"
-                   (a (@ (href "wiliki.cgi?p=ZZZ&c=e")) "?")))))
+                   (a (@ (href "wiliki.cgi?p=ZZZ&c=n")) "?")))))
        (values-ref (run-cgi-script->sxml
                     *cgi-path*
                     :environment '((REQUEST_METHOD . "GET")
@@ -169,7 +169,7 @@
          (head (!contain (title "Nonexistent page: ZZZ")))
          (body (!contain
                 (p "Create a new page: ZZZ"
-                   (a (@ (href "wiliki.cgi?p=ZZZ&c=e")) "?")))))
+                   (a (@ (href "wiliki.cgi?p=ZZZ&c=n")) "?")))))
        (values-ref (run-cgi-script->sxml
                     *cgi-path*
                     :environment '((REQUEST_METHOD . "GET")
@@ -193,7 +193,7 @@
            (textarea (@ (name "content") ?*) ?*))
          (values-ref (run-cgi-script->sxml
                       *cgi-path*
-                      :environment '((REQUEST_METHOD . "GET"))
+                      :environment '((REQUEST_METHOD . "POST"))
                       :parameters '((c . e)))
                      1)
          (test-sxml-select-matcher
@@ -215,7 +215,7 @@
 
   (test* "check commit"
          '(!contain (p "This is a test page.  LINK"
-                       (a (@ (href "wiliki.cgi?p=LINK&c=e")) "?")))
+                       (a (@ (href "wiliki.cgi?p=LINK&c=n")) "?")))
          (values-ref (run-cgi-script->sxml
                       *cgi-path*
                       :environment '((REQUEST_METHOD . "GET"))
@@ -232,7 +232,7 @@
        '(title "LINK")
        (values-ref (run-cgi-script->sxml
                     *cgi-path*
-                    :environment '((REQUEST_METHOD . "GET"))
+                    :environment '((REQUEST_METHOD . "POST"))
                     :parameters '((c . e) (p . "LINK")))
                    1)
        (test-sxml-select-matcher
@@ -279,7 +279,7 @@
          '(!contain (input (@ (name "mtime") (value ?mtime) ?*)))
          (values-ref (run-cgi-script->sxml
                       *cgi-path*
-                      :environment '((REQUEST_METHOD . "GET"))
+                      :environment '((REQUEST_METHOD . "POST"))
                       :parameters '((c . e) (p . "LINK")))
                      1)
          (test-sxml-select-matcher
@@ -328,7 +328,7 @@
    '(!contain (input (@ (name "mtime") (value ?mtime) ?*)))
    (values-ref (run-cgi-script->sxml
                 *cgi-path*
-                :environment '((REQUEST_METHOD . "GET"))
+                :environment '((REQUEST_METHOD . "POST"))
                 :parameters '((c . e) (p . "TEST")))
                1))
 

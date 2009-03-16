@@ -130,12 +130,11 @@
 (define-wiliki-action v :read (pagename)
   ;; NB: see the comment in format-wikiname about the order of
   ;; wiliki-db-get and virtual-page? check.
-  (cond ((wiliki:db-get pagename) => html-page)
-        ((virtual-page? pagename)
-         (html-page (handle-virtual-page pagename)))
-        ((equal? pagename (top-page-of (wiliki)))
-         (let ((toppage (make <wiliki-page>
-                          :title pagename :key pagename :mtime (sys-time))))
+  (cond [(wiliki:db-get pagename) => html-page]
+        [(virtual-page? pagename) (html-page (handle-virtual-page pagename))]
+        [(equal? pagename (top-page-of (wiliki)))
+         (let1 toppage (make <wiliki-page>
+                         :title pagename :key pagename :mtime (sys-time))
            ;; Top page is non-existent, or its name may be changed.
            ;; create it automatically.  We need to ensure db is writable.
            (if (editable? (wiliki))
@@ -143,17 +142,18 @@
                                (wiliki:db-put! (ref (wiliki)'top-page) toppage)
                                (html-page toppage))
                              :rwmode :write)
-             (errorf"Top-page #f (~a) doesn't exist, and the database is read-only" toppage))))
-        ((or (string-index pagename #[\[\]])
+             (errorf "Top-page #f (~a) doesn't exist, and the database \
+                      is read-only" toppage)))]
+        [(or (string-index pagename #[\[\]])
              (#/^\s|\s$/ pagename)
              (string-prefix? "$" pagename))
-         (error "Invalid page name" pagename))
-        (else
+         (error "Invalid page name" pagename)]
+        [else
          (html-page
           (make <wiliki-page>
             :title (string-append ($$ "Nonexistent page: ") pagename)
             :content `((p ,($$ "Create a new page: ")
-                          ,@(wiliki:format-wikiname pagename))))))
+                          ,@(wiliki:format-wikiname pagename)))))]
         ))
 
 (define-wiliki-action lv :read (pagename)
@@ -229,10 +229,25 @@
 
 ;;
 ;; Edit and commit
-;;
+;;   We redirect GET request to the edit action to the normal view,
+;;   since it is bothering that search engines pick the link to the edit
+;;   page.  (We allow GET with t parameter, since edit history page
+;;   contains such links.)
+;;   The 'n' action is only used from the link of creating a new page.
+;;   It returns the normal view if the named page already exists.
 (define-wiliki-action e :read (pagename
                                (t :convert x->integer :default #f))
-  (cmd-edit pagename t))
+  (if (or t
+          (and-let* ([m (cgi-get-metavariable "REQUEST_METHOD")])
+            (string-ci=? m "POST")))
+    (cmd-edit pagename t)
+    (wiliki:redirect-page pagename)))
+
+
+(define-wiliki-action n :read (pagename)
+  (if (wiliki:db-exists? pagename)
+    (wiliki:redirect-page pagename)
+    (cmd-edit pagename #f)))
 
 (define-wiliki-action c :write (pagename
                                 (commit :default #f)
@@ -276,7 +291,7 @@
 
 ;; Navigation buttons
 (define (wiliki:make-navi-button params content)
-  `(form (@ (method GET) (action ,(cgi-name-of (wiliki)))
+  `(form (@ (method POST) (action ,(cgi-name-of (wiliki)))
             (style "margin:0pt; padding:0pt"))
          ,@(map (match-lambda
                   [(n v) `(input (@ (type hidden) (name ,n) (value ,v)))])
@@ -386,55 +401,54 @@
 
 (define (default-format-wikiname name)
   (define (inter-wikiname-prefix head)
-    (and-let* ((page (wiliki:db-get "InterWikiName"))
-               (rx   (string->regexp #`"^:,|head|:\\s*")))
+    (and-let* ([page (wiliki:db-get "InterWikiName")]
+               [rx   (string->regexp #`"^:,|head|:\\s*")])
       (call-with-input-string (ref page 'content)
         (lambda (p)
           (let loop ((line (read-line p)))
-            (cond ((eof-object? line) #f)
-                  ((rx line) =>
+            (cond [(eof-object? line) #f]
+                  [(rx line) =>
                    (lambda (m)
-                     (let ((prefix (m 'after)))
+                     (let1 prefix (m 'after)
                        (if (string-null? prefix)
-                         (let ((prefix (read-line p)))
+                         (let1 prefix (read-line p)
                            (if (or (eof-object? prefix) (string-null? prefix))
                              #f
                              (string-trim-both prefix)))
-                         (string-trim-both prefix)))))
-                  (else (loop (read-line p)))))))))
+                         (string-trim-both prefix))))]
+                  [else (loop (read-line p))]))))))
   (define (reader-macro-wikiname? name)
-    (cond ((string-prefix? "$$" name)
-           (handle-reader-macro name))
-          ((or (string-prefix? "$" name)
+    (cond [(string-prefix? "$$" name) (handle-reader-macro name)]
+          [(or (string-prefix? "$" name)
                (#/^\s/ name)
                (#/\s$/ name))
            ;;invalid wiki name
-           (list "[[" name "]]"))
-          (else #f)))
+           (list "[[" name "]]")]
+          [else #f]))
   (define (inter-wikiname? name)
     (receive (head after) (string-scan name ":" 'both)
       (or (and head
-               (and-let* ((inter-prefix (inter-wikiname-prefix head)))
+               (and-let* ([inter-prefix (inter-wikiname-prefix head)])
                  (values inter-prefix after)))
           (values #f name))))
   (or (reader-macro-wikiname? name)
       (receive (inter-prefix real-name) (inter-wikiname? name)
-        (cond (inter-prefix
+        (cond [inter-prefix
                (let1 scheme
                    (if (#/^(https?|ftp|mailto):/ inter-prefix) "" "http://")
                  `((a (@ (href ,(format "~a~a~a" scheme inter-prefix
                                         (uri-encode-string
                                          (cv-out real-name)))))
-                      ,name))))
+                      ,name)))]
               ;; NB: the order of checks here is debatable.  Should a virtual
               ;; page shadow an existing page, or an existing page shadow a
               ;; virtual one?  Note also the order of this check must match
               ;; the order in cmd-view.
-              ((or (wiliki:db-exists? real-name) (virtual-page? real-name))
-               (list (wiliki:wikiname-anchor real-name)))
-              (else
+              [(or (wiliki:db-exists? real-name) (virtual-page? real-name))
+               (list (wiliki:wikiname-anchor real-name))]
+              [else
                `(,real-name
-                 (a (@ (href ,(url "p=~a&c=e" (cv-out real-name)))) "?")))))
+                 (a (@ (href ,(url "p=~a&c=n" (cv-out real-name)))) "?"))]))
       )
   )
 
