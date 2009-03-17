@@ -2,7 +2,7 @@ To build from CVS sources:
 
 Requirements:
   autoconf 2.52
-  Gauche-0.6.8
+  Gauche-0.8.14
 
 After checking out the source tree, run
 

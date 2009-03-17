@@ -1,7 +1,7 @@
 ;;;
 ;;; wiliki/format.scm - format wiki pages (backward compatibility module)
 ;;;
-;;;  Copyright (c) 2003-2008  Shiro Kawai  <shiro@acm.org>
+;;;  Copyright (c) 2003-2009  Shiro Kawai  <shiro@acm.org>
 ;;;
 ;;;  Permission is hereby granted, free of charge, to any person
 ;;;  obtaining a copy of this software and associated documentation
