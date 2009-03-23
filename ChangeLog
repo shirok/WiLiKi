@@ -1,3 +1,7 @@
+2009-03-22  Shiro Kawai  <shiro@acm.org>
+
+	* po/Makefile.in (MSGDIR): Append DESTDIR for proper packaging.
+
 2009-03-16  Shiro Kawai  <shiro@acm.org>
 
 	* release 0.6.1
