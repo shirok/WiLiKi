@@ -236,7 +236,7 @@
      ;; consists entirely of a bunch of URLs, it's likely a spam.
      ((and (> (string-size content) 300)
            (< (/. (string-size (regexp-replace-all* content
-                                                    #/http:\/\/[:\w\/%&?=.,+-#]+/ ""
+                                                    #/http:\/\/[:\w\/%&?=.,+#-]+/ ""
                                                     #/\s/ ""))
                   (string-size content))
               0.20))
