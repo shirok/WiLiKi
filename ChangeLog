@@ -1,3 +1,8 @@
+2009-05-02  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/edit.scm (cmd-commit-edit): tighten the threshold of
+	  filtering spams with bunch of URLs.
+
 2009-03-22  Shiro Kawai  <shiro@acm.org>
 
 	* po/Makefile.in (MSGDIR): Append DESTDIR for proper packaging.
