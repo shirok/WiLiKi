@@ -414,6 +414,7 @@
   (define (filter-suspicious content)
     (and (string? content)
          (not (#/<a\s+href=[\"'\s]*http/i content))
+         (not (#/^\s*comment\d*\s*$/i content)) ; temporary
          content))
 
   ;; Find maximum comment count
