@@ -414,8 +414,8 @@
   (define (filter-suspicious content)
     (cond [(or (not (string? content))
                (#/<a\s+href=[\"'\s]*http/i content)
-               (#/^\s*comment\d*\s*$/i content) ; temporary
-               (#/^\s*[\d\;_.tx]\s*$/ content)) ; temporary
+               (#/^\s*comment\d*\s*$/i content)  ; temporary
+               (#/^\s*[\d\;_.tx]+\s*$/ content)) ; temporary
            (wiliki:log-event "rejecting spam comment for ~s: name=~s content=~s"
                              pagename n content)
            #f]

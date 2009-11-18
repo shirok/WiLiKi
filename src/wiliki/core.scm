@@ -412,13 +412,18 @@
 
 ;; Returns absolute pathname of the log file, or #f
 (define (wiliki:log-file-path wiliki)
-  (and-let* (wiliki
-             (filename (ref wiliki'log-file)))
-    (if (or (string-prefix? "./" filename)
-            (string-prefix? "../" filename)
-            (string-prefix? "/" filename))
-      filename
-      (build-path (sys-dirname (ref wiliki'db-path)) filename))))
+  (wiliki-prepend-path wiliki (ref wiliki'log-file)))
+
+(define (wiliki:event-log-file-path wiliki)
+  (wiliki-prepend-path wiliki (ref wiliki'event-log-file)))
+
+(define (wiliki-prepend-path wiliki filename)
+  (and (string? filename)
+       (if (or (string-prefix? "./" filename)
+               (string-prefix? "../" filename)
+               (string-prefix? "/" filename))
+         filename
+         (build-path (sys-dirname (ref wiliki'db-path)) filename))))
 
 ;; Standard page 
 (define (wiliki:std-page page . args)
