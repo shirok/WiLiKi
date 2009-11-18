@@ -212,41 +212,43 @@
             (push! difflist chunk)))
         (reverse! difflist)))
 
+    ;; Ad-hoc filter for mechanical spams.
+    (define (suspicious?)
+      (or
+       ;; Normal wiliki content never includes explicit HTML tags (strictly
+       ;; speaking, the content may have HTML tag within verbatim block.
+       ;; let's see if it becomes a problem or not.
+       (and (string? content) (#/<a\s+href=[\"' ]?\s*http/i content))
+       (and (string? logmsg) (#/<a\s+href=[\"' ]?\s*http/i logmsg))
+       ;; Some spammer put the same string in content and logmsg.
+       (and (not (equal? content "")) (equal? content logmsg))
+       ;; If the content has some amount and consists entirely of a bunch
+       ;; of URLs, it's likely a spam.
+       (and (> (string-size content) 250)
+            (< (/. (string-size (regexp-replace-all* content
+                                                     #/http:\/\/[:\w\/%&?=.,+#-]+/ ""
+                                                     #/\s/ ""))
+                   (string-size content))
+               0.20)))) 
+
     ;; The body of cmd-commit-edit
     ;; If content is empty and the page is not the top page, we erase
     ;; the page.
     (let1 editable (ref (wiliki)'editable?)
       (when (or (not editable)
                 (and (not limited) (eq? editable 'limited)))
-        (errorf"Can't edit the page ~s: the database is read-only" pagename)))
+        (errorf "Can't edit the page ~s: the database is read-only" pagename)))
     (cond
-     ;; A very ad-hoc filter for mechanical spams.  Normal wiliki content
-     ;; never includes explicit HTML tags (strictly speaking, the content
-     ;; may have HTML tag within verbatim block.  let's see if it becomes
-     ;; a problem or not.)
-     ((or (and (string? content) (#/<a\s+href=[\"' ]?\s*http/i content))
-          (and (string? logmsg) (#/<a\s+href=[\"' ]?\s*http/i logmsg)))
-      (wiliki:redirect-page (ref (wiliki)'top-page)))
-     ;; Another ad-hoc filter: some (probably automated) spammer put
-     ;; the same string in content and logmsg
-     ((and (not (equal? content ""))
-           (equal? content logmsg))
-      (wiliki:redirect-page (ref (wiliki)'top-page)))
-     ;; Another ad-hoc filter: if the content has some amount and
-     ;; consists entirely of a bunch of URLs, it's likely a spam.
-     ((and (> (string-size content) 250)
-           (< (/. (string-size (regexp-replace-all* content
-                                                    #/http:\/\/[:\w\/%&?=.,+#-]+/ ""
-                                                    #/\s/ ""))
-                  (string-size content))
-              0.20))
-      (wiliki:redirect-page (ref (wiliki)'top-page)))      
-     ((or (not (ref p 'mtime)) (eqv? (ref p 'mtime) mtime))
+     [(suspicious?)
+      (wiliki:log-event "rejecting spam on ~s: content=~s logmsg=~s"
+                        pagename content logmsg)
+      (wiliki:redirect-page (ref (wiliki)'top-page))]
+     [(or (not (ref p 'mtime)) (eqv? (ref p 'mtime) mtime))
       (if (and (not (equal? pagename (ref (wiliki)'top-page)))
                (string-every #[\s] content))
         (erase-page)
-        (update-page content)))
-     (else (handle-conflict)))
+        (update-page content))]
+     [else (handle-conflict)])
     ))
 
 (define (conflict-page page diff content logmsg donttouch)

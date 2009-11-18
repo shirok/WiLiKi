@@ -1,3 +1,12 @@
+2009-11-18  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/core.scm (wiliki:log-event): Added event-log-file slot
+	  to <wiliki>.  If it is set, call for wiliki:log-event are recorded
+	  to the named file.  (In retrospect, we should name the current
+	  "log file" as "journal" and name this event log as log file...)
+	* src/wiliki/edit.scm, src/wiliki/macro.scm: Records spam rejection
+	  events by wiliki:log-event.
+
 2009-05-02  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/edit.scm (cmd-commit-edit): tighten the threshold of

@@ -412,10 +412,14 @@
   ;; See cmd-commit-edit in edit.scm; probably we should consolidate
   ;; those heuristic spam filtering into one module.
   (define (filter-suspicious content)
-    (and (string? content)
-         (not (#/<a\s+href=[\"'\s]*http/i content))
-         (not (#/^\s*comment\d*\s*$/i content)) ; temporary
-         content))
+    (cond [(or (not (string? content))
+               (#/<a\s+href=[\"'\s]*http/i content)
+               (#/^\s*comment\d*\s*$/i content) ; temporary
+               (#/^\s*[\d\;_.tx]\s*$/ content)) ; temporary
+           (wiliki:log-event "rejecting spam comment for ~s: name=~s content=~s"
+                             pagename n content)
+           #f]
+          [else content]))
 
   ;; Find maximum comment count
   (define (max-comment-count)
