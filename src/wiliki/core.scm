@@ -171,9 +171,9 @@
   (set! (port-buffering (current-error-port)) :line)
   (parameterize ([wiliki self]
                  [wiliki:event-log-drain
-                  (and-let* ([f (ref self'event-log-file)])
+                  (when (ref self'event-log-file)
                     (make <log-drain>
-                      :path (wiliki:event-log-file-path f)
+                      :path (wiliki:event-log-file-path self)
                       :prefix event-log-prefix))])
     (cgi-main
      (lambda (param)
