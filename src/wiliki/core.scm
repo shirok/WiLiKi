@@ -281,7 +281,7 @@
   (let1 t (sys-localtime (sys-time))
     (format "~a ~2d ~2,'0d:~2,'0d:~2,'0d [~a]:"
             (sys-strftime "%b" t) (ref t'mday) (ref t'hour) (ref t'min)
-            (ref t'sec) (sys-getenv "REMOTE_HOST"))))
+            (ref t'sec) (sys-getenv "REMOTE_ADDR"))))
 
 ;;;==================================================================
 ;;; Action framework
