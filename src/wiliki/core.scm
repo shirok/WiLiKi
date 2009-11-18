@@ -172,7 +172,9 @@
   (parameterize ([wiliki self]
                  [wiliki:event-log-drain
                   (and-let* ([f (ref self'event-log-file)])
-                    (make <log-drain> :path f :prefix event-log-prefix))])
+                    (make <log-drain>
+                      :path (wiliki:event-log-file-path f)
+                      :prefix event-log-prefix))])
     (cgi-main
      (lambda (param)
        (let ((pagename (get-page-name self param))
