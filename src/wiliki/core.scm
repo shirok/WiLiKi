@@ -171,10 +171,10 @@
   (set! (port-buffering (current-error-port)) :line)
   (parameterize ([wiliki self]
                  [wiliki:event-log-drain
-                  (when (ref self'event-log-file)
-                    (make <log-drain>
-                      :path (wiliki:event-log-file-path self)
-                      :prefix event-log-prefix))])
+                  (and (ref self'event-log-file)
+                       (make <log-drain>
+                         :path (wiliki:event-log-file-path self)
+                         :prefix event-log-prefix))])
     (cgi-main
      (lambda (param)
        (let ((pagename (get-page-name self param))

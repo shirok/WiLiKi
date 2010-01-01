@@ -1,3 +1,8 @@
+2010-01-01  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/core.scm (wiliki-main): Fixed a bug that left
+	  wiliki:event-log-drain #<undef> if event-log-file wasn't specified.
+
 2009-11-18  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/core.scm (wiliki:log-event): Added event-log-file slot
