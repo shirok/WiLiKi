@@ -89,7 +89,7 @@
 (define (wiliki:page-circular? page)
   (member page (wiliki:page-stack)
           (lambda (p1 p2)
-            (and (ref p1 'key) (ref p2 'key)
+            (and p1 p2 (ref p1 'key) (ref p2 'key)
                  (string=? (ref p1 'key) (ref p2 'key))))))
 
 ;; Returns if the current page is rendered because it is included

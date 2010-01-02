@@ -1,3 +1,8 @@
+2010-01-02  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/page.scm (wiliki:page-circular?): Tolerate having
+	  boolean value inside page-stack.
+
 2010-01-01  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/core.scm (wiliki-main): Fixed a bug that left
