@@ -1,5 +1,8 @@
 2010-01-02  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki/macro.scm (comment): Avoid formatting when the current
+	  page is not set.  It occurs during formatting as RSS.
+
 	* src/wiliki/page.scm (wiliki:page-circular?): Tolerate having
 	  boolean value inside page-stack.
 

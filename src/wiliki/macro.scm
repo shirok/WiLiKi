@@ -303,7 +303,8 @@
 ;;        Either "top", "bottom", or "none" (do not allow adding comments).
 
 (define-reader-macro (comment . opts)
-  (let-macro-keywords* opts ((id (ref (wiliki-current-page)'key))
+  (let-macro-keywords* opts ((id (and-let* ([p (wiliki-current-page)])
+                                   (ref p'key)))
                              (order "old->new")
                              (textarea "bottom"))
     ;; argument check
@@ -311,11 +312,13 @@
       (error "$$comment: Invalid 'order' argument (must be either old->new or new->old):" order))
     (unless (member textarea '("bottom" "top" "none"))
       (error "$$comment: Invalid 'textarea' argument (must be either one of bottom, top or none):" textarea))
-    ;; If the page that contains $$comment macro is included in another page,
-    ;; we only show the summary.
-    (if (wiliki:current-page-being-included?)
-      (comment-summary id)
-      (comment-input-and-display id order textarea))))
+    (cond [(not id) '()]
+          [(wiliki:current-page-being-included?)
+           ;; If the page that contains $$comment macro is included in
+           ;; another page, we only show the summary.
+           (comment-summary id)]
+          [else
+           (comment-input-and-display id order textarea)])))
 
 (define (comment-input-and-display id order textarea)
   (random-source-randomize! default-random-source)
