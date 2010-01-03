@@ -379,19 +379,16 @@
     '()))
 
 (define (wiliki:default-head-elements page opts)
-  `((title ,(ref page 'title))
-    ,@(or (and-let* ((w (wiliki))
-                     (fsp (full-script-path-of w)))
-            `((base (@ (href ,fsp)))
-              (link (@ (rel "alternate") (type "application/rss+xml")
-                       (title "RSS") (href ,(format "~a?c=rss" fsp))))))
-          '())
-    ,(or (and-let* ((w (wiliki)) (ss (style-sheet-of w)))
-           `(link (@ (rel "stylesheet") (href ,ss) (type "text/css"))))
-         ;; default
-         '(style (@ (type "text/css"))
-            "body { background-color: #eeeedd }"))
-    ))
+  (let1 w (wiliki)
+    `((title ,(wiliki:format-head-title (the-formatter) page))
+      ,@(cond-list
+         [w `(base (@ (href ,(wiliki:url :full))))]
+         [w `(link (@ (rel "alternate") (type "application/rss+xml")
+                      (title "RSS") (href ,(wiliki:url :full "c=rss"))))]
+         [(and w (ref w'style-sheet))
+          => (lambda (s)
+               `(link (@ (rel "stylesheet") (href ,s) (type "text/css"))))])
+      )))
 
 (define (default-format-time time)
   (if time

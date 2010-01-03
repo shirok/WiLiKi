@@ -9,6 +9,11 @@
 	  of (wiliki:formatter).   The old way is still supported for the
 	  backward compatibility, but is deprecated.
 
+	* src/wiliki.scm (wiliki:default-head-elements),
+	  src/wiliki/format.scm (wiliki:format-head-title):
+	  Allow customizing 'title' element in the html head by specializing
+	  wiliki:format-head-title.
+
 2010-01-02  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/macro.scm (comment): Avoid formatting when the current

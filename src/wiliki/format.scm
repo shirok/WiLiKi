@@ -56,6 +56,7 @@
           wiliki:format-page-footer
           wiliki:format-page-body
           wiliki:format-head-elements
+          wiliki:format-head-title
           wiliki:format-page
           wiliki:format-line-plainly
           wiliki:calculate-heading-id
@@ -298,6 +299,10 @@
    (ref page 'extra-head-elements)))
 (define-method wiliki:format-head-elements ((page <wiliki-page>) . opts)
   (apply wiliki:format-head-elements (the-formatter) page opts))
+
+(define-method wiliki:format-head-title ((fmt <wiliki-formatter-base>)
+                                         (page <wiliki-page>) . options)
+  (ref page'title))
 
 (define-method wiliki:format-page ((fmt  <wiliki-formatter-base>)
                                    (page <wiliki-page>)
