@@ -1,3 +1,14 @@
+2010-01-03  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm (<wiliki-formatter>),
+	  src/wiliki/format.scm (<wiliki-formatter-base>): Splitted the base
+	  formatter (with minimal functionality) and the default formatter
+	  (for web rendering).  This change allows the new wiliki app to
+	  customize formatting by subclassing <wiliki-formatter> and defining
+	  method specialized for the subclass, instead of setting slots
+	  of (wiliki:formatter).   The old way is still supported for the
+	  backward compatibility, but is deprecated.
+
 2010-01-02  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/macro.scm (comment): Avoid formatting when the current

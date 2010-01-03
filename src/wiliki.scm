@@ -49,6 +49,7 @@
   (use wiliki.macro)
   (extend wiliki.core)
   (export <wiliki> wiliki-main
+          <wiliki-formatter>
           wiliki:language-link wiliki:make-navi-button
           wiliki:top-link wiliki:edit-link wiliki:history-link
           wiliki:all-link wiliki:recent-link wiliki:search-box
@@ -452,13 +453,21 @@
       )
   )
 
-(wiliki:formatter
- (make <wiliki-formatter>
-   :bracket       default-format-wikiname
-   :time          default-format-time
-   :header        wiliki:default-page-header
-   :footer        wiliki:default-page-footer
-   :head-elements wiliki:default-head-elements))
+;; Ideally, default-format-wikiname &c should be defined as a method
+;; specialized for <wiliki-formatter>.  However we need to keep the
+;; old protocol for the backward compatibility; existing wiliki app
+;; may customize the formatter by setting slots.  Newly written scripts
+;; should customize by subclassing <wiliki-formatter>, *not* by setting
+;; slots.
+(define-class <wiliki-formatter> (<wiliki-formatter-base>)
+  (;; for backward compatibility.
+   (bracket :init-value default-format-wikiname)
+   (time    :init-value default-format-time)
+   (header  :init-value wiliki:default-page-header)
+   (footer  :init-value wiliki:default-page-footer)
+   (head-elements :init-value wiliki:default-head-elements)))
+
+(wiliki:formatter (make <wiliki-formatter>)) ;override the default
 
 ;; Character conv ---------------------------------
 

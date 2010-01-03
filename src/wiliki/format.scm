@@ -43,7 +43,7 @@
   (use wiliki.parse)
   (use wiliki.page)
   (use sxml.tools)
-  (export <wiliki-formatter>
+  (export <wiliki-formatter-base>
           wiliki:persistent-page?
           wiliki:transient-page?
           wiliki:format-wikiname
@@ -66,16 +66,19 @@
   )
 (select-module wiliki.format)
 
-;;; NOTE: This module is going to fade out.  The main function of
-;;; formatting is now moved to wiliki.parse, and the abstraction
-;;; of pages are in wiliki.page.  We keep this module for a while
-;;; to maintain backward compatibility of the existing macros, though.
+;; This module provides a base class <wiliki-formatter-base> as an anchor
+;; point of customizing various formatting functions.
+;;
+;; The base class and methods only implements minimum functionalities, that
+;; do not depend on persistent database.   Subclass this class and specialize
+;; method if you're writing a formatter for non-web targets (e.g. formatting
+;; for a plain text).
+;;
+;; The <wiliki-formatter> class in wiliki.scm provides a full feature of
+;; to generate HTML page.  If you're customizing webpage formatting, use
+;; that class as a starting point.
 
-;; A formatter base class.
-;; The user can define her own formatter by subclassing this and
-;; overloading some methods.
-
-(define-class <wiliki-formatter> ()
+(define-class <wiliki-formatter-base> ()
   (;; The following slots are only for compatibility to the code
    ;; written with WiLiKi-0.5_pre2.
    ;; They won't be supported officially in future versions; use
@@ -102,7 +105,7 @@
 
 ;; Global context and the default formatter
 (define the-formatter
-  (make-parameter (make <wiliki-formatter>)))
+  (make-parameter (make <wiliki-formatter-base>)))
 
 ;; similar to sxml:sxml->xml, but deals with stree node, which
 ;; embeds a string tree.
@@ -239,32 +242,32 @@
 ;; NB: It is _temporary_ that these methods calling the slot value
 ;; of the formatter, just to keep the backward compatibility to 0.5_pre2.
 ;; Do not count on this implementation.  The next release will remove
-;; all the closure slots of <wiliki-formatter> and the default behavior
+;; all the closure slots of <wiliki-formatter-base> and the default behavior
 ;; will directly be embedded in these methods.
 
-(define-method wiliki:format-wikiname ((fmt <wiliki-formatter>) name)
+(define-method wiliki:format-wikiname ((fmt <wiliki-formatter-base>) name)
   ((ref fmt 'bracket) name))
 (define-method wiliki:format-wikiname ((name <string>))
   (wiliki:format-wikiname (the-formatter) name))
 
-(define-method wiliki:format-macro ((fmt <wiliki-formatter>) expr context)
+(define-method wiliki:format-macro ((fmt <wiliki-formatter-base>) expr context)
   ((ref fmt 'macro) expr context))
 (define-method wiliki:format-macro (expr context)
   (wiliki:format-macro (the-formatter) expr context))
 
-(define-method wiliki:format-time ((fmt <wiliki-formatter>) time)
+(define-method wiliki:format-time ((fmt <wiliki-formatter-base>) time)
   ((ref fmt 'time) time))
 (define-method wiliki:format-time (time)
   (wiliki:format-time (the-formatter) time))
 
-(define-method wiliki:format-page-content ((fmt  <wiliki-formatter>)
+(define-method wiliki:format-page-content ((fmt  <wiliki-formatter-base>)
                                            page  ;; may be a string
                                            . options)
   ((ref fmt 'content) page options))
 (define-method wiliki:format-page-content (page . opts)
   (apply wiliki:format-page-content (the-formatter) page opts))
 
-(define-method wiliki:format-page-body ((fmt  <wiliki-formatter>)
+(define-method wiliki:format-page-body ((fmt  <wiliki-formatter-base>)
                                         (page <wiliki-page>)
                                         . opts)
   `(,@(apply wiliki:format-page-header  page opts)
@@ -273,21 +276,21 @@
 (define-method wiliki:format-page-body ((page <wiliki-page>) . opts)
   (apply wiliki:format-page-body (the-formatter) page opts))
 
-(define-method wiliki:format-page-header ((fmt  <wiliki-formatter>)
+(define-method wiliki:format-page-header ((fmt  <wiliki-formatter-base>)
                                           (page <wiliki-page>)
                                           . options)
   ((ref fmt 'header) page options))
 (define-method wiliki:format-page-header ((page <wiliki-page>) . opts)
   (apply wiliki:format-page-header (the-formatter) page opts))
   
-(define-method wiliki:format-page-footer ((fmt  <wiliki-formatter>)
+(define-method wiliki:format-page-footer ((fmt  <wiliki-formatter-base>)
                                           (page <wiliki-page>)
                                           . options)
   ((ref fmt 'footer) page options))
 (define-method wiliki:format-page-footer ((page <wiliki-page>) . opts)
   (apply wiliki:format-page-footer (the-formatter) page opts))
 
-(define-method wiliki:format-head-elements ((fmt  <wiliki-formatter>)
+(define-method wiliki:format-head-elements ((fmt  <wiliki-formatter-base>)
                                             (page <wiliki-page>)
                                             . options)
   (append
@@ -296,7 +299,7 @@
 (define-method wiliki:format-head-elements ((page <wiliki-page>) . opts)
   (apply wiliki:format-head-elements (the-formatter) page opts))
 
-(define-method wiliki:format-page ((fmt  <wiliki-formatter>)
+(define-method wiliki:format-page ((fmt  <wiliki-formatter-base>)
                                    (page <wiliki-page>)
                                    . opts)
   `(html
