@@ -1,3 +1,8 @@
+2010-01-12  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/rss.scm (rss-source, rss-url-format): Make the title
+	  and url format customizable.
+
 2010-01-03  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm (<wiliki-formatter>),

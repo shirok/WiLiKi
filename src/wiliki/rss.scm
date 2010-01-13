@@ -33,11 +33,13 @@
   (use gauche.parameter)
   (use gauche.experimental.app)
   (use wiliki.core)
+  (use file.util)
   (use util.list)
+  (use util.match)
   (use text.html-lite)
   (use text.tree)
-  (export rss-page rss-item-count rss-item-description
-          rss-partial-content-lines))
+  (export rss-page rss-item-count rss-item-description 
+          rss-partial-content-lines rss-source rss-url-format))
 (select-module wiliki.rss)
 
 ;; Parameters
@@ -55,11 +57,22 @@
 ;; in the partial content (raw-partial, html-partial).
 (define rss-partial-content-lines (make-parameter 20))
 
+;; A procedure that takes maximum # of entries, and returns a list
+;; of entries to be included in the RSS.  The returned list should be
+;; in the following form:
+;;  <entries> : (<entry> ...)
+;;  <entry>   : (<key> . <timestamp>) | ((<key> . <title>) . <timestamp>)
+(define rss-source
+  (make-parameter (cut wiliki:recent-changes-alist :length <>)))
+
+;; Whether the url in RSS should be in the format of url?key or url/key
+(define rss-url-format (make-parameter 'query))
+
 ;; Main entry
 (define (rss-page :key
                   (count (rss-item-count))
                   (item-description #f))
-  (rss-format (wiliki:recent-changes-alist :length count)
+  (rss-format ((rss-source) count)
               (case (or item-description (rss-item-description))
                 [(raw)          (cut raw-content <> #f)]
                 [(raw-partial)  (cut raw-content <> #t)]
@@ -79,21 +92,18 @@
        xmlns:content=\"http://purl.org/rss/1.0/modules/content/\"
       >\n"
       ,(rdf-channel
-        full-url
-        (rdf-title (ref self'title))
+        (wiliki:url :full)
+        (rdf-title (ref (wiliki)'title))
         (rdf-link  full-url)
-        (rdf-description (ref self'description))
-        (rdf-items-seq
-         (map (lambda (entry)
-                (rdf-li (wiliki:url :full "~a" (wiliki:cv-out (car entry)))))
-              entries)))
-      ,(map (lambda (entry)
-              (let1 url (wiliki:url :full "~a" (wiliki:cv-out (car entry)))
+        (rdf-description (ref (wiliki)'description))
+        (rdf-items-seq (map (lambda (e) (rdf-li (entry->url e))) entries)))
+      ,(map (lambda (e)
+              (let1 url (entry->url e)
                 (rdf-item url
-                          (rdf-title (car entry))
+                          (rdf-title (entry->title e))
                           (rdf-link url)
-                          (item-description-proc (car entry))
-                          (dc-date  (cdr entry)))))
+                          (item-description-proc (entry->key e))
+                          (dc-date  (entry->timestamp e)))))
             entries)
       "</rdf:RDF>\n")))
 
@@ -114,6 +124,20 @@
                         (rss-partial-content-lines))
                  "\n")
     raw-text))
+
+(define (entry->url entry)
+  (case (rss-url-format)
+    [(query) (wiliki:url :full "~a" (entry->key entry))]
+    [(path)  (build-path (wiliki:url :full) (entry->key entry))]
+    [else (wiliki:url :full "config-error:invalid-rss-url-format")]))
+
+(define (entry->title entry)
+  (match entry [((key . title) . _) title] [(key . _) key]))
+
+(define (entry->key entry)
+  (match entry [((key . title) . _) key] [(key . _) key]))
+
+(define (entry->timestamp entry) (cdr entry))
 
 ;; RDF rendering utilities.
 ;; NB: these should be implemented within xml framework
