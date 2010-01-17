@@ -1,3 +1,9 @@
+2010-01-16  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/auth.scm, test/auth.scm: Added simple authentication and
+	  session management module.  Note: This module won't work with
+	  Gauche 0.9 or earlier.
+
 2010-01-12  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/rss.scm (rss-source, rss-url-format): Make the title
