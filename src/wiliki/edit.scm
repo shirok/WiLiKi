@@ -229,7 +229,9 @@
                                                      #/http:\/\/[:\w\/%&?=.,+#-]+/ ""
                                                      #/\s/ ""))
                    (string-size content))
-               0.20)))) 
+               0.20))
+       (wiliki:contains-spam? content)))
+            
 
     ;; The body of cmd-commit-edit
     ;; If content is empty and the page is not the top page, we erase

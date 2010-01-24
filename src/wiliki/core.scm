@@ -79,6 +79,9 @@
           wiliki:db-search wiliki:db-search-content
 
           wiliki:log-event
+
+          wiliki:spam-blacklist wiliki:spam-blacklist-append!
+          wiliki:contains-spam?
           ))
 (select-module wiliki.core)
 
@@ -347,6 +350,19 @@
 ;;;==================================================================
 ;;; Gadgets
 ;;;
+
+;; A list of urls or regexps that should be rejected at commit time.
+(define wiliki:spam-blacklist (make-parameter '()))
+
+(define (wiliki:spam-blacklist-append! lis)
+  (wiliki:spam-blacklist (append (wiliki:spam-blacklist) lis)))
+
+(define (wiliki:contains-spam? content)
+  (any (lambda (x)
+         (cond [(regexp? x) (rxmatch x content)]
+               [(string? x) (string-contains content x)]
+               [else #f]))
+       (wiliki:spam-blacklist)))
 
 ;; Returns SXML anchor node and string for given wikiname.
 (define (wiliki:wikiname-anchor wikiname . maybe-anchor-string)

@@ -1,3 +1,9 @@
+2010-01-23  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/core.scm (wiliki:spam-blacklist etc.): Added crude
+	  blacklisting mechanism for stealth spamming.
+	* src/wiliki/edit.scm: Check spam blacklist on commit.
+
 2010-01-16  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/auth.scm, test/auth.scm: Added simple authentication and
