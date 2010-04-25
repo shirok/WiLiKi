@@ -39,7 +39,7 @@
 
 (define-module wiliki.auth
   (use gauche.parameter)
-  (use gauche.bcrypt)
+  (use crypt.bcrypt)
   (use file.util)
   (use util.match)
   (use srfi-13)
