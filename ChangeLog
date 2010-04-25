@@ -1,3 +1,8 @@
+2010-04-25  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm (wiliki:default-head-elements): Allow a list
+	  in :style-sheet.
+
 2010-01-23  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/core.scm (wiliki:spam-blacklist etc.): Added crude
