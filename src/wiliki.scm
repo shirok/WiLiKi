@@ -390,7 +390,7 @@
                 (map (lambda (s)
                        `(link (@ (rel "stylesheet")
                                  (href ,s) (type "text/css"))))
-                     (if (list? s) s (list s))))])
+                     (if (list? ss) ss (list ss))))])
       )))
 
 (define (default-format-time time)
