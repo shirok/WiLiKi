@@ -385,11 +385,12 @@
          [w `(base (@ (href ,(wiliki:url :full))))]
          [w `(link (@ (rel "alternate") (type "application/rss+xml")
                       (title "RSS") (href ,(wiliki:url :full "c=rss"))))]
-         [(and w (ref w'style-sheet)) @
-          => (lambda (ss)
-               (map (lambda (s)
-                      `(link (@ (rel "stylesheet") (href ,s) (type "text/css"))))
-                    (if (list? s) s (list s))))])
+         [(and w (ref w'style-sheet))
+          => @(lambda (ss)
+                (map (lambda (s)
+                       `(link (@ (rel "stylesheet")
+                                 (href ,s) (type "text/css"))))
+                     (if (list? s) s (list s))))])
       )))
 
 (define (default-format-time time)
