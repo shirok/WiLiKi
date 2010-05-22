@@ -1,3 +1,8 @@
+2010-05-22  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm (default-format-wikiname): Fixed a bug that can
+	  produce an invalid regexp while searching InterWikiName.
+
 2010-04-25  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm (wiliki:default-head-elements): Allow a list
