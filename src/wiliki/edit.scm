@@ -227,7 +227,7 @@
        (and (> (string-size content) 250)
             (< (/. (string-size (regexp-replace-all* content
                                                      #/http:\/\/[:\w\/%&?=.,+#-]+/ ""
-                                                     #/\s/ ""))
+                                                     #/\W/ ""))
                    (string-size content))
                0.20))
        (wiliki:contains-spam? content)))
