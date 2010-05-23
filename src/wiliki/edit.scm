@@ -218,20 +218,25 @@
        ;; Normal wiliki content never includes explicit HTML tags (strictly
        ;; speaking, the content may have HTML tag within verbatim block.
        ;; let's see if it becomes a problem or not.
-       (and (string? content) (#/<a\s+href=[\"' ]?\s*http/i content))
-       (and (string? logmsg) (#/<a\s+href=[\"' ]?\s*http/i logmsg))
+       (and (string? content) (#/<a\s+href=[\"' ]?\s*http/i content)
+            "literal anchor tag in content"
+       (and (string? logmsg) (#/<a\s+href=[\"' ]?\s*http/i logmsg)
+            "literal anchor tag in logmsg")
        ;; Some spammer put the same string in content and logmsg.
-       (and (not (equal? content "")) (equal? content logmsg))
+       (and (not (equal? content "")) (equal? content logmsg)
+            "content and logmsg are the same")
        ;; If the content has some amount and consists entirely of a bunch
        ;; of URLs, it's likely a spam.
        (and (> (string-size content) 250)
-            (< (/. (string-size (regexp-replace-all* content
-                                                     #/http:\/\/[:\w\/%&?=.,+#-]+/ ""
-                                                     #/[\W\d]/ ""))
-                   (string-size content))
-               0.24))
-       (wiliki:contains-spam? content)))
-            
+            (let1 p (/. (string-size (regexp-replace-all*
+                                      content
+                                      #/http:\/\/[:\w\/%&?=.,+#-]+/ ""
+                                      #/[\t-@\[-^`\{-\x7f]/ ""))
+                        (string-size content))
+              (and (< p 0.24)
+                   (format "too much urls (ratio=~a)" p))))
+       (and (wiliki:contains-spam? content)
+            "url-hit-blacklist"))))
 
     ;; The body of cmd-commit-edit
     ;; If content is empty and the page is not the top page, we erase
@@ -242,9 +247,10 @@
         (errorf "Can't edit the page ~s: the database is read-only" pagename)))
     (cond
      [(suspicious?)
-      (wiliki:log-event "rejecting spam on ~s: content=~s logmsg=~s"
-                        pagename content logmsg)
-      (wiliki:redirect-page (ref (wiliki)'top-page))]
+      => (lambda (reason)
+           (wiliki:log-event "rejecting spam on ~s (~s): content=~s logmsg=~s"
+                             pagename reason content logmsg)
+           (wiliki:redirect-page (ref (wiliki)'top-page)))]
      [(or (not (ref p 'mtime)) (eqv? (ref p 'mtime) mtime))
       (if (and (not (equal? pagename (ref (wiliki)'top-page)))
                (string-every #[\s] content))

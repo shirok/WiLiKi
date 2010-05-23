@@ -1,3 +1,8 @@
+2010-05-23  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/edit.scm (cmd-commit-edit): Record spam rejection reason
+	  to the event log.
+
 2010-05-22  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm (default-format-wikiname): Fixed a bug that can
