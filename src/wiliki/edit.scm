@@ -219,7 +219,7 @@
        ;; speaking, the content may have HTML tag within verbatim block.
        ;; let's see if it becomes a problem or not.
        (and (string? content) (#/<a\s+href=[\"' ]?\s*http/i content)
-            "literal anchor tag in content"
+            "literal anchor tag in content")
        (and (string? logmsg) (#/<a\s+href=[\"' ]?\s*http/i logmsg)
             "literal anchor tag in logmsg")
        ;; Some spammer put the same string in content and logmsg.
@@ -236,7 +236,7 @@
               (and (< p 0.24)
                    (format "too much urls (ratio=~a)" p))))
        (and (wiliki:contains-spam? content)
-            "url-hit-blacklist"))))
+            "url-hit-blacklist")))
 
     ;; The body of cmd-commit-edit
     ;; If content is empty and the page is not the top page, we erase
@@ -248,7 +248,7 @@
     (cond
      [(suspicious?)
       => (lambda (reason)
-           (wiliki:log-event "rejecting spam on ~s (~s): content=~s logmsg=~s"
+           (wiliki:log-event "rejecting spam on ~s (~a): content=~s logmsg=~s"
                              pagename reason content logmsg)
            (wiliki:redirect-page (ref (wiliki)'top-page)))]
      [(or (not (ref p 'mtime)) (eqv? (ref p 'mtime) mtime))
