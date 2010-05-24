@@ -1,5 +1,9 @@
 2010-05-23  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki/macro.scm (post-comment): Avoid updating timestamp of
+	  the commented page if the comment is rejected as spam by
+	  cmd-commit-edit.
+
 	* src/wiliki/edit.scm (cmd-commit-edit): Record spam rejection reason
 	  to the event log.
 

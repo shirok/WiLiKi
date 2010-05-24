@@ -439,14 +439,20 @@
                [ (< (- now 7200) t now) ]
                [content (filter-suspicious (get-legal-post-content))]
                [ (> (string-length content) 0) ]
-               [cnt (+ (max-comment-count) 1)])
-      (cmd-commit-edit (format "~a~3'0d" (comment-prefix cid) cnt)
+               [cnt (+ (max-comment-count) 1)]
+               [comment-page (format "~a~3'0d" (comment-prefix cid) cnt)])
+      ;; ignore the result of cmd-commit-edit.  we'll redirect to the
+      ;; main page anyway.
+      (cmd-commit-edit comment-page
                        (string-append
                         "* "n" ("
                         (sys-strftime "%Y/%m/%d %T" (sys-localtime now))
                         "):\n<<<\n"content"\n>>>\n")
                        t "" #t #t)
-      (wiliki:db-touch! pagename)))
+      ;; cmd-commit-edit may reject creating comment page if it thinks
+      ;; the content is spam.  See if comment page is actually created.
+      (when (wiliki:db-exists? comment-page)
+        (wiliki:db-touch! pagename))))
 
   (do-post)
   (wiliki:redirect-page pagename))
