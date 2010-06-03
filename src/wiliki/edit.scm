@@ -235,6 +235,12 @@
                         (string-size content))
               (and (< p 0.24)
                    (format "too much urls (ratio=~a)" p))))
+       ;; See if there are too many URLs (we should allow many URLs in
+       ;; the main content, but for the comment, we may say it's too
+       ;; suspicious.)
+       (let1 c (length (string-split content #/http:\/\/[:\w\/%&?=.,+#-]+/))
+         (and (> c 12)
+              (format "too many urls (~a)" (- c 1))))
        (and (wiliki:contains-spam? content)
             "url-hit-blacklist")))
 
