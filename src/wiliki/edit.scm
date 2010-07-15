@@ -225,22 +225,7 @@
        ;; Some spammer put the same string in content and logmsg.
        (and (not (equal? content "")) (equal? content logmsg)
             "content and logmsg are the same")
-       ;; If the content has some amount and consists entirely of a bunch
-       ;; of URLs, it's likely a spam.
-       (and (> (string-size content) 250)
-            (let1 p (/. (string-size (regexp-replace-all*
-                                      content
-                                      #/http:\/\/[:\w\/%&?=.,+#-]+/ ""
-                                      #/[\t-@\[-^`\{-\x7f]/ ""))
-                        (string-size content))
-              (and (< p 0.24)
-                   (format "too much urls (ratio=~a)" p))))
-       ;; See if there are too many URLs (we should allow many URLs in
-       ;; the main content, but for the comment, we may say it's too
-       ;; suspicious.)
-       (let1 c (length (string-split content #/http:\/\/[:\w\/%&?=.,+#-]+/))
-         (and (> c 12)
-              (format "too many urls (~a)" (- c 1))))
+       ;; Check blacklist.
        (and (wiliki:contains-spam? content)
             "url-hit-blacklist")))
 

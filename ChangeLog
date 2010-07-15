@@ -1,3 +1,11 @@
+2010-07-14  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/edit.scm (cmd-commit-edit),
+	  src/wiliki/macro.scm (post-comment): Heuristic spam checks for
+	  # of urls and url ratio are moved from cmd-commit-edit to
+	  post-comment, for legitimate wiki pages may include or consist
+	  of lots of urls.  It's unlikely the case for comments.
+
 2010-05-23  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/macro.scm (post-comment): Avoid updating timestamp of

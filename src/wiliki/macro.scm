@@ -422,6 +422,24 @@
            (wiliki:log-event "rejecting spam comment for ~s: name=~s content=~s"
                              pagename n content)
            #f]
+          ;; If the content has some amount and consists entirely of a bunch
+          ;; of URLs, it's likely a spam.
+          [(and (> (string-size content) 250)
+                (let1 p (/. (string-size (regexp-replace-all*
+                                          content
+                                          #/http:\/\/[:\w\/%&?=.,+#-]+/ ""
+                                          #/[\t-@\[-^`\{-\x7f]/ ""))
+                            (string-size content))
+                  (and (< p 0.24) p)))
+           => (lambda (p)
+                (wiliki:log-event "too much urls in comment (ratio=~a)" p)
+                #f)]
+          ;; See if there are too many URLs (we should allow many URLs in
+          ;; the main content, but for the comment, we may say it's too
+          ;; suspicious.)
+          [(let1 c (length (string-split content #/http:\/\/[:\w\/%&?=.,+#-]+/))
+             (and (> c 12) c))
+           => (lambda (c) (format "too many urls in comment (~a)" (- c 1)) #f)]
           [else content]))
 
   ;; Find maximum comment count
