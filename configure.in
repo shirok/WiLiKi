@@ -4,7 +4,7 @@ dnl Process this file with autoconf to generate 'configure'.
 dnl
 dnl $Id: configure.in,v 1.19 2007-07-14 05:33:19 shirok Exp $
 AC_PREREQ(2.54)
-AC_INIT(WiLiKi, 0.6.1, shiro@acm.org)
+AC_INIT(WiLiKi, 0.6.2, shiro@acm.org)
 
 dnl If you want to use the system name (OS, architecture, etc) in the
 dnl configure, uncomment the following line.  In such a case, you need
