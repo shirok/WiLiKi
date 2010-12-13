@@ -1,11 +1,11 @@
-GOSH = @GOSH@
+GOSH = "@GOSH@"
 TEST_OUT = test.log logger.log test.dbm _test
 TESTS = core.scm format.scm log.scm edit.scm rss.scm auth.scm test-wiliki.scm
 
 all: gosh-path
 
 gosh-path :
-	echo "$(GOSH)" > gosh-path
+	echo $(GOSH) > gosh-path
 
 check : all
 	@rm -rf $(TEST_OUT)

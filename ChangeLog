@@ -1,3 +1,8 @@
+2010-12-12  Shiro Kawai  <shiro@acm.org>
+
+	* configure.in, */Makefile.in: Modified to work if gauche is
+	  installed under pathnames containing spaces.
+
 2010-12-05  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/parse.scm (fmt-line): Added a new formatting primitive

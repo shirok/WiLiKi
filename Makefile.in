@@ -15,11 +15,11 @@ VPATH       = $(srcdir)
 
 # These may be overridden by make invocators
 DESTDIR        =
-GOSH           = @GOSH@
-GAUCHE_CONFIG  = @GAUCHE_CONFIG@
-GAUCHE_PACKAGE = @GAUCHE_PACKAGE@
-GAUCHE_CESCONV = @GAUCHE_CESCONV@
-INSTALL        = @GAUCHE_INSTALL@
+GOSH           = "@GOSH@"
+GAUCHE_CONFIG  = "@GAUCHE_CONFIG@"
+GAUCHE_PACKAGE = "@GAUCHE_PACKAGE@"
+GAUCHE_CESCONV = "@GAUCHE_CESCONV@"
+INSTALL        = "@GAUCHE_INSTALL@"
 
 # Other parameters
 SOEXT  = @SOEXT@
@@ -36,9 +36,9 @@ HEADERS   =
 CONFIG_GENERATED = Makefile config.cache config.log config.status \
 		   configure.lineno autom4te*.cache $(PACKAGE).gpd
 
-HEADER_INSTALL_DIR  = $(DESTDIR)`$(GAUCHE_CONFIG) --siteincdir`
-SCM_INSTALL_DIR     = $(DESTDIR)`$(GAUCHE_CONFIG) --sitelibdir`
-ARCH_INSTALL_DIR    = $(DESTDIR)`$(GAUCHE_CONFIG) --sitearchdir`
+HEADER_INSTALL_DIR  = "$(DESTDIR)@GAUCHE_PKGINCDIR@"
+SCM_INSTALL_DIR     = "$(DESTDIR)@GAUCHE_PKGLIBDIR@"
+ARCH_INSTALL_DIR    = "$(DESTDIR)@GAUCHE_PKGARCHDIR@"
 
 all :
 	cd src; $(MAKE)
