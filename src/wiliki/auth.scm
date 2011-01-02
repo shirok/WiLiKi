@@ -46,10 +46,10 @@
   (use srfi-1)
   (use srfi-13)
   (export <auth-failure> auth-db-path auth-valid-password?
-          auth-change-password auth-add-user auth-delete-user
+          auth-change-password! auth-add-user! auth-delete-user!
           auth-user-exists? auth-users
           auth-new-session auth-get-session
-          auth-delete-session auth-clean-sessions))
+          auth-delete-session! auth-clean-sessions!))
 (select-module wiliki.auth)
 
 (define-condition-type <auth-failure> <message-condition> #f)
@@ -136,7 +136,7 @@
            "password can only contain ascii graphical characters [!-~]")))
 
 ;; API
-(define (auth-add-user user pass :key (allow-override #f))
+(define (auth-add-user! user pass :key (allow-override #f))
   (%check-db-path)
   (%user-pass-check user pass)
   (with-passwd-db
@@ -146,7 +146,7 @@
      (commit (assoc-set! db user `(,(bcrypt-hashpw pass)))))))
 
 ;; API
-(define (auth-delete-user user :key (if-does-not-exist :error))
+(define (auth-delete-user! user :key (if-does-not-exist :error))
   (%check-db-path)
   (with-passwd-db
    (^(db commit)
@@ -156,7 +156,7 @@
      (commit (alist-delete user db equal?)))))
 
 ;; API
-(define (auth-change-password user pass)
+(define (auth-change-password! user pass)
   (%check-db-path)
   (%user-pass-check user pass)
   (with-passwd-db
@@ -210,13 +210,13 @@
       :if-does-not-exist #f)))
 
 ;; API
-(define (auth-delete-session key)
+(define (auth-delete-session! key)
   (and (>= (string-length key) 6)
        (sys-unlink (build-path (temporary-directory)
                                #`"wiliki-,(string-take key 6)"))))
 
 ;; API
-(define (auth-clean-sessions age)
+(define (auth-clean-sessions! age)
   (let1 limit (- (sys-time) age)
     (dolist [f (glob (build-path (temporary-directory) "wiliki-??????"))]
       (when (< (file-mtime f) limit) (sys-unlink f)))))

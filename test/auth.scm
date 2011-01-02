@@ -19,7 +19,7 @@
 (test-section "password management")
 
 (test* "new user" #t
-       (begin (auth-add-user "shiro" "humuhumunukunkuapua`a")
+       (begin (auth-add-user! "shiro" "humuhumunukunkuapua`a")
               (file-exists? (auth-db-path))))
 
 (test* "user-exists? 1" #t (auth-user-exists? "shiro"))
@@ -34,7 +34,7 @@
 
 (test* "more user" #t
        (begin
-         (auth-add-user "kuro" "opakapaka")
+         (auth-add-user! "kuro" "opakapaka")
          (and (auth-valid-password? "shiro" "humuhumunukunkuapua`a")
               (auth-valid-password? "kuro" "opakapaka"))))
 
@@ -46,31 +46,31 @@
        (sort (map car (auth-users))))
 
 (test* "new user / dupe" (test-error <auth-failure>)
-       (auth-add-user "shiro" "mahimahi"))
+       (auth-add-user! "shiro" "mahimahi"))
 
 (test* "new user / override" #t
        (begin
-         (auth-add-user "shiro" "mahimahi" :allow-override #t)
+         (auth-add-user! "shiro" "mahimahi" :allow-override #t)
          (auth-valid-password? "shiro" "mahimahi")))
 
 (test* "new user / too short password" (test-error <auth-failure>)
-       (auth-add-user "midori" "ahi"))
+       (auth-add-user! "midori" "ahi"))
 
 (test* "change pass" '(#f #t)
        (begin
-         (auth-change-password "shiro" "mahimahi")
+         (auth-change-password! "shiro" "mahimahi")
          (list (auth-valid-password? "shiro" "humuhumunukunkuapua`a")
                (auth-valid-password? "shiro" "mahimahi"))))
 
 (test* "change pass / no user" (test-error <auth-failure>)
-       (auth-change-password "midori" "papaikualoa"))
+       (auth-change-password! "midori" "papaikualoa"))
 
 (test* "change pass / too short password" (test-error <auth-failure>)
-       (auth-change-password "shiro" "moi"))
+       (auth-change-password! "shiro" "moi"))
 
 (test* "delete user" '(#f #t)
        (begin
-         (auth-delete-user "shiro")
+         (auth-delete-user! "shiro")
          (list (auth-user-exists? "shiro")
                (auth-user-exists? "kuro"))))
 
@@ -96,17 +96,17 @@
 
     (test* "delete-session" 1
            (begin
-             (auth-delete-session key)
+             (auth-delete-session! key)
              (length (glob (build-path (temporary-directory) "wiliki-*")))))
 
     (test* "clean-sessions" 1
            (begin
-             (auth-clean-sessions 3600)
+             (auth-clean-sessions! 3600)
              (length (glob (build-path (temporary-directory) "wiliki-*")))))
              
     (test* "clean-sessions" 0
            (begin
-             (auth-clean-sessions -10)
+             (auth-clean-sessions! -10)
              (length (glob (build-path (temporary-directory) "wiliki-*")))))
     ))
 (remove-files "_test")
