@@ -19,8 +19,11 @@
 (test-section "password management")
 
 (test* "new user" #t
-       (begin (auth-new-user "shiro" "humuhumunukunkuapua`a")
+       (begin (auth-add-user "shiro" "humuhumunukunkuapua`a")
               (file-exists? (auth-db-path))))
+
+(test* "user-exists? 1" #t (auth-user-exists? "shiro"))
+(test* "user-exists? 1" #f (auth-user-exists? "taro"))
 
 (test* "check pass" #t
        (auth-valid-password? "shiro" "humuhumunukunkuapua`a"))
@@ -31,15 +34,27 @@
 
 (test* "more user" #t
        (begin
-         (auth-new-user "kuro" "opakapaka")
+         (auth-add-user "kuro" "opakapaka")
          (and (auth-valid-password? "shiro" "humuhumunukunkuapua`a")
               (auth-valid-password? "kuro" "opakapaka"))))
 
+(test* "user-exists? 2" #t (auth-user-exists? "shiro"))
+(test* "user-exists? 2" #t (auth-user-exists? "kuro"))
+(test* "user-exists? 2" #f (auth-user-exists? "taro"))
+
+(test* "users" '("kuro" "shiro")
+       (sort (map car (auth-users))))
+
 (test* "new user / dupe" (test-error <auth-failure>)
-       (auth-new-user "shiro" "mahimahi"))
+       (auth-add-user "shiro" "mahimahi"))
+
+(test* "new user / override" #t
+       (begin
+         (auth-add-user "shiro" "mahimahi" :allow-override #t)
+         (auth-valid-password? "shiro" "mahimahi")))
 
 (test* "new user / too short password" (test-error <auth-failure>)
-       (auth-new-user "midori" "ahi"))
+       (auth-add-user "midori" "ahi"))
 
 (test* "change pass" '(#f #t)
        (begin
@@ -52,6 +67,12 @@
 
 (test* "change pass / too short password" (test-error <auth-failure>)
        (auth-change-password "shiro" "moi"))
+
+(test* "delete user" '(#f #t)
+       (begin
+         (auth-delete-user "shiro")
+         (list (auth-user-exists? "shiro")
+               (auth-user-exists? "kuro"))))
 
 (sys-unlink (auth-db-path))
 

@@ -42,9 +42,12 @@
   (use crypt.bcrypt)
   (use file.util)
   (use util.match)
+  (use util.list)
+  (use srfi-1)
   (use srfi-13)
   (export <auth-failure> auth-db-path auth-valid-password?
-          auth-change-password auth-new-user
+          auth-change-password auth-add-user auth-delete-user
+          auth-user-exists? auth-users
           auth-new-session auth-get-session
           auth-delete-session auth-clean-sessions))
 (select-module wiliki.auth)
@@ -57,6 +60,7 @@
 (define-constant +min-password-length+ 8)
 (define-constant +max-password-length+ 40)
 
+;; API
 (define auth-db-path (make-parameter #f))
 
 (define (%check-db-path)
@@ -64,18 +68,54 @@
     (error <auth-failure> "password file pathname isn't set")))
 
 (define (read-passwd-file)
-  (%check-db-path)
-  (or (file->sexp-list (auth-db-path) :if-does-not-exist #f)
-      '()))
+  (or (file->list parse-passwd-entry (auth-db-path) :if-does-not-exist #f) '()))
+
+(define (parse-passwd-entry port)
+  (let1 line (read-line port)
+    (if (eof-object? line)
+      line
+      (let1 cols (string-split line ":")
+        (if (= (length cols) 2)
+          cols
+          (errorf <auth-failure> "bad record in password file ~a: ~a"
+                  (auth-db-path) line))))))  
 
 (define (write-passwd-file db)
-  (%check-db-path)
   (receive (port path) (sys-mkstemp (auth-db-path))
     (guard ([e (else (sys-unlink path) (raise e))])
-      (dolist [entry db] (write entry port) (newline port))
+      (dolist [entry db] (format port "~a:~a\n" (car entry) (cadr entry)))
       (close-output-port port)
       (sys-rename path (auth-db-path)))))
 
+;; todo: we need flexible lock mechanism in Gauche, which chooses appropriate
+;; lock strategy (fcntl, symlink, mkdir, etc.)  For the time being, we stick
+;; to mkdir strategy since it is universal.
+(define (lock-passwd-file)
+  (guard (e [(and (<system-error> e) (eqv? (~ e'errno) EEXIST)) #f]
+            [else (errorf <auth-failure> "cannot lock password file: ~a"
+                          (~ e'message))])
+    (sys-mkdir (lockdir) #o555)))
+
+(define (unlock-passwd-file) (sys-rmdir (lockdir)))
+
+(define (lockdir) #`",(auth-db-path).lock")
+
+;; Calls PROC with read database and commit procedure
+(define (with-passwd-db proc)
+  (let retry ([try 0])
+    (cond [(> try 3)
+           (errorf <auth-failure>
+                   "Couldn't lock password file.  Other process is holding \
+                    a lock.  If you believe there's no such process, remove \
+                    ~a and try again." (lockdir))]
+          [(lock-passwd-file)]
+          [else (sys-sleep 2) (retry (+ try 1))]))
+  (unwind-protect (proc (read-passwd-file) write-passwd-file)
+    (unlock-passwd-file)))
+
+(define (user-exists? db user) (assoc user db))
+
+;; API
 (define (auth-valid-password? user pass)
   (%check-db-path)
   (and-let* ([p (assoc user (read-passwd-file))])
@@ -95,30 +135,55 @@
     (error <auth-failure>
            "password can only contain ascii graphical characters [!-~]")))
 
-;; todo: lock
-(define (auth-new-user user pass)
+;; API
+(define (auth-add-user user pass :key (allow-override #f))
   (%check-db-path)
   (%user-pass-check user pass)
-  (let1 db (read-passwd-file)
-    (when (assoc user db)
-      (errorf <auth-failure> "user ~a already exists" user))
-    (write-passwd-file `((,user ,(bcrypt-hashpw pass)) ,@db))))
+  (with-passwd-db
+   (^(db commit)
+     (when (and (not allow-override) (user-exists? db user))
+       (errorf <auth-failure> "user ~a already exists" user))
+     (commit (assoc-set! db user `(,(bcrypt-hashpw pass)))))))
 
-;; todo: lock
+;; API
+(define (auth-delete-user user :key (if-does-not-exist :error))
+  (%check-db-path)
+  (with-passwd-db
+   (^(db commit)
+     (when (and (eq? if-does-not-exist :error)
+                (not (user-exists? db user)))
+       (errorf <auth-failure> "user ~a does not exist" user))
+     (commit (alist-delete user db equal?)))))
+
+;; API
 (define (auth-change-password user pass)
   (%check-db-path)
   (%user-pass-check user pass)
-  (let1 db (read-passwd-file)
-    (cond [(assoc user db)
-           => (lambda (p)
-                (set! (cadr p) (bcrypt-hashpw pass))
-                (write-passwd-file db))]
-          [else (errorf <auth-failure> "user ~a does not exist" user)])))
+  (with-passwd-db
+   (^(db commit)
+     (unless (user-exists? db user)
+       (errorf <auth-failure> "user ~a does not exist" user))
+     (commit (assoc-set! db user `(,(bcrypt-hashpw pass)))))))
+
+;; API
+(define (auth-user-exists? user)
+  (%check-db-path)
+  (boolean (user-exists? (read-passwd-file) user)))
+
+;; API
+;; Simply returns list of (user-name hashed-pass).  The returned list
+;; may be extended in future to have more info.  This is a simple
+;; wrapper to read-passwd-file now, but we can substitute the storage
+;; layer later without changing public api.
+(define (auth-users)
+  (%check-db-path)
+  (read-passwd-file))
 
 ;;;
 ;;; Session management
 ;;;
 
+;; API
 (define (auth-new-session value)
   (receive (port path)
       (sys-mkstemp (build-path (temporary-directory) "wiliki-"))
@@ -129,6 +194,7 @@
         (close-output-port port)
         (string-append key hv)))))
 
+;; API
 (define (auth-get-session key)
   (when (< (string-length key) (+ 6 7))
     (error <auth-failure> "invalid session key"))
@@ -143,11 +209,13 @@
             (error <auth-failure> "invalid or expired session")))
       :if-does-not-exist #f)))
 
+;; API
 (define (auth-delete-session key)
   (and (>= (string-length key) 6)
        (sys-unlink (build-path (temporary-directory)
                                #`"wiliki-,(string-take key 6)"))))
 
+;; API
 (define (auth-clean-sessions age)
   (let1 limit (- (sys-time) age)
     (dolist [f (glob (build-path (temporary-directory) "wiliki-??????"))]

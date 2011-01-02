@@ -1,3 +1,9 @@
+2011-01-02  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/auth.scm: Reorganized API.  Changed password file format
+	  to be similar to htpasswd (eventually we may add compatibility to
+	  htpasswd file.  For now we only support bcrypt, tho.)
+
 2010-12-12  Shiro Kawai  <shiro@acm.org>
 
 	* release 0.6.2
