@@ -1,3 +1,8 @@
+2011-02-26  Shiro Kawai  <shiro@acm.org>
+
+	* Repository moved to git.
+	  git://wiliki.git.sourceforge.net/gitroot/wiliki/WiLiKi
+
 2011-01-02  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/auth.scm: Reorganized API.  Changed password file format

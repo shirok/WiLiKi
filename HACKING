@@ -1,8 +1,8 @@
-To build from CVS sources:
+To build from git sources:
 
 Requirements:
   autoconf 2.52
-  Gauche-0.8.14
+  Gauche-0.9
 
 After checking out the source tree, run
 
