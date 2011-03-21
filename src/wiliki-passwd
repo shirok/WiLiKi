@@ -1,0 +1,63 @@
+;;;
+;;; Simple password management utility for wiliki.auth
+;;;
+
+(use wiliki.auth)
+(use gauche.parseopt)
+(use gauche.termios)
+(use crypt.bcrypt)
+(use util.match)
+
+(define (usage)
+  (print "Usage: wiliki-passwd [-D] <passwdfile> <username> [<password>]")
+  (print "  Creates and maintains a password file suitable for wiliki.auth module.")
+  (print "Options:")
+  (print "  -D   Delete the specified user.")
+  (print "Arguments:")
+  (print "  <passwdfile>   Path to the password file.  If it does not exist,")
+  (print "       a new file will be created.")
+  (print "  <username>     The name of the user to set/modify password, or delete.")
+  (print "  <password>     Plain password for the user.  If this argument is omitted,")
+  (print "       the user is prompted to type a password.  If this argument is '-',")
+  (print "       a password is read from stdin.")
+  (exit 1))
+
+(define (main args)
+  (let-args (cdr args) ([delete-mode "D"]
+                        [else _ (usage)]
+                        . args)
+    (guard (e [(<auth-failure> e) (exit 1 "~a" (~ e'message))])
+      (match args
+        [(passwdfile username)
+         (auth-db-path passwdfile)
+         (if delete-mode
+           (auth-delete-user! username)
+           (set-pass passwdfile username (read-password)))]
+        [(passwdfile username "-")
+         (when delete-mode (exit 1 "password can't be given with -D option."))
+         (set-pass passwdfile username (read-line))]
+        [(passwdfile username password)
+         (when delete-mode (exit 1 "password can't be given with -D option."))
+         (set-pass passwdfile username password)]
+        [_ (usage)])))
+  0)
+
+(define (read-password)
+  (define (get1 prompt)
+    (display prompt) (flush)
+    (begin0 (without-echoing #f read-line)
+      (newline)))
+  (let* ([p1 (get1 "Enter Password: ")]
+         [p2 (get1 "Retype Password: ")])
+    (unless (and (string? p1) (equal? p1 p2))
+      (exit 1 "Typed passwords don't match."))
+    p1))
+
+(define (set-pass passwdfile user pass)
+  (auth-db-path passwdfile)
+  (auth-add-user! user pass :allow-override #t))
+         
+
+;; Local variables:
+;; mode: scheme
+;; end:
