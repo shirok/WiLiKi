@@ -1,3 +1,10 @@
+2011-04-07  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/core.scm (wiliki:ip-blacklist, wiliki:ip-blacklist-append!)
+	(wiliki:from-blacklisted-ip?): Added IP-based blacklisting.
+	* src/wiliki/edit.scm (cmd-commit-edit): Use IP blacklist to reject
+	  spam comments.
+
 2011-03-21  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki-passwd : Added a untility to manage simple password

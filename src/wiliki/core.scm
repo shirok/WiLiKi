@@ -82,6 +82,8 @@
 
           wiliki:spam-blacklist wiliki:spam-blacklist-append!
           wiliki:contains-spam?
+          wiliki:ip-blacklist wiliki:ip-blacklist-append!
+          wiliki:from-blacklisted-ip?
           ))
 (select-module wiliki.core)
 
@@ -363,6 +365,18 @@
                [(string? x) (string-contains content x)]
                [else #f]))
        (wiliki:spam-blacklist)))
+
+;; A list of IP addresses we want to reject writing from.
+;; TODO: we may want to allow netmask or wildcards.  For now
+;; we only support exact match.
+(define wiliki:ip-blacklist (make-parameter '()))
+
+(define (wiliki:ip-blacklist-append! lis)
+  (wiliki:ip-blacklist (append (wiliki:ip-blacklist) lis)))
+
+(define (wiliki:from-blacklisted-ip?
+         :optional (ip (cgi-get-metavariable "REMOTE_ADDR")))
+  (member ip (wiliki:ip-blacklist)))
 
 ;; Returns SXML anchor node and string for given wikiname.
 (define (wiliki:wikiname-anchor wikiname . maybe-anchor-string)

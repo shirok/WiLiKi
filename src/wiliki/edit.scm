@@ -227,7 +227,9 @@
             "content and logmsg are the same")
        ;; Check blacklist.
        (and (wiliki:contains-spam? content)
-            "url-hit-blacklist")))
+            "url-hit-blacklist")
+       (and (wiliki:from-blacklisted-ip?)
+            "ip-hit-blacklist")))
 
     ;; The body of cmd-commit-edit
     ;; If content is empty and the page is not the top page, we erase
