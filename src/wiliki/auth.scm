@@ -82,7 +82,7 @@
 
 (define (write-passwd-file db)
   (receive (port path) (sys-mkstemp (auth-db-path))
-    (guard ([e (else (sys-unlink path) (raise e))])
+    (guard (e [else (sys-unlink path) (raise e)])
       (dolist [entry db] (format port "~a:~a\n" (car entry) (cadr entry)))
       (close-output-port port)
       (sys-rename path (auth-db-path)))))
@@ -171,7 +171,7 @@
   (boolean (user-exists? (read-passwd-file) user)))
 
 ;; API
-;; Simply returns list of (user-name hashed-pass).  The returned list
+;; Simply returns a list of (user-name hashed-pass).  The returned list
 ;; may be extended in future to have more info.  This is a simple
 ;; wrapper to read-passwd-file now, but we can substitute the storage
 ;; layer later without changing public api.
@@ -184,6 +184,14 @@
 ;;;
 
 ;; API
+;;   A parameter points to a directory where session records are stored.
+;;   In future, it may be extended to hold 
+(define auth-session-directory
+  (make-parameter (build-path (temporary-directory) "wiliki")))
+
+
+;; API
+;;   Returns a session key that holds the given value.
 (define (auth-new-session value)
   (receive (port path)
       (sys-mkstemp (build-path (temporary-directory) "wiliki-"))
