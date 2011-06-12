@@ -323,7 +323,7 @@
 (define (comment-input-and-display id order textarea)
   (random-source-randomize! default-random-source)
   (let* ((rkey (+ (random-integer #x10000000) 1)) ; never be 0
-         (answer (modulo (ash rkey -11) 3))
+         (answer (modulo (ash rkey -11) 7))
          (prefix (comment-prefix id))
          (sorter (if (equal? order "old->new") string<? string>?))
          ;; NB: sort procedure assumes we have up to 1000 comments.
@@ -354,7 +354,12 @@
                          (input (@ (type text) (name "n")))))
                  (tr (td (textarea (@ ,(st 0) (name "c0")))
                          (textarea (@ ,(st 1) (name "c1")))
-                         (textarea (@ ,(st 2) (name "c2")))))
+                         (textarea (@ ,(st 2) (name "c2")))
+                         (textarea (@ ,(st 3) (name "c3")))
+                         (textarea (@ ,(st 4) (name "c4")))
+                         (textarea (@ ,(st 5) (name "c5")))
+                         (textarea (@ ,(st 6) (name "c6")))
+                         ))
                  (tr (td (input (@ (type submit) (name "submit")
                                    (value ,(gettext"Submit Comment"))))))
                  )))
@@ -397,20 +402,25 @@
           (n   :convert wiliki:cv-in :default "") ; name
           (c0  :convert wiliki:cv-in :default "")
           (c1  :convert wiliki:cv-in :default "")
-          (c2  :convert wiliki:cv-in :default ""))
+          (c2  :convert wiliki:cv-in :default "")
+          (c3  :convert wiliki:cv-in :default "")
+          (c4  :convert wiliki:cv-in :default "")
+          (c5  :convert wiliki:cv-in :default "")
+          (c6  :convert wiliki:cv-in :default "")
+          )
 
   ;; Pick the valid textarea contents.  If there's any text in the
   ;; dummy textarea, we assume it is from automated spammer.
   (define (get-legal-post-content)
     (and-let* (( (> rkey 0) )
-               (answer (modulo (ash rkey -11) 3)))
+               (answer (modulo (ash rkey -11) 7)))
       (fold (lambda (content n r)
               (cond ((= n answer) content)
                     ((equal? content "") r)
                     (else #f)))
             #f
-            (list c0 c1 c2)
-            (iota 3))))
+            (list c0 c1 c2 c3 c4 c5 c6)
+            (iota 7))))
 
   ;; See cmd-commit-edit in edit.scm; probably we should consolidate
   ;; those heuristic spam filtering into one module.
