@@ -49,19 +49,19 @@
   :group 'wiliki)
 
 (defcustom wiliki-home-base-url
-  "http://www.shiro.dreamhost.com/scheme/wiliki/wiliki.cgi"
+  "http://practical-scheme.net/wiliki/wiliki.cgi"
   "Default WiLiKi site to visit."
   :group 'wiliki
   :type 'string)
 
 (defcustom wiliki-sites
   '(("WiLiKi"
-     "http://www.shiro.dreamhost.com/scheme/wiliki/wiliki.cgi"
-     "http://www.shiro.dreamhost.com/scheme/wiliki/wiliki2.cgi")
+     "http://practical-scheme.net/wiliki/wiliki.cgi"
+     "http://practical-scheme.net/wiliki/wiliki2.cgi")
     ("GaucheMemo"
-     "http://www.shiro.dreamhost.com/scheme/gauche/gmemo/index.cgi")
+     "http://practical-scheme.net/gauche/gmemo/index.cgi")
     ("SchemeCrossReference"
-     "www.shiro.dreamhost.com/scheme/wiliki/schemexref.cgi"))
+     "http://practical-scheme.net/wiliki/schemexref.cgi"))
   "List of WiLiKi sites.
     (SITE1 SITE2 ...)
 Each SITE consists of the following form:
