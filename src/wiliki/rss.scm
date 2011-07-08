@@ -167,7 +167,7 @@
 (define (rdf-description desc) (rdf-simple-1 "description" desc))
 (define (rdf-content content)
   `("<content:encoded><![CDATA["
-    ,(regexp-replace-all #/\]\]>/ content "&93;]>")
+    ,(regexp-replace-all #/\]\]>/ content "]]]]><![CDATA[>")
     "]]></content:encoded>"))
 
 (define (dc-date secs)
