@@ -115,8 +115,8 @@
 (define (html-content entry partial?)
   (or (and-let* ([page (wiliki:db-get entry)])
         ($ rdf-content $ tree->string $ map wiliki:sxml->stree
-           $ wiliki:format-content (trim-content (ref page'content) partial?)))
-      ""))  
+           $ wiliki:format-content $ trim-content (~ page'content) partial?))
+      ""))
 
 (define (trim-content raw-text partial?)
   (if partial?
