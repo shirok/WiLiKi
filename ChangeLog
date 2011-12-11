@@ -1,3 +1,7 @@
+2011-12-10  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/log.scm (wiliki-log-pick): Allow regexp as pagename.
+
 2011-07-08  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/rss.scm (rdf-content): Fix treatment of ']]>' in CDATA.

@@ -140,23 +140,29 @@
 ;; Picks entries of the specified pagename ---------------
 ;; Returns a list of entries, where each entry is just
 ;; a list of lines.  The entries are in reverse chronological order.
-
+;; PAGENAME can be a string for an exact match, or regexp.
+;; Note: regexp match is a lot slower. Be careful.
 (define (wiliki-log-pick pagename iport)
-  (define pick-prefix (format "C ~s" pagename))
+  (define pick
+    (cond [(string? pagename)
+           (cute string-prefix? (format "C ~s" pagename) <>)]
+          [(regexp? pagename)
+           (^[line] (let1 s (read-from-string (string-drop line 2))
+                      (rxmatch pagename s)))]
+          [else
+           (error "wiliki-log-pick: invalid pagename argument:" pagename)]))
   (define entries '())
   (with-port-locking iport
-    (lambda ()
-      (port-fold (lambda (line acc)
-                   (cond ((string=? "." line)
+    (^[]
+      (port-fold (^[line acc]
+                   (cond [(string=? "." line)
                           (when acc (push! entries (reverse! (cons "." acc))))
-                          #f)
-                         ((string-prefix? "C " line)
+                          #f]
+                         [(string-prefix? "C " line)
                           (when acc (push! entries (reverse! acc)))
-                          (if (string-prefix? pick-prefix line)
-                            (list line)
-                            #f))
-                         (acc (cons line acc))
-                         (else #f)))
+                          (and (pick line) (list line))]
+                         [acc (cons line acc)]
+                         [else #f]))
                  #f
                  (cut read-line iport))))
   entries)
