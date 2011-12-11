@@ -306,22 +306,34 @@
 (define-syntax define-wiliki-action
   (syntax-rules ()
     [(_ name rwmode (pagename (arg . opts) ...) . body)
-     (wiliki-action-add!
-      'name
-      (lambda (pagename params)
-        (let1 action (lambda (arg ...) . body)
-          (wiliki:with-db (lambda ()
-                            (let1 args-alist
+     (%register-wiliki-action 'name rwmode
+                              (^[pagename] (^[arg ...] . body))
+                              (^[params]
                                 (list
                                  (cons 'arg
                                        (cgi-get-parameter (x->string 'arg)
                                                           params . opts))
-                                 ...)
-                              (wiliki:run-action (wiliki) 'name action
-                                                 pagename params
-                                                 args-alist)))
-                          :rwmode rwmode))))]
+                                 ...)))]
+    [(_ name rwmode (pagename params_ (arg . opts) ...) . body)
+     (%register-wiliki-action 'name rwmode
+                              (^[pagename] (^[params_ arg ...] . body))
+                              (^[params]
+                                (list
+                                 (cons 'params params)
+                                 (cons 'arg
+                                       (cgi-get-parameter (x->string 'arg)
+                                                          params . opts))
+                                 ...)))]
     ))
+
+(define (%register-wiliki-action name rwmode fn-gen args-alist-gen)
+  (wiliki-action-add!
+   name
+   (^[pagename params]
+     (wiliki:with-db
+      (^[] (wiliki:run-action (wiliki) 'name (fn-gen pagename)
+                              pagename params (args-alist-gen params)))
+      :rwmode rwmode))))
 
 (define-method wiliki:run-action
     ((wiliki <wiliki>) name action pagename params args-alist)

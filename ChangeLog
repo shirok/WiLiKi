@@ -1,3 +1,8 @@
+2011-12-11  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/core.scm (define-wiliki-action): Allow an alternative
+	  syntax that can receive the whole cgi params list in the action.
+
 2011-12-10  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/log.scm (wiliki-log-pick): Allow regexp as pagename.
