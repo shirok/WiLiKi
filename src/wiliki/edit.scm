@@ -153,12 +153,14 @@
 ;; DONTTOUCH - If #t, don't update RecentChanges.
 ;; LIMITED - #t indicates this edit is generated procedurally, like comment
 ;;           feature.  It is allowed if EDITABLE? == limited.
-
+;; MTIME should match the current page's mtime, to detect conflict.
+;;       MTIME==#f skips that check.
 (define (cmd-commit-edit pagename content mtime logmsg donttouch limited)
   (let ((p   (wiliki:db-get pagename #t))
         (now (sys-time)))
 
     (define (erase-page)
+      (wiliki:log-event "Erasing ~s" pagename)
       (write-log (wiliki) pagename (ref p 'content) "" now logmsg)
       (set! (ref p 'content) "")
       (wiliki:db-delete! pagename)
@@ -244,7 +246,7 @@
            (wiliki:log-event "rejecting spam on ~s (~a): content=~s logmsg=~s"
                              pagename reason content logmsg)
            (wiliki:redirect-page (ref (wiliki)'top-page)))]
-     [(or (not (ref p 'mtime)) (eqv? (ref p 'mtime) mtime))
+     [(or (not (ref p 'mtime)) (not mtime) (eqv? (ref p 'mtime) mtime))
       (if (and (not (equal? pagename (ref (wiliki)'top-page)))
                (string-every #[\s] content))
         (erase-page)

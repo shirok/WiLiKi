@@ -1,5 +1,9 @@
 2011-12-11  Shiro Kawai  <shiro@acm.org>
 
+	* src/wiliki/edit.scm (cmd-commit-edit): Allow mtime to be #f, for
+	  it's convenient when cmd-commit-edit is called within the wiliki
+	  action (e.g. batch edit).
+
 	* src/wiliki/core.scm (define-wiliki-action): Allow an alternative
 	  syntax that can receive the whole cgi params list in the action.
 
