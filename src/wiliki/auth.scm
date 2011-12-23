@@ -48,7 +48,7 @@
   (export <auth-failure> auth-db-path auth-valid-password?
           auth-change-password! auth-add-user! auth-delete-user!
           auth-user-exists? auth-users
-          auth-new-session auth-get-session
+          auth-session-directory auth-new-session auth-get-session
           auth-delete-session! auth-clean-sessions!))
 (select-module wiliki.auth)
 
@@ -87,31 +87,16 @@
       (close-output-port port)
       (sys-rename path (auth-db-path)))))
 
-;; todo: we need flexible lock mechanism in Gauche, which chooses appropriate
-;; lock strategy (fcntl, symlink, mkdir, etc.)  For the time being, we stick
-;; to mkdir strategy since it is universal.
-(define (lock-passwd-file)
-  (guard (e [(and (<system-error> e) (eqv? (~ e'errno) EEXIST)) #f]
-            [else (errorf <auth-failure> "cannot lock password file: ~a"
-                          (~ e'message))])
-    (sys-mkdir (lockdir) #o555)))
-
-(define (unlock-passwd-file) (sys-rmdir (lockdir)))
-
-(define (lockdir) #`",(auth-db-path).lock")
-
 ;; Calls PROC with read database and commit procedure
 (define (with-passwd-db proc)
-  (let retry ([try 0])
-    (cond [(> try 3)
-           (errorf <auth-failure>
-                   "Couldn't lock password file.  Other process is holding \
-                    a lock.  If you believe there's no such process, remove \
-                    ~a and try again." (lockdir))]
-          [(lock-passwd-file)]
-          [else (sys-sleep 2) (retry (+ try 1))]))
-  (unwind-protect (proc (read-passwd-file) write-passwd-file)
-    (unlock-passwd-file)))
+  (guard (e [(<lock-file-failure> e)
+             (errorf <auth-failure>
+                     "Couldn't lock password file.  Other process is holding \
+                      a lock.  If you believe there's no such process, remove \
+                      ~a and try again." (~ e'lock-file-name))]
+            [else (raise e)])
+    (with-lock-file #`",(auth-db-path).lock"
+                    (^[] (proc (read-passwd-file) write-passwd-file)))))
 
 (define (user-exists? db user) (assoc user db))
 
@@ -186,15 +171,13 @@
 ;; API
 ;;   A parameter points to a directory where session records are stored.
 ;;   In future, it may be extended to hold 
-(define auth-session-directory
-  (make-parameter (build-path (temporary-directory) "wiliki")))
-
+(define auth-session-directory (make-parameter (temporary-directory)))
 
 ;; API
 ;;   Returns a session key that holds the given value.
 (define (auth-new-session value)
   (receive (port path)
-      (sys-mkstemp (build-path (temporary-directory) "wiliki-"))
+      (sys-mkstemp (build-path (auth-session-directory) "wiliki-"))
     (guard [e (else (close-output-port port) (sys-unlink path) (raise e))]
       (let* ([key (string-take-right path 6)]
              [hv  (bcrypt-hashpw key)])
@@ -208,7 +191,7 @@
     (error <auth-failure> "invalid session key"))
   (let* ([suffix (string-take key 6)]
          [hv     (string-drop key 6)]
-         [path   (build-path (temporary-directory) #`"wiliki-,suffix")])
+         [path   (build-path (auth-session-directory) #`"wiliki-,suffix")])
     (call-with-input-file path
       (lambda (p)
         (or (and p (match (read p)
@@ -220,11 +203,11 @@
 ;; API
 (define (auth-delete-session! key)
   (and (>= (string-length key) 6)
-       (sys-unlink (build-path (temporary-directory)
+       (sys-unlink (build-path (auth-session-directory)
                                #`"wiliki-,(string-take key 6)"))))
 
 ;; API
 (define (auth-clean-sessions! age)
   (let1 limit (- (sys-time) age)
-    (dolist [f (glob (build-path (temporary-directory) "wiliki-??????"))]
+    (dolist [f (glob (build-path (auth-session-directory) "wiliki-??????"))]
       (when (< (file-mtime f) limit) (sys-unlink f)))))

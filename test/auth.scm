@@ -80,12 +80,12 @@
 
 (remove-files "_test")
 
-(parameterize ([temporary-directory "_test"])
-  (make-directory* (temporary-directory))
+(parameterize ([auth-session-directory "_test"])
+  (make-directory* (auth-session-directory))
   (let1 key #f
     (test* "new-session" #t
            (begin (set! key (auth-new-session "ahi poke"))
-                  (file-exists? (build-path (temporary-directory)
+                  (file-exists? (build-path (auth-session-directory)
                                             #`"wiliki-,(string-take key 6)"))))
     (test* "get-session" "ahi poke" (auth-get-session key))
 
@@ -97,17 +97,17 @@
     (test* "delete-session" 1
            (begin
              (auth-delete-session! key)
-             (length (glob (build-path (temporary-directory) "wiliki-*")))))
+             (length (glob (build-path (auth-session-directory) "wiliki-*")))))
 
     (test* "clean-sessions" 1
            (begin
              (auth-clean-sessions! 3600)
-             (length (glob (build-path (temporary-directory) "wiliki-*")))))
+             (length (glob (build-path (auth-session-directory) "wiliki-*")))))
              
     (test* "clean-sessions" 0
            (begin
              (auth-clean-sessions! -10)
-             (length (glob (build-path (temporary-directory) "wiliki-*")))))
+             (length (glob (build-path (auth-session-directory) "wiliki-*")))))
     ))
 (remove-files "_test")
 
