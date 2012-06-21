@@ -450,7 +450,7 @@
           ;; suspicious.)
           [(let1 c (length (string-split content #/http:\/\/[:\w\/%&?=.,+#-]+/))
              (and (> c 12) c))
-           => (lambda (c) (format "too many urls in comment (~a)" (- c 1)) #f)]
+           => (^c(wiliki:log-event "too many urls in comment (~a)" (- c 1)) #f)]
           [else content]))
 
   ;; Find maximum comment count
@@ -462,10 +462,17 @@
                               [else maxval]))
                       -1)))
 
+  (define (comment-post-in-valid-timerange?)
+    (let1 now (sys-time)
+      (cond [(< (- now 7200) t)
+             (wiliki:log-event "comment posting timed out") #f]
+            [(< (- now 10) t)
+             (wiliki:log-event "comment posting too quick") #f]
+            [else #t])))
+
   (define (do-post)
     (and-let* ([ (> (string-length n) 0) ]
-               [now (sys-time)]
-               [ (< (- now 7200) t now) ]
+               [ (comment-post-in-valid-timerange?) ]
                [content (filter-suspicious (get-legal-post-content))]
                [ (> (string-length content) 0) ]
                [cnt (+ (max-comment-count) 1)]
@@ -475,7 +482,7 @@
       (cmd-commit-edit comment-page
                        (string-append
                         "* "n" ("
-                        (sys-strftime "%Y/%m/%d %T" (sys-localtime now))
+                        (sys-strftime "%Y/%m/%d %T" (sys-localtime (sys-time)))
                         "):\n<<<\n"content"\n>>>\n")
                        t "" #t #t)
       ;; cmd-commit-edit may reject creating comment page if it thinks
