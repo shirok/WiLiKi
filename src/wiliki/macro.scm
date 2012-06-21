@@ -464,7 +464,7 @@
 
   (define (comment-post-in-valid-timerange?)
     (let1 now (sys-time)
-      (cond [(< (- now 7200) t)
+      (cond [(> (- now 7200) t)
              (wiliki:log-event "comment posting timed out") #f]
             [(< (- now 10) t)
              (wiliki:log-event "comment posting too quick") #f]
