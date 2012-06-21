@@ -462,19 +462,23 @@
                               [else maxval]))
                       -1)))
 
-  (define (comment-post-in-valid-timerange?)
+  (define (comment-post-in-valid-timerange? content)
     (let1 now (sys-time)
       (cond [(> (- now 7200) t)
-             (wiliki:log-event "comment posting timed out") #f]
+             (wiliki:log-event "comment posting timed out (~a:~a)"
+                               n content)
+             #f]
             [(< (- now 10) t)
-             (wiliki:log-event "comment posting too quick") #f]
+             (wiliki:log-event "comment posting too quick (~a:~a)"
+                               n content)
+             #f]
             [else #t])))
 
   (define (do-post)
     (and-let* ([ (> (string-length n) 0) ]
-               [ (comment-post-in-valid-timerange?) ]
                [content (filter-suspicious (get-legal-post-content))]
                [ (> (string-length content) 0) ]
+               [ (comment-post-in-valid-timerange? content) ]
                [cnt (+ (max-comment-count) 1)]
                [comment-page (format "~a~3'0d" (comment-prefix cid) cnt)])
       ;; ignore the result of cmd-commit-edit.  we'll redirect to the
