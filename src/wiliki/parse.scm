@@ -369,7 +369,7 @@
         (define (finish)
           `((dd ,@(reverse! (fold-p))) (dt ,@dt) ,@seed))
         (case (token-type tok)
-          ((eof null hr heading)
+          ((eof null hr heading close-quote)
            (values tok (finish)))
           ((dl)
            (def-item-rec tok ctx (finish)))
@@ -396,7 +396,7 @@
              (values tok (finish))))
           (else
            (loop (next-token ctx) '()
-                 (fmt-line ctx (token-value tok) (fold-p))))
+                 (fmt-line ctx "" (fold-p))))
           ))))
 
   ;; Main body

@@ -543,7 +543,8 @@
                                  (p "ddd\n"))
                              (dt "eee\n")
                              (dd (p)))
-                         (p "fff\n")))
+                         (p "fff\n"))
+             (p "ggg\n"))
     (page "<<<"
           ":aaa:"
           "<<<"
@@ -554,7 +555,9 @@
           "ddd"
           ":eee:"
           ""
-          "fff"))
+          "fff"
+          ">>>"
+          "ggg"))
 
 ;;------------------------------------------------
 (test-section "block elements (table)")
