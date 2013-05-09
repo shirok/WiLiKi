@@ -221,7 +221,7 @@
        ;; verbatim block.
        (and (string? content)
             ($ #/<a [^>]*href=[\"' ]?\s*http/i
-               $ regexp-replace-all #/\{\{\{\n.*?\n\}\}\}\n/ content "")
+               $ regexp-replace-all #/\{\{\{\r?\n.*?\n\}\}\}\r?\n/ content "")
             "literal anchor tag in content")
        (and (string? logmsg) (#/<a [^>]*href=[\"' ]?\s*http/i logmsg)
             "literal anchor tag in logmsg")
