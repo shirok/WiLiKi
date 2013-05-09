@@ -1,3 +1,8 @@
+2013-05-08  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/edit.scm (cmd-commit-edit): Exclude verbatim block from
+	  literal anchor tag check.
+
 2013-04-30  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/parse.scm (fmt-lines): Fixed a bug that caused an error

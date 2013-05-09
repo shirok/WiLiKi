@@ -217,10 +217,11 @@
     ;; Ad-hoc filter for mechanical spams.
     (define (suspicious?)
       (or
-       ;; Normal wiliki content never includes explicit HTML tags (strictly
-       ;; speaking, the content may have HTML tag within verbatim block.
-       ;; let's see if it becomes a problem or not.
-       (and (string? content) (#/<a [^>]*href=[\"' ]?\s*http/i content)
+       ;; Normal wiliki content never includes explicit HTML tags except
+       ;; verbatim block.
+       (and (string? content)
+            ($ #/<a [^>]*href=[\"' ]?\s*http/i
+               $ regexp-replace-all #/\{\{\{\n.*?\n\}\}\}\n/ content "")
             "literal anchor tag in content")
        (and (string? logmsg) (#/<a [^>]*href=[\"' ]?\s*http/i logmsg)
             "literal anchor tag in logmsg")
