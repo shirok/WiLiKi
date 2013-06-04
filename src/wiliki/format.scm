@@ -27,14 +27,12 @@
 
 (define-module wiliki.format
   (use srfi-1)
-  (use srfi-2)
   (use srfi-11)
   (use srfi-13)
   (use text.html-lite)
   (use text.tree)
   (use text.tr)
   (use rfc.uri)
-  (use util.list)
   (use util.queue)
   (use util.match)
   (use gauche.parameter)
@@ -113,15 +111,15 @@
 (define (wiliki:sxml->stree sxml)
   (define (sxml-node type body)
     (define (attr lis r)
-      (cond ((null? lis) (reverse! r))
-            ((not (= (length+ (car lis)) 2))
-             (error "bad attribute in node: " (cons type body)))
-            (else
+      (cond [(null? lis) (reverse! r)]
+            [(not (= (length+ (car lis)) 2))
+             (error "bad attribute in node: " (cons type body))]
+            [else
              (attr (cdr lis)
                    (cons `(" " ,(html-escape-string (x->string (caar lis)))
                            "=\"" ,(html-escape-string (x->string (cadar lis)))
                            "\"")
-                         r)))))
+                         r))]))
     (define (rest type lis)
       (if (and (null? lis)
                (memq type '(br area link img param hr input col base meta)))
@@ -137,17 +135,17 @@
 
   (define (node n r)
     (cond
-     ((string? n) (cons (html-escape-string n) r))
-     ((and (pair? n) (symbol? (car n)))
+     [(string? n) (cons (html-escape-string n) r)]
+     [(and (pair? n) (symbol? (car n)))
       (if (eq? (car n) 'stree)
         (cons (cdr n) r)
-        (cons (sxml-node (car n) (cdr n)) r)))
-     (else
+        (cons (sxml-node (car n) (cdr n)) r))]
+     [else
       ;; badly formed node.  we show it for debugging ease.
       (cons (list "<span class=\"wiliki-alert\">" 
                   (html-escape-string (format "~,,,,50:s" n))
                   "</span\n>")
-            r))))
+            r)]))
 
   (node sxml '()))
 
@@ -168,50 +166,45 @@
 (define (wiliki:format-content page)
   (define (do-fmt content)
     (expand-page (wiliki-parse-string content)))
-  (cond ((string? page) (do-fmt page))
-        ((is-a? page <wiliki-page>)
+  (cond [(string? page) (do-fmt page)]
+        [(is-a? page <wiliki-page>)
          (if (wiliki-page-circular? page)
            ;; loop in $$include chain detected
            `(p ">>>$$include loop detected<<<")
-           (parameterize
-               ((wiliki-page-stack (cons page (wiliki-page-stack))))
+           (parameterize ([wiliki-page-stack (cons page (wiliki-page-stack))])
              (if (string? (ref page 'content))
-               (let1 sxml (do-fmt (ref page 'content))
-                 (set! (ref page'content) sxml)
-                 sxml)
-               (ref page 'content)))))
-        (else page)))
+               (rlet1 sxml (do-fmt (ref page 'content))
+                 (set! (ref page'content) sxml))
+               (ref page 'content))))]
+        [else page]))
 
 ;; [SXML] -> [SXML], expanding wiki-name and wiki-macro nodes.
 ;; 
 (define (expand-page sxmls)
-  (let rec ((sxmls sxmls)
-            (hctx '()))                 ;;headings context
+  (let rec ([sxmls sxmls]
+            [hctx '()])                 ;;headings context
     (match sxmls
-      (()  '())
-      ((('wiki-name name) . rest)
+      [()  '()]
+      [(('wiki-name name) . rest)
        (append (wiliki:format-wikiname (the-formatter) name)
-               (rec rest hctx)))
-      ((('wiki-macro . expr) . rest)
+               (rec rest hctx))]
+      [(('wiki-macro . expr) . rest)
        (append (wiliki:format-macro (the-formatter) expr 'inline)
-               (rec rest hctx)))
-      (((and ((or 'h2 'h3 'h4 'h5 'h6) . _) sxml) . rest)
+               (rec rest hctx))]
+      [((and ((or 'h2 'h3 'h4 'h5 'h6) . _) sxml) . rest)
        ;; extract heading hierarchy to calculate heading id
-       (let* ((hn   (sxml:name sxml))
-              (hkey (assq 'hkey (sxml:aux-list-u sxml)))
-              (hctx2 (extend-headings-context hctx hn hkey)))
-         (cons `(,hn ,@(if hkey
-                         `((@ (id ,(heading-id hctx2))))
-                         '())
+       (let* ([hn   (sxml:name sxml)]
+              [hkey (assq 'hkey (sxml:aux-list-u sxml))]
+              [hctx2 (extend-headings-context hctx hn hkey)])
+         (cons `(,hn ,@(cond-list [hkey `(@ (id ,(heading-id hctx2)))])
                      ,@(rec (sxml:content sxml) hctx))
-               (rec rest hctx2))))
-      (((and (name . _) sxml) . rest);; generic node
-       (cons `(,name ,@(cond ((sxml:attr-list-node sxml) => list)
-                             (else '()))
+               (rec rest hctx2)))]
+      [((and (name . _) sxml) . rest);; generic node
+       (cons `(,name ,@(cond-list [(sxml:attr-list-node sxml)])
                      ,@(rec (sxml:content sxml) hctx))
-             (rec rest hctx)))
-      ((other . rest)
-       (cons other (rec rest hctx))))))
+             (rec rest hctx))]
+      [(other . rest)
+       (cons other (rec rest hctx))])))
 
 (define (hn->level hn)
   (find-index (cut eq? hn <>) '(h2 h3 h4 h5 h6)))
@@ -219,8 +212,8 @@
 (define (extend-headings-context hctx hn hkey)
   (if (not hkey)
     hctx
-    (let* ((level (hn->level hn))
-           (up (drop-while (lambda (x) (>= (hn->level (car x)) level)) hctx)))
+    (let* ([level (hn->level hn)]
+           [up (drop-while (^x (>= (hn->level (car x)) level)) hctx)])
       (acons hn (cadr hkey) up))))
 
 (define (heading-id hctx)
@@ -247,24 +240,24 @@
 ;; will directly be embedded in these methods.
 
 (define-method wiliki:format-wikiname ((fmt <wiliki-formatter-base>) name)
-  ((ref fmt 'bracket) name))
+  ((~ fmt 'bracket) name))
 (define-method wiliki:format-wikiname ((name <string>))
   (wiliki:format-wikiname (the-formatter) name))
 
 (define-method wiliki:format-macro ((fmt <wiliki-formatter-base>) expr context)
-  ((ref fmt 'macro) expr context))
+  ((~ fmt 'macro) expr context))
 (define-method wiliki:format-macro (expr context)
   (wiliki:format-macro (the-formatter) expr context))
 
 (define-method wiliki:format-time ((fmt <wiliki-formatter-base>) time)
-  ((ref fmt 'time) time))
+  ((~ fmt 'time) time))
 (define-method wiliki:format-time (time)
   (wiliki:format-time (the-formatter) time))
 
 (define-method wiliki:format-page-content ((fmt  <wiliki-formatter-base>)
                                            page  ;; may be a string
                                            . options)
-  ((ref fmt 'content) page options))
+  ((~ fmt 'content) page options))
 (define-method wiliki:format-page-content (page . opts)
   (apply wiliki:format-page-content (the-formatter) page opts))
 
@@ -280,14 +273,14 @@
 (define-method wiliki:format-page-header ((fmt  <wiliki-formatter-base>)
                                           (page <wiliki-page>)
                                           . options)
-  ((ref fmt 'header) page options))
+  ((~ fmt 'header) page options))
 (define-method wiliki:format-page-header ((page <wiliki-page>) . opts)
   (apply wiliki:format-page-header (the-formatter) page opts))
   
 (define-method wiliki:format-page-footer ((fmt  <wiliki-formatter-base>)
                                           (page <wiliki-page>)
                                           . options)
-  ((ref fmt 'footer) page options))
+  ((~ fmt 'footer) page options))
 (define-method wiliki:format-page-footer ((page <wiliki-page>) . opts)
   (apply wiliki:format-page-footer (the-formatter) page opts))
 
@@ -295,14 +288,14 @@
                                             (page <wiliki-page>)
                                             . options)
   (append
-   ((ref fmt 'head-elements) page options)
+   ((~ fmt 'head-elements) page options)
    (ref page 'extra-head-elements)))
 (define-method wiliki:format-head-elements ((page <wiliki-page>) . opts)
   (apply wiliki:format-head-elements (the-formatter) page opts))
 
 (define-method wiliki:format-head-title ((fmt <wiliki-formatter-base>)
                                          (page <wiliki-page>) . options)
-  (ref page'title))
+  (~ page'title))
 
 (define-method wiliki:format-page ((fmt  <wiliki-formatter-base>)
                                    (page <wiliki-page>)
@@ -333,9 +326,9 @@
     `(span (@ (class "diff_deleted")
               (style "background-color:#ffffff; color: #ff4444"))
            ,@c))
-  (cond ((string? line) `(span "  " ,line "\n"))
-        ((eq? (car line) '+) (aline "+ " (cdr line) "\n"))
-        ((eq? (car line) '-) (dline "- " (cdr line) "\n"))
-        (else "???")))
+  (cond [(string? line) `(span "  " ,line "\n")]
+        [(eq? (car line) '+) (aline "+ " (cdr line) "\n")]
+        [(eq? (car line) '-) (dline "- " (cdr line) "\n")]
+        [else "???"]))
 
 (provide "wiliki/format")
