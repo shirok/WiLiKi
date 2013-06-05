@@ -51,5 +51,3 @@
 (define wiliki-db-for-each wiliki:db-for-each)
 (define wiliki-db-search  wiliki:db-search)
 (define wiliki-db-search-content wiliki:db-search-content)
-
-(provide "wiliki/db")

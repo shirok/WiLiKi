@@ -176,25 +176,25 @@
   (set! (port-buffering (current-error-port)) :line)
   (parameterize ([wiliki self]
                  [wiliki:event-log-drain
-                  (and (ref self'event-log-file)
+                  (and (~ self'event-log-file)
                        (make <log-drain>
                          :path (wiliki:event-log-file-path self)
                          :prefix event-log-prefix))])
     (cgi-main
-     (lambda (param)
-       (let ((pagename (get-page-name self param))
-             (command  (cgi-get-parameter "c" param))
-             (language (cgi-get-parameter "l" param :convert string->symbol)))
-         (parameterize ((wiliki:lang (or language (ref self'language))))
+     (^[param]
+       (let ([pagename (get-page-name self param)]
+             [command  (cgi-get-parameter "c" param)]
+             [language (cgi-get-parameter "l" param :convert string->symbol)])
+         (parameterize ([wiliki:lang (or language (~ self'language))])
            (cgi-output-character-encoding (wiliki:output-charset))
            (setup-textdomain self language)
            (cond
             ;; command may #t if we're looking at the page named "c".
-            ((wiliki:action-ref (if (string? command)
+            [(wiliki:action-ref (if (string? command)
                                   (string->symbol command)
                                   'v))
-             => (cut <> pagename param))
-            (else (error "Unknown command" command))
+             => (cut <> pagename param)]
+            [else (error "Unknown command" command)]
             ))))
      :merge-cookies #t
      :on-error error-page)))
@@ -214,16 +214,15 @@
 
 (define (setup-textdomain wiliki param-lang)
   (let1 lang (cond
-              (param-lang
-               (if (eq? param-lang 'jp) 'ja param-lang)) ; kluge for compatibility
-              ((cgi-get-metavariable "HTTP_ACCEPT_LANGUAGE")
-               => (lambda (v)
-                    (rxmatch-case v
-                      [#/^\s*([a-zA-Z]+)(?:-([a-zA-Z]+))?/ (_ pri sec)
-                        (if sec #`",|pri|_,|sec|" pri)]
-                      [else #f])))
-              (else (ref wiliki 'language)))
-    (textdomain "WiLiKi" (x->string lang) (ref wiliki 'gettext-paths))))
+              [param-lang
+               (if (eq? param-lang 'jp) 'ja param-lang)] ; kluge for compatibility
+              [(cgi-get-metavariable "HTTP_ACCEPT_LANGUAGE")
+               => (^v (rxmatch-case v
+                        [#/^\s*([a-zA-Z]+)(?:-([a-zA-Z]+))?/ (_ pri sec)
+                               (if sec #`",|pri|_,|sec|" pri)]
+                        [else #f]))]
+              [else (~ wiliki 'language)])
+    (textdomain "WiLiKi" (x->string lang) (~ wiliki 'gettext-paths))))
 
 ;; Retrieve requested page name.
 ;; The pagename can be specified in one of the following ways:
@@ -249,30 +248,30 @@
 
   ;; Extract the extra components of PATH_INFO
   (define (get-path-info)
-    (and-let* ((path (cgi-get-metavariable "PATH_INFO"))
-               ((string-prefix? "/" path))
-               (conv (wiliki:cv-in (uri-decode-string (string-drop path 1)))))
+    (and-let* ([path (cgi-get-metavariable "PATH_INFO")]
+               [(string-prefix? "/" path)]
+               [conv (wiliki:cv-in (uri-decode-string (string-drop path 1)))])
       conv))
 
   (let1 pg
-      (cond ((get-path-info))
-            ((cgi-get-parameter "p" param :default #f :convert wiliki:cv-in))
-            ((and (pair? param) (pair? (car param)) (eq? (cadar param) #t))
-             (wiliki:cv-in (caar param)))
-            (else ""))
+      (cond [(get-path-info)]
+            [(cgi-get-parameter "p" param :default #f :convert wiliki:cv-in)]
+            [(and (pair? param) (pair? (car param)) (eq? (cadar param) #t))
+             (wiliki:cv-in (caar param))]
+            [else ""])
     (if (equal? pg "")
       (top-page-of wiki)
       pg))
   )
 
 (define (error-page e)
-  (wiliki:log-event "error: ~a" (ref e'message))
-  (wiliki:with-db (lambda ()
+  (wiliki:log-event "error: ~a" (~ e'message))
+  (wiliki:with-db (^[]
                     (wiliki:std-page
                      (make <wiliki-page>
                        :title #`",(title-of (wiliki)) : Error"
                        :content
-                       `((p ,(ref e 'message))
+                       `((p ,(~ e 'message))
                          ,@(if (positive? (debug-level (wiliki)))
                              `((pre ,(call-with-output-string
                                        (cut with-error-to-port <>
@@ -285,8 +284,8 @@
 (define (event-log-prefix drain)
   (let1 t (sys-localtime (sys-time))
     (format "~a ~2d ~2,'0d:~2,'0d:~2,'0d [~a]:"
-            (sys-strftime "%b" t) (ref t'mday) (ref t'hour) (ref t'min)
-            (ref t'sec) (sys-getenv "REMOTE_ADDR"))))
+            (sys-strftime "%b" t) (~ t'mday) (~ t'hour) (~ t'min)
+            (~ t'sec) (sys-getenv "REMOTE_ADDR"))))
 
 ;;;==================================================================
 ;;; Action framework
@@ -355,9 +354,9 @@
     ""))
 
 (define (wiliki:output-charset)
-  (or (and-let* (((wiliki))
-                 (p (assoc (wiliki:lang) (charsets-of (wiliki))))
-                 ((symbol? (cdr p))))
+  (or (and-let* ([(wiliki)]
+                 [p (assoc (wiliki:lang) (charsets-of (wiliki)))]
+                 [(symbol? (cdr p))])
         (cdr p))
       "utf-8")) ;; this is a fallback.
 
@@ -372,10 +371,9 @@
   (wiliki:spam-blacklist (append (wiliki:spam-blacklist) lis)))
 
 (define (wiliki:contains-spam? content)
-  (any (lambda (x)
-         (cond [(regexp? x) (rxmatch x content)]
-               [(string? x) (string-contains content x)]
-               [else #f]))
+  (any (^x (cond [(regexp? x) (rxmatch x content)]
+                 [(string? x) (string-contains content x)]
+                 [else #f]))
        (wiliki:spam-blacklist)))
 
 ;; A list of IP addresses we want to reject writing from.
@@ -401,44 +399,41 @@
     (apply wiliki:wikiname-anchor wikiname maybe-anchor-string))))
 
 ;; Calls proc over each line of page. 
-(define (wiliki:page-lines-fold page proc seed . keys)
-  (let-keywords* keys ((follow-includes? #f)
-                       (skip-verbatim? #f))
-
-    (define (content-fold line seed)
-      (cond ((eof-object? line) seed)
-            ((string=? line "{{{") (verb-fold line seed))
-            ((and follow-includes?
-                  (#/^\[\[$$include\s*(\S*)\]\]/ line))
-             => (lambda (m)
-                  (handle-include (m 1) (m 'after)
+(define (wiliki:page-lines-fold page proc seed
+                                :key (follow-includes? #f) (skip-verbatim? #f))
+  (define (content-fold line seed)
+    (cond [(eof-object? line) seed]
+          [(string=? line "{{{") (verb-fold line seed)]
+          [(and follow-includes?
+                (#/^\[\[$$include\s*(\S*)\]\]/ line))
+           => (^m (handle-include (m 1) (m 'after)
                                   (if (string-null? (m 'before))
                                     seed
-                                    (content-fold (m 'before) seed)))))
-            (else (content-fold (read-line) (proc line seed)))))
+                                    (content-fold (m 'before) seed))))]
+          [else (content-fold (read-line) (proc line seed))]))
 
-    (define (handle-include pagename after seed)
-      (content-fold (if (string-null? after) (read-line) after)
-                    (handle-page (wiliki:db-get pagename #f) seed)))
+  (define (handle-include pagename after seed)
+    (content-fold (if (string-null? after) (read-line) after)
+                  (handle-page (wiliki:db-get pagename #f) seed)))
 
-    (define (handle-page page seed)
-      (if (or (not (is-a? page <wiliki-page>))
-              (not (string? (ref page 'content))))
-        seed
-        (with-input-from-string (ref page 'content)
-          (cut with-port-locking (current-input-port)
-               (cut content-fold (read-line) seed)))))
+  (define (handle-page page seed)
+    (if (or (not (is-a? page <wiliki-page>))
+            (not (string? (~ page 'content))))
+      seed
+      (with-input-from-string (~ page 'content)
+        (cut with-port-locking (current-input-port)
+             (cut content-fold (read-line) seed)))))
 
-    (define (verb-fold line seed)
-      (cond ((eof-object? line) seed)
-            ((string=? line "}}}")
-             (content-fold (read-line)
-                           (if skip-verbatim? seed (proc line seed))))
-            (else
-             (verb-fold (read-line)
-                        (if skip-verbatim? seed (proc line seed))))))
+  (define (verb-fold line seed)
+    (cond [(eof-object? line) seed]
+          [(string=? line "}}}")
+           (content-fold (read-line)
+                         (if skip-verbatim? seed (proc line seed)))]
+          [else
+           (verb-fold (read-line)
+                      (if skip-verbatim? seed (proc line seed)))]))
 
-    (handle-page page seed)))
+  (handle-page page seed))
 
 ;; Returns recent changes
 (define (wiliki:recent-changes-alist . keys)
@@ -456,10 +451,10 @@
 
 ;; Returns absolute pathname of the log file, or #f
 (define (wiliki:log-file-path wiliki)
-  (wiliki-prepend-path wiliki (ref wiliki'log-file)))
+  (wiliki-prepend-path wiliki (~ wiliki'log-file)))
 
 (define (wiliki:event-log-file-path wiliki)
-  (wiliki-prepend-path wiliki (ref wiliki'event-log-file)))
+  (wiliki-prepend-path wiliki (~ wiliki'event-log-file)))
 
 (define (wiliki-prepend-path wiliki filename)
   (and (string? filename)
@@ -467,7 +462,7 @@
                (string-prefix? "../" filename)
                (string-prefix? "/" filename))
          filename
-         (build-path (sys-dirname (ref wiliki'db-path)) filename))))
+         (build-path (sys-dirname (~ wiliki'db-path)) filename))))
 
 ;; Standard page 
 (define (wiliki:std-page page . args)
@@ -491,27 +486,27 @@
 
 (define (wiliki:url . args)
   (define (rel-base w)
-    (sys-basename (ref w'script-name)))
+    (sys-basename (~ w'script-name)))
   (define (abs-base w)
     (format "~a://~a~a~a"
-            (ref w'protocol)
-            (ref w'server-name)
-            (if (or (and (= (ref w'server-port) 80)
-                         (string=? (ref w'protocol) "http"))
-                    (and (= (ref w'server-port) 443)
-                         (string=? (ref w'protocol) "https")))
+            (~ w'protocol)
+            (~ w'server-name)
+            (if (or (and (= (~ w'server-port) 80)
+                         (string=? (~ w'protocol) "http"))
+                    (and (= (~ w'server-port) 443)
+                         (string=? (~ w'protocol) "https")))
               ""
-              #`":,(ref w'server-port)")
-            (ref w'script-name)))
+              #`":,(~ w'server-port)")
+            (~ w'script-name)))
   (define (lang-spec language prefix)
-    (if (equal? language (ref (wiliki)'language))
+    (if (equal? language (~ (wiliki)'language))
       ""
       #`",|prefix|l=,|language|"))
   (define (url-format full? fmt args)
-    (let* ((w (wiliki))
-           (fstr (if fmt
+    (let* ([w (wiliki)]
+           [fstr (if fmt
                    #`"?,|fmt|,(lang-spec (wiliki:lang) '&)"
-                   (lang-spec (wiliki:lang) '?))))
+                   (lang-spec (wiliki:lang) '?))])
       (string-append
        (if full? (abs-base w) (rel-base w))
        (if (null? args)
@@ -542,9 +537,8 @@
 
 (define (wrap-macro-output output)
   (if (and (proper-list? output)
-           (every (lambda (node)
-                    (or (string? node)
-                        (and (pair? node) (symbol? (car node)))))
+           (every (^[node] (or (string? node)
+                               (and (pair? node) (symbol? (car node)))))
                   output))
     output ;; it's likely an SXML list
     `((stree ,@output)))) ;;otherwise, wrap it by stree node
@@ -554,67 +548,60 @@
 ;;
 
 (define (handle-reader-macro name)
-  (or (and-let* ((args (wiliki:parse-macro-args name)))
-        (handle-expansion name
-                          (lambda () (assoc (car args) (wiliki:reader-macros)))
-                          (lambda (p) (apply (cdr p) (cdr args)))))
-      (unrecognized-macro name)))
+  (if-let1 args (wiliki:parse-macro-args name)
+    (handle-expansion name
+                      (^[] (assoc (car args) (wiliki:reader-macros)))
+                      (^p (apply (cdr p) (cdr args))))
+    (unrecognized-macro name)))
       
 
 (define (handle-writer-macro name)
-  (or (and-let* ((args (wiliki:parse-macro-args name)))
-        (handle-expansion name
-                          (lambda () (assoc (car args) (wiliki:writer-macros)))
-                          (lambda (p) (apply (cdr p) (cdr args)))))
-      (unrecognized-macro name)))
+  (if-let1 args (wiliki:parse-macro-args name)
+    (handle-expansion name
+                      (^[] (assoc (car args) (wiliki:writer-macros)))
+                      (^p (apply (cdr p) (cdr args))))
+    (unrecognized-macro name)))
 
 (define (handle-virtual-page name)
   (make <wiliki-page>
     :title name
     :content (handle-expansion name
-                               (lambda () (get-virtual-page name))
-                               (lambda (p) ((cdr p) name)))))
+                               (^[] (get-virtual-page name))
+                               (^p ((cdr p) name)))))
 
 (define (handle-expansion name finder applier)
-  (guard (e
-          (else
-           (if (positive? (ref (wiliki) 'debug-level))
-             `((pre (@ (class "macroerror"))
-                    ,#`"Macro error in [[,|name|]]:\n"
-                    ,(call-with-output-string
-                       (cut with-error-to-port <>
-                            (cut report-error e)))))
-             (unrecognized-macro name))))
+  (guard (e [else
+             (if (positive? (~ (wiliki) 'debug-level))
+               `((pre (@ (class "macroerror"))
+                      ,#`"Macro error in [[,|name|]]:\n"
+                      ,(call-with-output-string
+                         (cut with-error-to-port <>
+                              (cut report-error e)))))
+               (unrecognized-macro name))])
     (wrap-macro-output
-     (cond ((finder) => applier)
-           (else (unrecognized-macro name))))))
+     (cond [(finder) => applier]
+           [else (unrecognized-macro name)]))))
 
 (define (expand-writer-macros content)
 
   (define (normal line)
-    (cond ((eof-object? line))
-          ((string=? line "{{{")
-           (print line)
-           (verbatim (read-line)))
-          (else
-           (display
-            (regexp-replace-all
-             #/\[\[($\w+(?:\s+[^\]]*)?)\]\]/ line
-             (lambda (m) (tree->string (handle-writer-macro (m 1))))))
+    (cond [(eof-object? line)]
+          [(string=? line "{{{") (print line) (verbatim (read-line))]
+          [else
+           (display (regexp-replace-all
+                     #/\[\[($\w+(?:\s+[^\]]*)?)\]\]/ line
+                     (^m (tree->string (handle-writer-macro (m 1))))))
            (newline)
-           (normal (read-line)))))
+           (normal (read-line))]))
 
   (define (verbatim line)
-    (cond ((eof-object? line) (print "}}}")) ;; close verbatim block
-          ((string=? line "}}}")
-           (print line) (normal (read-line)))
-          (else
-           (print line) (verbatim (read-line)))))
+    (cond [(eof-object? line)    (print "}}}")] ;; close verbatim block
+          [(string=? line "}}}") (print line) (normal (read-line))]
+          [else                  (print line) (verbatim (read-line))]))
 
   (with-string-io content
-    (lambda ()
-      (with-port-locking (current-input-port)
-        (lambda () (normal (read-line)))))))
+    (^[] (with-port-locking (current-input-port)
+           (^[] (normal (read-line)))))))
 
 ;;----------------------------------------------
 ;; Utility to define macros
@@ -625,59 +612,57 @@
 
 (define-syntax define-reader-macro 
   (syntax-rules ()
-    ((_ (name . args) . body)
+    [(_ (name . args) . body)
      (wiliki:reader-macros
-      (cons (let ((sname (string-append "$$" (symbol->string 'name))))
+      (cons (let1 sname (string-append "$$" (symbol->string 'name))
               (cons sname
-                    (lambda p
-                      (if (arity-matches? p 'args)
-                        (apply (lambda args . body) p)
-                        (unrecognized-macro sname)))))
-            (wiliki:reader-macros))))
+                    (^ p (if (arity-matches? p 'args)
+                           (apply (^ args . body) p)
+                           (unrecognized-macro sname)))))
+            (wiliki:reader-macros)))]
     ))
 
 (define-syntax define-writer-macro 
   (syntax-rules ()
-    ((_ (name . args) . body)
+    [(_ (name . args) . body)
      (wiliki:writer-macros
-      (let ((sname (string-append "$" (symbol->string 'name))))
+      (let1 sname (string-append "$" (symbol->string 'name))
         (acons sname
-               (lambda p
-                 (if (arity-matches? p 'args)
-                   (apply (lambda args . body) p)
-                   (unrecognized-macro sname)))
-               (wiliki:writer-macros)))))
+               (^ p (if (arity-matches? p 'args)
+                      (apply (^ args . body) p)
+                      (unrecognized-macro sname)))
+               (wiliki:writer-macros))))]
     ))
 
 (define-syntax define-virtual-page
   (syntax-rules ()
-    ((_ (expr (var ...)) . body)
+    [(_ (expr (var ...)) . body)
      (wiliki:virtual-pages
       (acons expr
-             (lambda p
+             (^ p
                (rxmatch-if (rxmatch expr (car p)) (var ...)
-                 (apply (lambda args . body) p)
+                 (apply (^ args . body) p)
                  (unrecognized-macro (regexp->string expr))))
-             (wiliki:virtual-pages))))
+             (wiliki:virtual-pages)))]
     ))
 
 (define (get-virtual-page name)
-  (find (lambda (e) (rxmatch (car e) name)) (wiliki:virtual-pages)))
+  (find (^e (rxmatch (car e) name)) (wiliki:virtual-pages)))
 
 (define (virtual-page? name)
   (not (not (get-virtual-page name))))
   
 (define (arity-matches? list formals)
-  (cond ((null? list)
-         (or (null? formals) (not (pair? formals))))
-        ((null? formals) #f)
-        ((pair? formals) (arity-matches? (cdr list) (cdr formals)))
-        (else #t)))
+  (cond [(null? list)
+         (or (null? formals) (not (pair? formals)))]
+        [(null? formals) #f]
+        [(pair? formals) (arity-matches? (cdr list) (cdr formals))]
+        [else #t]))
 
 (define wiliki:parse-macro-args
   (let1 parser (make-csv-reader #\space)
-    (lambda (name)
-      (guard (e (else #f))
+    (^[name]
+      (guard (e [else #f])
         (call-with-input-string name parser)))))
 
 (define-macro (let-macro-keywords* args binds . body)
@@ -706,9 +691,8 @@
 (define (db-try-open dbpath dbtype rwmode)
   ;; Try to open the database.  We retry up to *retry-limit* times.
   (define (try retry mode)
-    (guard (e
-            [(>= retry *retry-limit*) (raise e)]
-            [else (sys-nanosleep #e15e8) (try (+ retry 1) mode)])
+    (guard (e [(>= retry *retry-limit*) (raise e)]
+              [else (sys-nanosleep #e15e8) (try (+ retry 1) mode)])
       (dbm-open dbtype :path dbpath :rw-mode mode)))
   ;; If db file does not exist, we open it with :write mode,
   ;; regardless of rwmode arg, so that the empty DB is created.
@@ -737,26 +721,22 @@
 ;; open, we just call thunk, EXCEPT that the opened db is in read-only mode
 ;; and we're requested to reopen it in write mode.
 
-(define (wiliki:with-db thunk . opts)
-  (let-keywords* opts ((rwmode :read))
-    (let ((path (ref (wiliki)'db-path))
-          (type (ref (wiliki)'db-type)))
-      (cond [(the-db)
-             => (lambda (db)
-                  (when (and (eq? rwmode :write)
-                             (eq? (ref db'rw-mode) :read))
-                    ;; we should reopen the db
-                    (dbm-close db)
-                    (the-db (db-try-open path type rwmode)))
-                  (thunk))]
-            [else
-             (parameterize ((the-db (db-try-open path type rwmode)))
-               (dynamic-wind
-                   (lambda () #f)
-                   thunk
-                   (lambda ()
-                     (unless (dbm-closed? (the-db))
-                       (dbm-close (the-db))))))]))))
+(define (wiliki:with-db thunk :key (rwmode :read))
+  (let ([path (~ (wiliki)'db-path)]
+        [type (~ (wiliki)'db-type)])
+    (cond [(the-db)
+           => (^[db]
+                (when (and (eq? rwmode :write)
+                           (eq? (~ db'rw-mode) :read))
+                  ;; we should reopen the db
+                  (dbm-close db)
+                  (the-db (db-try-open path type rwmode)))
+                (thunk))]
+          [else
+           (parameterize ([the-db (db-try-open path type rwmode)])
+             (unwind-protect (thunk)
+               (unless (dbm-closed? (the-db))
+                 (dbm-close (the-db)))))])))
 
 ;; Returns the class to represent the page
 (define-method wiliki:page-class ((self <wiliki>)) <wiliki-page>)
@@ -769,18 +749,17 @@
 ;; needs to be overridden.
 (define-method wiliki:db-record->page ((self <wiliki>) key record)
   (call-with-input-string record
-    (lambda (p)
-      (let* ((params  (read p))
-             (content (port->string p)))
-        (apply make (wiliki:page-class self)
-               :title key :key key :content content params)))))
+    (^p (let* ([params  (read p)]
+               [content (port->string p)])
+          (apply make (wiliki:page-class self)
+                 :title key :key key :content content params)))))
 
 ;; internal; to save overhead of making <wiliki-page>
 (define-method wiliki:db-record-content-find ((self <wiliki>) record pred)
   (call-with-input-string record
-    (lambda (p)
+    (^p
       (read p) ; skip metadata
-      (let loop ((line (read-line p)) (out-verb? #t))
+      (let loop ([line (read-line p)] [out-verb? #t])
         (cond [(eof-object? line) #f]
               [(and out-verb? (string-prefix? ";;" line))
                (loop (read-line p) #t)]
@@ -793,12 +772,12 @@
 
 (define-method wiliki:page->db-record ((self <wiliki>) (page <wiliki-page>))
   (with-output-to-string
-    (lambda ()
-      (write (list :ctime (ref page 'ctime)
-                   :cuser (ref page 'cuser)
-                   :mtime (ref page 'mtime)
-                   :muser (ref page 'muser)))
-      (display (ref page 'content)))))
+    (^[]
+      (write (list :ctime (~ page 'ctime)
+                   :cuser (~ page 'cuser)
+                   :mtime (~ page 'mtime)
+                   :muser (~ page 'muser)))
+      (display (~ page 'content)))))
 
 ;; Raw acessors
 (define (wiliki:db-raw-get key . maybe-default)
@@ -810,23 +789,20 @@
 (define (wiliki:db-exists? key)
   (dbm-exists? (check-db) key))
 
-(define (wiliki:db-get key . opts)
-  (let-optionals* opts ((create? #f))
-    (let1 db (check-db)
-      (cond [(dbm-get db key #f)
-             => (cut wiliki:db-record->page (wiliki) key <>)]
-            [create? (make (wiliki:page-class (wiliki)) :title key :key key)]
-            [else #f]))))
+(define (wiliki:db-get key :optional (create? #f))
+  (let1 db (check-db)
+    (cond [(dbm-get db key #f) => (cut wiliki:db-record->page (wiliki) key <>)]
+          [create? (make (wiliki:page-class (wiliki)) :title key :key key)]
+          [else #f])))
 
-(define-method wiliki:db-put! (key (page <wiliki-page>) . opts)
-  (let-keywords* opts ((donttouch #f))
-    (let ((db (check-db))
-          (s  (wiliki:page->db-record (wiliki) page)))
-      (dbm-put! db key s)
-      (unless donttouch
-        (let1 r (alist-delete key (read-recent-changes db))
-          (write-recent-changes db (acons key (ref page 'mtime) r))))
-      )))
+(define-method wiliki:db-put! (key (page <wiliki-page>) :key (donttouch #f))
+  (let ([db (check-db)]
+        [s  (wiliki:page->db-record (wiliki) page)])
+    (dbm-put! db key s)
+    (unless donttouch
+      (let1 r (alist-delete key (read-recent-changes db))
+        (write-recent-changes db (acons key (~ page 'mtime) r))))
+    ))
 
 (define (wiliki:db-touch! key)
   (and-let* ([db (check-db)]
@@ -835,8 +811,8 @@
     (write-recent-changes db (acons key (sys-time) r))))
 
 (define (wiliki:db-delete! key)
-  (let* ((db (check-db))
-         (r (alist-delete key (read-recent-changes db))))
+  (let* ([db (check-db)]
+         [r (alist-delete key (read-recent-changes db))])
     (dbm-delete! db key)
     (write-recent-changes db r)))
 
@@ -845,36 +821,32 @@
 
 (define (wiliki:db-fold proc seed)
   (dbm-fold (check-db)
-            (lambda (k v seed)
-              (if (string-prefix? " " k)
-                seed
-                (proc k v seed)))
+            (^[k v seed] (if (string-prefix? " " k)
+                           seed
+                           (proc k v seed)))
             seed))
 
 (define (wiliki:db-map proc)
-  (wiliki:db-fold (lambda (k v seed) (cons (proc k v) seed)) '()))
+  (wiliki:db-fold (^[k v seed] (cons (proc k v) seed)) '()))
 
 (define (wiliki:db-for-each proc)
-  (wiliki:db-fold (lambda (k v seed) (proc k v) #f) #f))
+  (wiliki:db-fold (^[k v seed] (proc k v) #f) #f))
 
 (define (wiliki:db-search pred . maybe-sorter)
   (sort
    (dbm-fold (check-db)
-             (lambda (k v r)
-               (if (pred k v) (acons k (read-from-string v) r) r))
+             (^[k v r] (if (pred k v) (acons k (read-from-string v) r) r))
              '())
    (get-optional maybe-sorter
-                 (lambda (a b)
-                   (> (get-keyword :mtime (cdr a) 0)
-                      (get-keyword :mtime (cdr b) 0))))))
+                 (^[a b] (> (get-keyword :mtime (cdr a) 0)
+                            (get-keyword :mtime (cdr b) 0))))))
 
 (define (wiliki:db-search-content key . maybe-sorter)
   (let1 w (wiliki)
     (apply wiliki:db-search
-           (lambda (k v)
-             (and (not (string-prefix? " " k))
-                  (wiliki:db-record-content-find
-                   w v (cut string-contains-ci <> key))))
+           (^[k v] (and (not (string-prefix? " " k))
+                        (wiliki:db-record-content-find
+                         w v (cut string-contains-ci <> key))))
            maybe-sorter)))
 
 ;;;==================================================================
@@ -884,5 +856,3 @@
 (define (wiliki:log-event fmt . args)
   (when (wiliki:event-log-drain)
     (apply log-format (wiliki:event-log-drain) fmt args)))
-
-(provide "wiliki/core")

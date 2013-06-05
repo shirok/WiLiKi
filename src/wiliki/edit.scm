@@ -64,15 +64,15 @@
      ,@(if preview (list preview '(hr)) '())
      (textarea (@ (name content)
                   (class content)
-                  (rows ,(ref (wiliki)'textarea-rows))
-                  (cols ,(ref (wiliki)'textarea-cols)))
+                  (rows ,(~ (wiliki)'textarea-rows))
+                  (cols ,(~ (wiliki)'textarea-cols)))
                ,content)
      (br)
      (p ,($$ "ChangeLog (brief summary of your edit for later reference):"))
      (textarea (@ (name logmsg)
                   (class logmsg)
                   (rows 2)
-                  (cols ,(ref (wiliki)'textarea-cols)))
+                  (cols ,(~ (wiliki)'textarea-cols)))
                ,logmsg)
      (br)
      ,@(buttons)
@@ -124,25 +124,23 @@
 
 (define (cmd-edit pagename time)
   (define (get-old-content page)
-    (and-let* ((time)
-               (lines (wiliki-log-recover-content pagename
-                                                  (wiliki:log-file-path (wiliki))
-                                                  (ref page 'content)
-                                                  time)))
+    (and-let* ([time]
+               [lines ($ wiliki-log-recover-content pagename
+                         (wiliki:log-file-path (wiliki))
+                         (~ page 'content) time)])
       (string-join lines "\n")))
-  (unless (eq? (ref (wiliki)'editable?) #t)
+  (unless (eq? (~(wiliki)'editable?) #t)
     (errorf "Can't edit the page ~s: the database is read-only" pagename))
-  (let* ((page (wiliki:db-get pagename #t))
-         (content (or (get-old-content page) (ref page 'content)))
-         )
+  (let* ([page (wiliki:db-get pagename #t)]
+         [content (or (get-old-content page) (~ page 'content))])
     (wiliki:std-page
      (make <wiliki-page>
        :title pagename
        :content
-       (edit-form #f pagename content (ref page 'mtime) "" #f)))))
+       (edit-form #f pagename content (~ page 'mtime) "" #f)))))
 
 (define (cmd-preview pagename content mtime logmsg donttouch restricted)
-  (let ((page (wiliki:db-get pagename #t)))
+  (let1 page (wiliki:db-get pagename #t)
     (wiliki:std-page
      (make <wiliki-page>
        :title (format #f ($$ "Preview of ~a") pagename)
@@ -156,24 +154,23 @@
 ;; MTIME should match the current page's mtime, to detect conflict.
 ;;       MTIME==#f skips that check.
 (define (cmd-commit-edit pagename content mtime logmsg donttouch limited)
-  (let ((p   (wiliki:db-get pagename #t))
-        (now (sys-time)))
+  (let ([p   (wiliki:db-get pagename #t)]
+        [now (sys-time)])
 
     (define (erase-page)
       (wiliki:log-event "Erasing ~s" pagename)
-      (write-log (wiliki) pagename (ref p 'content) "" now logmsg)
-      (set! (ref p 'content) "")
+      (write-log (wiliki) pagename (~ p 'content) "" now logmsg)
+      (set! (~ p 'content) "")
       (wiliki:db-delete! pagename)
-      (wiliki:redirect-page (ref (wiliki)'top-page)))
+      (wiliki:redirect-page (~ (wiliki)'top-page)))
 
     (define (update-page content)
-      (when (page-changed? content (ref p 'content))
-        (let1 new-content
-            (parameterize ([wiliki:page-stack (list p)])
-              (expand-writer-macros content))
-          (write-log (wiliki) pagename (ref p 'content) new-content now logmsg)
-          (set! (ref p 'mtime) now)
-          (set! (ref p 'content) new-content)
+      (when (page-changed? content (~ p 'content))
+        (let1 new-content (parameterize ([wiliki:page-stack (list p)])
+                            (expand-writer-macros content))
+          (write-log (wiliki) pagename (~ p 'content) new-content now logmsg)
+          (set! (~ p 'mtime) now)
+          (set! (~ p 'content) new-content)
           (wiliki:db-put! pagename p :donttouch donttouch)))
       (wiliki:redirect-page pagename))
 
@@ -185,32 +182,32 @@
 
     (define (handle-conflict)
       ;; let's see if we can merge changes
-      (or (and-let* ((logfile (wiliki:log-file-path (wiliki)))
-                     (picked (wiliki-log-pick-from-file pagename logfile)))
-            (let ((common (wiliki-log-revert*
-                           (wiliki-log-entries-after picked mtime)
-                           (ref p 'content))))
+      (or (and-let* ([logfile (wiliki:log-file-path (wiliki))]
+                     [picked (wiliki-log-pick-from-file pagename logfile)])
+            (let1 common (wiliki-log-revert*
+                          (wiliki-log-entries-after picked mtime)
+                          (~ p 'content))
               (receive (merged success?)
-                  (wiliki-log-merge common (ref p 'content) content)
+                  (wiliki-log-merge common (~ p 'content) content)
                 (if success?
                   (update-page (string-join merged "\n" 'suffix))
                   (conflict-page p (conflict->diff merged)
                                  content logmsg donttouch)))))
-          (if (equal? (ref p 'content) content)
+          (if (equal? (~ p 'content) content)
             (wiliki:redirect-page pagename) ;; no need to update
             (let1 diff '()
-              (diff-report (ref p 'content) content
-                           :writer (lambda (line type)
+              (diff-report (~ p 'content) content
+                           :writer (^[line type]
                                      (push! diff
                                             (if type (cons type line) line))))
               (conflict-page p (reverse! diff) content logmsg donttouch)))))
 
     (define (conflict->diff merged)
       (let1 difflist '()
-        (dolist (chunk merged)
+        (dolist [chunk merged]
           (if (pair? chunk)
             (let1 k (if (eq? (car chunk) 'b) '+ '-)
-              (dolist (line (cdr chunk)) (push! difflist (cons k line))))
+              (dolist [line (cdr chunk)] (push! difflist (cons k line))))
             (push! difflist chunk)))
         (reverse! difflist)))
 
@@ -237,18 +234,18 @@
     ;; The body of cmd-commit-edit
     ;; If content is empty and the page is not the top page, we erase
     ;; the page.
-    (let1 editable (ref (wiliki)'editable?)
+    (let1 editable (~ (wiliki)'editable?)
       (when (or (not editable)
                 (and (not limited) (eq? editable 'limited)))
         (errorf "Can't edit the page ~s: the database is read-only" pagename)))
     (cond
      [(suspicious?)
-      => (lambda (reason)
+      => (^[reason]
            (wiliki:log-event "rejecting spam on ~s (~a): content=~s logmsg=~s"
                              pagename reason content logmsg)
-           (wiliki:redirect-page (ref (wiliki)'top-page)))]
-     [(or (not (ref p 'mtime)) (not mtime) (eqv? (ref p 'mtime) mtime))
-      (if (and (not (equal? pagename (ref (wiliki)'top-page)))
+           (wiliki:redirect-page (~ (wiliki)'top-page)))]
+     [(or (not (~ p 'mtime)) (not mtime) (eqv? (~ p 'mtime) mtime))
+      (if (and (not (equal? pagename (~ (wiliki)'top-page)))
                (string-every #[\s] content))
         (erase-page)
         (update-page content))]
@@ -258,7 +255,7 @@
 (define (conflict-page page diff content logmsg donttouch)
   (wiliki:std-page
    (make <wiliki-page>
-     :title (string-append (ref (wiliki)'title)": "($$ "Update Conflict"))
+     :title (string-append (~ (wiliki)'title)": "($$ "Update Conflict"))
      :content
      `((stree ,($$ "<p>It seems that somebody has updated this page
        while you're editing.  The difference is snown below.
@@ -272,7 +269,7 @@
        ,(wiliki:format-diff-pre diff)
        (a (@ (name "edit")) (hr))
        ,($$ "<p>The following shows what you are about to submit.  Please re-edit the content and submit again.</p>")
-       ,@(edit-form #f (ref page 'key) content (ref page 'mtime) logmsg donttouch)
+       ,@(edit-form #f (~ page 'key) content (~ page 'mtime) logmsg donttouch)
        ))))
 
 (define (preview-box content)
@@ -284,17 +281,15 @@
 ;; NB: we assume write-log is always called during the main database
 ;; is locked, so we don't do any locking here.
 (define (write-log wiliki pagename old new timestamp logmsg)
-  (and-let* ((logfile (wiliki:log-file-path wiliki)))
+  (and-let* ([logfile (wiliki:log-file-path wiliki)])
     (let1 content (wiliki-log-create
                    pagename new old
                    :timestamp timestamp
                    :remote-addr (or (cgi-get-metavariable "REMOTE_ADDR") "")
                    :remote-user (or (cgi-get-metavariable "REMOTE_USER") "")
                    :message (or logmsg ""))
-      (call-with-output-file logfile
-        (lambda (p) (display content p) (flush p))
-        :if-exists :append))
-    ))
+      (call-with-output-file logfile (^p (display content p) (flush p))
+                             :if-exists :append))))
 
 (provide "wiliki/edit")
 
