@@ -28,14 +28,12 @@
 
 (define-module wiliki
   (use srfi-1)
-  (use srfi-11)
   (use srfi-13)
   (use text.html-lite)
   (use text.tree)
   (use text.tr)
   (use text.gettext)
   (use util.match)
-  (use util.list)
   (use www.cgi)
   (use rfc.uri)
   (use dbm)
@@ -88,24 +86,24 @@
 ;; compatibility stuff
 
 ;; wiliki accessors.  They're now obsolete; using ref is recommended.
-(define (db-path-of w)     (ref w'db-path))
-(define (db-type-of w)     (ref w'db-type))
-(define (title-of w)       (if w (ref w'title) ""))
-(define (top-page-of w)    (ref w'top-page))
-(define (language-of w)    (if w (ref w'language) 'en))
-(define (charsets-of w)    (ref w'charsets))
-(define (editable? w)      (ref w'editable?))
-(define (style-sheet-of w) (ref w'style-sheet))
-(define (image-urls-of w)  (ref w'image-urls))
-(define (description-of w) (ref w'description))
-(define (protocol-of w)    (ref w'protocol))
-(define (server-name-of w) (ref w'server-name))
-(define (server-port-of w) (ref w'server-port))
-(define (script-name-of w) (ref w'script-name))
-(define (debug-level w)    (if w (ref w'debug-level) 0))
-(define (gettext-paths w)  (ref w'gettext-paths))
-(define (textarea-rows-of w) (ref w'textarea-rows)) ;; obsoleted
-(define (textarea-cols-of w) (ref w'textarea-cols)) ;; obsoleted
+(define (db-path-of w)     (~ w'db-path))
+(define (db-type-of w)     (~ w'db-type))
+(define (title-of w)       (if w (~ w'title) ""))
+(define (top-page-of w)    (~ w'top-page))
+(define (language-of w)    (if w (~ w'language) 'en))
+(define (charsets-of w)    (~ w'charsets))
+(define (editable? w)      (~ w'editable?))
+(define (style-sheet-of w) (~ w'style-sheet))
+(define (image-urls-of w)  (~ w'image-urls))
+(define (description-of w) (~ w'description))
+(define (protocol-of w)    (~ w'protocol))
+(define (server-name-of w) (~ w'server-name))
+(define (server-port-of w) (~ w'server-port))
+(define (script-name-of w) (~ w'script-name))
+(define (debug-level w)    (if w (~ w'debug-level) 0))
+(define (gettext-paths w)  (~ w'gettext-paths))
+(define (textarea-rows-of w) (~ w'textarea-rows)) ;; obsoleted
+(define (textarea-cols-of w) (~ w'textarea-cols)) ;; obsoleted
 
 (define redirect-page      wiliki:redirect-page)
 
@@ -139,8 +137,8 @@
            ;; Top page is non-existent, or its name may be changed.
            ;; create it automatically.  We need to ensure db is writable.
            (if (editable? (wiliki))
-             (wiliki:with-db (lambda ()
-                               (wiliki:db-put! (ref (wiliki)'top-page) toppage)
+             (wiliki:with-db (^[]
+                               (wiliki:db-put! (~ (wiliki)'top-page) toppage)
                                (html-page toppage))
                              :rwmode :write)
              (errorf "Top-page #f (~a) doesn't exist, and the database \
@@ -164,9 +162,9 @@
       ,#`"title: ,|pagename|\n"
       ,#`"wiliki-lwp-version: ,|*lwp-version*|\n"
       ,(if page
-         `(,#`"mtime: ,(ref page 'mtime)\n"
+         `(,#`"mtime: ,(~ page 'mtime)\n"
            "\n"
-           ,(ref page 'content))
+           ,(~ page 'content))
          `(,#`"mtime: 0\n"
            "\n")))))
 
@@ -178,10 +176,8 @@
    (make <wiliki-page>
      :title (string-append (title-of (wiliki))": "($$ "All Pages"))
      :command "c=a"
-     :content `((ul
-                 ,@(map (lambda (k)
-                          `(li ,(wiliki:wikiname-anchor k)))
-                        (sort (wiliki:db-map (lambda (k v) k)) string<?))))
+     :content `((ul ,@(map (^k `(li ,(wiliki:wikiname-anchor k)))
+                           (sort (wiliki:db-map (^[k v] k)) string<?))))
      )))
 
 (define-wiliki-action r :read (_)
@@ -191,11 +187,10 @@
      :command "c=r"
      :content
      `((table
-        ,@(map (lambda (p)
-                 `(tr
-                   (td ,(wiliki:format-time (cdr p)))
-                   (td "(" ,(how-long-since (cdr p)) " ago)")
-                   (td ,(wiliki:wikiname-anchor (car p)))))
+        ,@(map (^p `(tr
+                     (td ,(wiliki:format-time (cdr p)))
+                     (td "(" ,(how-long-since (cdr p)) " ago)")
+                     (td ,(wiliki:wikiname-anchor (car p)))))
                (wiliki:db-recent-changes))))
      )))
 
@@ -219,12 +214,11 @@
      :command (format #f "c=s&key=~a" (html-escape-string key))
      :content
      `((ul
-        ,@(map (lambda (p)
-                 `(li
-                   ,(wiliki:wikiname-anchor (car p))
-                   ,(or (and-let* ((mtime (get-keyword :mtime (cdr p) #f)))
-                          #`"(,(how-long-since mtime))")
-                        "")))
+        ,@(map (^p `(li
+                     ,(wiliki:wikiname-anchor (car p))
+                     ,(or (and-let* ([mtime (get-keyword :mtime (cdr p) #f)])
+                            #`"(,(how-long-since mtime))")
+                          "")))
                (wiliki:db-search-content key))))
      )))
 
@@ -281,7 +275,7 @@
 
 ;; Creates a link to switch language
 (define (wiliki:language-link page)
-  (and-let* ((target (or (ref page 'command) (ref page 'key))))
+  (and-let* ([target (or (~ page 'command) (~ page 'key))])
     (receive (language label)
         (case (wiliki:lang)
           [(jp) (values 'en "->English")]
@@ -300,25 +294,25 @@
          (input (@ (type submit) (class "navi-button") (value ,content)))))
 
 (define (wiliki:top-link page)
-  (and (not (equal? (ref page 'title) (top-page-of (wiliki))))
+  (and (not (equal? (~ page 'title) (top-page-of (wiliki))))
        (wiliki:make-navi-button '() ($$ "Top"))))
 
 (define (wiliki:edit-link page)
-  (and (eq? (ref (wiliki) 'editable?) #t)
+  (and (eq? (~ (wiliki) 'editable?) #t)
        (wiliki:persistent-page? page)
-       (wiliki:make-navi-button `((p ,(ref page 'key)) (c e)) ($$ "Edit"))))
+       (wiliki:make-navi-button `((p ,(~ page 'key)) (c e)) ($$ "Edit"))))
 
 (define (wiliki:history-link page)
-  (and (ref (wiliki) 'log-file)
+  (and (~ (wiliki) 'log-file)
        (wiliki:persistent-page? page)
-       (wiliki:make-navi-button `((p ,(ref page 'key)) (c h)) ($$ "History"))))
+       (wiliki:make-navi-button `((p ,(~ page 'key)) (c h)) ($$ "History"))))
 
 (define (wiliki:all-link page)
-  (and (not (equal? (ref page 'command) "c=a"))
+  (and (not (equal? (~ page 'command) "c=a"))
        (wiliki:make-navi-button '((c a)) ($$ "All"))))
 
 (define (wiliki:recent-link page)
-  (and (not (equal? (ref page 'command) "c=r"))
+  (and (not (equal? (~ page 'command) "c=r"))
        (wiliki:make-navi-button '((c r)) ($$ "Recent Changes"))))
 
 (define (wiliki:search-box)
@@ -338,7 +332,7 @@
       (cons (wiliki:wikiname-anchor (string-join (reverse rcomps) delim)
                                     (car rcomps))
             acc)))
-  (let1 combs (string-split (ref page 'title) delim)
+  (let1 combs (string-split (~ page 'title) delim)
     (if (pair? (cdr combs))
       `((span (@ (class "breadcrumb-links"))
               ,@(intersperse
@@ -351,18 +345,18 @@
   `((table
      (@ (border 0) (cellpadding 0))
      (tr ,@(cond-list
-            ((wiliki:top-link page) => td)
-            ((wiliki:edit-link page) => td)
-            ((wiliki:history-link page) => td)
-            ((wiliki:all-link page) => td)
-            ((wiliki:recent-link page) => td))
+            [(wiliki:top-link page) => td]
+            [(wiliki:edit-link page) => td]
+            [(wiliki:history-link page) => td]
+            [(wiliki:all-link page) => td]
+            [(wiliki:recent-link page) => td])
          (td ,@(wiliki:search-box))))))
 
 (define (wiliki:page-title page)
   `((h1 ,(if (wiliki:persistent-page? page)
-           `(a (@ (href ,(url "c=s&key=[[~a]]" (ref page 'key))))
-               ,(ref page 'title))
-           (ref page 'title)))))
+           `(a (@ (href ,(url "c=s&key=[[~a]]" (~ page 'key))))
+               ,(~ page 'title))
+           (~ page 'title)))))
 
 (define (wiliki:default-page-header page opts)
   `(,@(wiliki:page-title page)
@@ -371,11 +365,11 @@
     (hr)))
 
 (define (wiliki:default-page-footer page opts)
-  (if (ref page 'mtime)
+  (if (~ page 'mtime)
     `((hr)
       (div (@ (align right))
            ,($$ "Last modified : ")
-           ,(wiliki:format-time (ref page 'mtime))))
+           ,(wiliki:format-time (~ page 'mtime))))
     '()))
 
 (define (wiliki:default-head-elements page opts)
@@ -385,12 +379,10 @@
          [w `(base (@ (href ,(wiliki:url :full))))]
          [w `(link (@ (rel "alternate") (type "application/rss+xml")
                       (title "RSS") (href ,(wiliki:url :full "c=rss"))))]
-         [(and w (ref w'style-sheet))
-          => @(lambda (ss)
-                (map (lambda (s)
-                       `(link (@ (rel "stylesheet")
-                                 (href ,s) (type "text/css"))))
-                     (if (list? ss) ss (list ss))))])
+         [(and w (~ w'style-sheet))
+          => @(^[ss] (map (^s `(link (@ (rel "stylesheet")
+                                        (href ,s) (type "text/css"))))
+                          (if (list? ss) ss (list ss))))])
       )))
 
 (define (default-format-time time)
@@ -404,20 +396,19 @@
   (define (inter-wikiname-prefix head)
     (and-let* ([page (wiliki:db-get "InterWikiName")]
                [rx   (string->regexp #`"^:,(regexp-quote head):\\s*")])
-      (call-with-input-string (ref page 'content)
-        (lambda (p)
-          (let loop ((line (read-line p)))
-            (cond [(eof-object? line) #f]
-                  [(rx line) =>
-                   (lambda (m)
-                     (let1 prefix (m 'after)
-                       (if (string-null? prefix)
-                         (let1 prefix (read-line p)
-                           (if (or (eof-object? prefix) (string-null? prefix))
-                             #f
-                             (string-trim-both prefix)))
-                         (string-trim-both prefix))))]
-                  [else (loop (read-line p))]))))))
+      (call-with-input-string (~ page 'content)
+        (^p (let loop ((line (read-line p)))
+              (cond [(eof-object? line) #f]
+                    [(rx line) =>
+                     (^m (let1 prefix (m 'after)
+                           (if (string-null? prefix)
+                             (let1 prefix (read-line p)
+                               (if (or (eof-object? prefix)
+                                       (string-null? prefix))
+                                 #f
+                                 (string-trim-both prefix)))
+                             (string-trim-both prefix))))]
+                    [else (loop (read-line p))]))))))
   (define (reader-macro-wikiname? name)
     (cond [(string-prefix? "$$" name) (handle-reader-macro name)]
           [(or (string-prefix? "$" name)
