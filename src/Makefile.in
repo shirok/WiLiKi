@@ -40,7 +40,7 @@ SCMFILES = wiliki.scm \
 
 SCRIPTS = wiliki-passwd
 
-TARGET = $(SCMFILES)
+TARGET = $(SCMFILES) $(SCRIPTS)
 
 GENERATED = wiliki/version.scm
 
@@ -54,7 +54,7 @@ wiliki/version.scm : ../VERSION
 	$(GOSH) ./gen-version ../VERSION > wiliki/version.scm
 
 install :
-	$(INSTALL) -m 444 -T $(SCM_INSTALL_DIR) $(TARGET)
+	$(INSTALL) -m 444 -T $(SCM_INSTALL_DIR) $(SCMFILES)
 	$(INSTALL) -m 555 --shebang $(GOSH) -T $(bindir) $(SCRIPTS)
 
 uninstall :

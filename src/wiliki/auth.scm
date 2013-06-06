@@ -193,11 +193,11 @@
          [hv     (string-drop key 6)]
          [path   (build-path (auth-session-directory) #`"wiliki-,suffix")])
     (call-with-input-file path
-      (lambda (p)
-        (or (and p (match (read p)
-                     [((? (cut string=? hv <>)) value) (touch-file path) value]
-                     [_ #f]))
-            (error <auth-failure> "invalid or expired session")))
+      (^p (or (and p (match (read p)
+                       [((? (cut string=? hv <>)) value)
+                        (touch-file path) value]
+                       [_ #f]))
+              (error <auth-failure> "invalid or expired session")))
       :if-does-not-exist #f)))
 
 ;; API
