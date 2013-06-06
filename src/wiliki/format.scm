@@ -27,7 +27,6 @@
 
 (define-module wiliki.format
   (use srfi-1)
-  (use srfi-11)
   (use srfi-13)
   (use text.html-lite)
   (use text.tree)
@@ -83,23 +82,21 @@
    ;; They won't be supported officially in future versions; use
    ;; subclassing & methods instead.
    (bracket       :init-keyword :bracket
-                  :init-value (lambda (name) (list #`"[[,|name|]]")))
+                  :init-value (^[name] (list #`"[[,|name|]]")))
    (macro         :init-keyword :macro
-                  :init-value (lambda (expr context)
-                                `("##" ,(write-to-string expr))))
+                  :init-value (^[expr context] `("##" ,(write-to-string expr))))
    (time          :init-keyword :time
-                  :init-value (lambda (time) (x->string time)))
+                  :init-value (^[time] (x->string time)))
    (body          :init-keyword :body
-                  :init-value (lambda (page opts) (fmt-body page opts)))
+                  :init-value (^[page opts] (fmt-body page opts)))
    (header        :init-keyword :header
-                  :init-value (lambda (page opts) '()))
+                  :init-value (^[page opts] '()))
    (footer        :init-keyword :footer
-                  :init-value (lambda (page opts) '()))
+                  :init-value (^[page opts] '()))
    (content       :init-keyword :content
-                  :init-value (lambda (page opts)
-                                (wiliki:format-content page)))
+                  :init-value (^[page opts] (wiliki:format-content page)))
    (head-elements :init-keyword :head-elements
-                  :init-value (lambda (page opts) '()))
+                  :init-value (^[page opts] '()))
    ))
 
 ;; Global context and the default formatter
