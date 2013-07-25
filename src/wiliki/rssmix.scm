@@ -24,8 +24,6 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: rssmix.scm,v 1.3 2007-04-06 09:18:58 shirok Exp $
-;;;
 
 ;; *EXPERIMENTAL*
 

@@ -23,7 +23,6 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: page.scm,v 1.5 2007-10-11 21:52:26 shirok Exp $
 
 (define-module wiliki.page
   (use srfi-1)

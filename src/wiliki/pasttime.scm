@@ -23,8 +23,6 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: pasttime.scm,v 1.3 2003-08-30 12:28:00 shirok Exp $
-;;;
 
 (define-module wiliki.pasttime
   (export how-long-since))

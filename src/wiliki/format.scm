@@ -23,7 +23,6 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: format.scm,v 1.46 2007-12-22 00:05:06 shirok Exp $
 
 (define-module wiliki.format
   (use srfi-1)

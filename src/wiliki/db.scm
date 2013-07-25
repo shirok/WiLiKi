@@ -23,7 +23,6 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;; $Id: db.scm,v 1.16 2007-12-21 11:56:43 shirok Exp $
 
 ;; NB: The wiliki.db feature is merged into wiliki.core.
 ;; This module is only kept for the compatibility.

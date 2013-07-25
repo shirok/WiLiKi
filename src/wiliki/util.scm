@@ -23,8 +23,6 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: util.scm,v 1.5 2007-07-14 05:33:20 shirok Exp $
-;;;
 
 ;; This module is only kept for backward compatibility.
 ;; use wiliki.core 

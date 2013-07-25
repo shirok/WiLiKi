@@ -23,8 +23,6 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: edit.scm,v 1.22 2007-11-05 22:26:40 shirok Exp $
-;;;
 
 (define-module wiliki.edit
   (use gauche.parameter)

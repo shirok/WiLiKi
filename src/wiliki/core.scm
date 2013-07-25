@@ -23,8 +23,6 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: core.scm,v 1.10 2007-12-21 12:00:36 shirok Exp $
-;;;
 
 ;;
 ;; Provides core functionality for WiLiKi web application;
@@ -88,6 +86,7 @@
 (select-module wiliki.core)
 
 (autoload dbm.gdbm <gdbm>)
+(autoload wiliki.auth auth-get-session)
 
 ;;===================================================================
 ;; Class <wiliki>
@@ -124,6 +123,8 @@
    ;;   can be #f, #t or 'limited.
    (editable?   :accessor editable?      :init-keyword :editable?
                 :init-value #t)
+   ;; auth-token
+   
    ;; style-sheet path
    (style-sheet :accessor style-sheet-of :init-keyword :style-sheet
                 :init-value #f)

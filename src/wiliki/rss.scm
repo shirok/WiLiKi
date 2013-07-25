@@ -23,8 +23,6 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: rss.scm,v 1.9 2007-05-02 13:02:44 shirok Exp $
-;;;
 
 ;; In future, this might be rewritten to use proper XML framework.
 ;; for now, I use an ad-hoc approach.

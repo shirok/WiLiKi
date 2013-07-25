@@ -23,8 +23,6 @@
 ;;;  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 ;;;  IN THE SOFTWARE.
 ;;;
-;;;  $Id: core.scm,v 1.10 2007-12-21 12:00:36 shirok Exp $
-;;;
 
 ;;
 ;; Simple authentication for WiLiKi.
