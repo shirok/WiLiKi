@@ -1,0 +1,51 @@
+#!/usr/bin/gosh
+
+;; A simple script to run a small web server locally to try wiliki.
+;; Requires Gauche-makiki https://github.com/shirok/Gauche-makiki
+
+(use gauche.parseopt)
+(use gauche.parameter)
+(use util.match)
+(use file.util)
+(use makiki)
+
+(define (usage)
+  (print "Usage: wiliki-server [-p port][-e entry-path][-d document-root] cgi-script")
+  (print "  -p|port <port>    Port number.  Default is 3133.")
+  (print "  -e|entry <url-path>")
+  (print "        The path to the cgi script in URL.  This doesn't need")
+  (print "        to be related to the actual cgi script file.  The default")
+  (print "        is '/cgi-script', where 'cgi-script' is the basename of the")
+  (print "        script given to the command-line argument.")
+         
+  (print "  -d|document-root <local-path>")
+  (print "        If the URL points something other than the cgi script")
+  (print "        specified by -e option, the staic document is served from")
+  (print "        this directory.  The default is the current working directory.")
+  (exit 1))
+
+(define (main args)
+  (let-args (cdr args) ([port  "p|port=i" 3133]
+                        [entry "e|entry=s" #f] ;entry point
+                        [docroot "d|document-root=s" "."] ; document root path
+                        [else _ (usage)]
+                        . args)
+    (match args
+      [(cgi-file)
+       (unless (file-is-readable? cgi-file)
+         (exit 1 "cannot read cgi-file ~s" cgi-file))
+       (run-wiliki-server port
+                          (or entry (string-append "/" (sys-basename cgi-file)))
+                          cgi-file docroot)]
+      [_ (usage)])))
+
+(define (run-wiliki-server port entry cgi-file docroot)
+  (parameterize ([document-root docroot])
+    (add-http-handler! (string->regexp (regexp-quote entry))
+                       (cgi-script cgi-file :script-name entry))
+    (add-http-handler! #/\// (file-handler))
+    (start-http-server :access-log #t :error-log #t :port port)))
+
+;; Local variables:
+;; mode: scheme
+;; end:
