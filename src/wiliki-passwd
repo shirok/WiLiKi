@@ -5,7 +5,6 @@
 (use wiliki.auth)
 (use gauche.parseopt)
 (use gauche.termios)
-(use crypt.bcrypt)
 (use util.match)
 
 (define (usage)
@@ -18,7 +17,7 @@
   (print "       a new file will be created.")
   (print "  <username>     The name of the user to set/modify password, or delete.")
   (print "  <password>     Plain password for the user.  If this argument is omitted,")
-  (print "       the user is prompted to type a password.  If this argument is '-',")
+  (print "       the command prompts to type a password.  If this argument is '-',")
   (print "       a password is read from stdin.")
   (exit 1))
 
