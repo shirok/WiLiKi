@@ -227,7 +227,8 @@
                                   items)
                              '()))
                          sites getters)
-             (cut ~ <> 'date))))
+             (cut ~ <> 'date)
+             >)))
 
 ;; Returns a procedure PROC, that takes a srfi-time and returns RSS data,
 ;; which is a list of (TITLE LINK UNIX-TIME).
