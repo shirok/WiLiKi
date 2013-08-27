@@ -31,7 +31,10 @@
 ;; Login is handled by a separate cgi script (customary named 'login'),
 ;; which sets up a session token in the cookie.
 ;;
-;; Session token is saved under a file /tmp/wiliki-*.
+;; Session token is saved under a file /tmp/wiliki-*.  (The directory is
+;; configurable by the parameter auth-session-directory.)
+;; For the security reasons, only the files owned by the same uid is considered
+;; as valid files.
 ;;
 ;; Wiliki script can check the validity of the token via auth-check-session.
 
@@ -190,22 +193,28 @@
   (let* ([suffix (string-take key 6)]
          [hv     (string-drop key 6)]
          [path   (build-path (auth-session-directory) #`"wiliki-,suffix")])
-    (call-with-input-file path
-      (^p (or (and p (match (read p)
-                       [((? (cut string=? hv <>)) value)
-                        (touch-file path) value]
-                       [_ #f]))
-              (error <auth-failure> "invalid or expired session")))
-      :if-does-not-exist #f)))
+    (and (= (file-uid path) (sys-geteuid))
+         (call-with-input-file path
+           (^p (or (and p (match (read p)
+                            [((? (cut string=? hv <>)) value)
+                             (touch-file path) value]
+                            [_ #f]))
+                   (error <auth-failure> "invalid or expired session")))
+           :if-does-not-exist #f))))
 
 ;; API
 (define (auth-delete-session! key)
   (and (>= (string-length key) 6)
-       (sys-unlink (build-path (auth-session-directory)
-                               #`"wiliki-,(string-take key 6)"))))
+       (let1 path (build-path (auth-session-directory)
+                              #`"wiliki-,(string-take key 6)")
+         (and (= (file-uid path) (sys-geteuid))
+              (sys-unlink path)))))
 
 ;; API
 (define (auth-clean-sessions! age)
   (let1 limit (- (sys-time) age)
     (dolist [f (glob (build-path (auth-session-directory) "wiliki-??????"))]
-      (when (< (file-mtime f) limit) (sys-unlink f)))))
+      (when (and (< (file-mtime f) limit)
+                 (file-is-regular? f)
+                 (= (file-uid f) (sys-geteuid)))
+        (sys-unlink f)))))

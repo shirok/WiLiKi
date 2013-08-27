@@ -1,3 +1,9 @@
+2013-08-27  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/auth.scm: Check the owner of session files.  Read and
+	  delete only the files that are owned by the euid of the
+	  running process.
+
 2013-05-08  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/edit.scm (cmd-commit-edit): Exclude verbatim block from
