@@ -92,38 +92,30 @@
 
 (define-syntax with-rss-db
   (syntax-rules ()
-    ((_ self . body)
-     (let* ((s  self)
-            (lock (ref s 'db-lock)))
-       (dynamic-wind
-        (lambda () (mutex-lock! lock))
-        (lambda ()
-          (let1 db (dbm-open (ref s 'db-type)
+    [(_ self . body)
+     (let* ([s  self]
+            [lock (ref s 'db-lock)])
+       (with-locking-mutex lock
+         (^[]
+           (let1 db (dbm-open (ref s 'db-type)
                              :path (ref s 'db-name) :rwmode :write)
             (set! (ref s 'db) db)
-            (with-error-handler
-                (lambda (e) (dbm-close db) (raise e))
-              (lambda ()
-                (receive r (begin . body)
-                  (dbm-close db)
-                  (apply values r))))))
-        (lambda () (mutex-unlock! lock))))
-     )))
+            (unwind-protect (begin . body)
+              (dbm-close db))))))]))
 
 ;; an ad-hoc function to estimate width of the string
 (define (char-width ch)
   (if (< (char->integer ch) 256) 1 2))
 
 (define (string-width str)
-  (string-fold (lambda (ch w) (+ w (char-width ch))) 0 str))
+  (string-fold (^[ch w] (+ w (char-width ch))) 0 str))
 
 (define (string-chop str width)
   (with-string-io str
-    (lambda ()
-      (let loop ((w 0) (ch (read-char)))
-        (unless (or (eof-object? ch) (> w width))
-          (write-char ch)
-          (loop (+ w (char-width ch)) (read-char)))))))
+    (^[] (let loop ([w 0] [ch (read-char)])
+           (unless (or (eof-object? ch) (> w width))
+             (write-char ch)
+             (loop (+ w (char-width ch)) (read-char)))))))
 
 (define (rss-format-date unix-time)
   (sys-strftime "%Y/%m/%d %H:%M:%S %Z" (sys-localtime unix-time)))
@@ -146,110 +138,96 @@
        body))))
 
 (define-method rss-error-page ((self <rssmix>) e)
-  (rss-page
-   self
-   "Error"
-   (html:p (html-escape-string (ref e 'message)))))
+  ($ rss-page self "Error" $ html:p $ html-escape-string $ ~ e 'message))
 
 (define-method rss-recent-changes ((self <rssmix>))
-  (rss-page
-   self
-   (ref self 'title)
-   (html:table
-    (map (lambda (item)
-           (html:tr
-            (html:td (rss-format-date (ref item 'date)))
-            (html:td
-             (let* ((id (ref item 'site-id))
-                    (title (ref item 'title))
-                    (titlew (string-width title))
-                    (len (- (ref self 'max-title-width)
-                            (+ (string-width id) titlew)))
-                    )
-               (when (negative? len)
-                 (set! title #`",(string-chop title (+ titlew len)) ..."))
-               (list
-                (html:a :href (ref item 'site-url) (html-escape-string id))
-                ": "
-                (html:a :href (ref item 'link) (html-escape-string title))
-                )
-               ))))
-         (take* (collect self) (ref self 'num-items)))
-    )))
+  ($ rss-page self (~ self 'title)
+     $ html:table
+     $ map (^[item]
+             (html:tr
+              (html:td (rss-format-date (ref item 'date)))
+              (html:td
+               (let* ([id (ref item 'site-id)]
+                      [title (ref item 'title)]
+                      [titlew (string-width title)]
+                      [len (- (ref self 'max-title-width)
+                              (+ (string-width id) titlew))])
+                 (when (negative? len)
+                   (set! title #`",(string-chop title (+ titlew len)) ..."))
+                 (list
+                  (html:a :href (ref item 'site-url) (html-escape-string id))
+                  ": "
+                  (html:a :href (ref item 'link) (html-escape-string title))
+                  )
+                 ))))
+     $ take* (collect self) (ref self 'num-items)))
 
 (define-method rss-site-info ((self <rssmix>))
-  (let* ((sites (ref self 'sites))
-         (infos (with-rss-db self
-                  (map (lambda (s)
-                         (read-from-string (dbm-get (ref self 'db) (car s) "#f")))
-                       sites)))
-         )
-    (rss-page
-     self
-     "RSSMix: Site Info"
-     (map (lambda (site info)
-            `(,(html:h3 (html-escape-string (car site)))
-              ,(html:table
-                (html:tr (html:td "Title")
-                         (html:td (get-keyword :channel-title info "--")))
-                (html:tr (html:td "Top")
-                         (html:td (html:a :href (cadr site)
-                                          (html-escape-string (cadr site)))))
-                (html:tr (html:td "RSS")
-                         (html:td (html:a :href (caddr site)
-                                          (html-escape-string (caddr site)))))
-                (html:tr (html:td "Last fetched")
-                         (html:td
-                          (or (and-let* ((info)
-                                         (ts (get-keyword :timestamp info #f)))
-                                (rss-format-date ts))
-                              "--")))
-                (html:tr (html:td "Time spent")
-                         (html:td
-                          (or (and-let* ((info)
-                                         (ts (get-keyword :elapsed info #f)))
-                                ts)
-                              "--")))
-                )))
-          sites infos)
-     )))
+  (let* ([sites (ref self 'sites)]
+         [infos (with-rss-db self
+                  (map (^s ($ read-from-string
+                              $ dbm-get (ref self 'db) (car s) "#f"))
+                       sites))])
+    ($ rss-page self "RSSMix: Site Info"
+       $ map (^[site info]
+               `(,(html:h3 (html-escape-string (car site)))
+                 ,(html:table
+                   (html:tr (html:td "Title")
+                            (html:td (get-keyword :channel-title info "--")))
+                   (html:tr (html:td "Top")
+                            (html:td (html:a :href (cadr site)
+                                             (html-escape-string (cadr site)))))
+                   (html:tr (html:td "RSS")
+                            (html:td (html:a :href (caddr site)
+                                             (html-escape-string (caddr site)))))
+                   (html:tr (html:td "Last fetched")
+                            (html:td
+                             (or (and-let* ((info)
+                                            (ts (get-keyword :timestamp info #f)))
+                                   (rss-format-date ts))
+                                 "--")))
+                   (html:tr (html:td "Time spent")
+                            (html:td
+                             (or (and-let* ((info)
+                                            (ts (get-keyword :elapsed info #f)))
+                                   ts)
+                                 "--")))
+                   )))
+         sites infos)))
+    
 
 (define-method rss-main ((self <rssmix>))
   (cgi-main
-   (lambda (params)
+   (^[params]
      (let1 command (cgi-get-parameter "c" params :default "list")
        (cond
-        ((equal? command "info") (rss-site-info self))
-        ((equal? command "list") (rss-recent-changes self))
-        (else (error "Unknown command" command)))))
-   :on-error (lambda (e) (rss-error-page self e)))
+        [(equal? command "info") (rss-site-info self)]
+        [(equal? command "list") (rss-recent-changes self)]
+        [else (error "Unknown command" command)])))
+   :on-error (^e (rss-error-page self e)))
   0)
 
 ;; Collect RSS info from given sites.
 (define (collect self)
-  (let* ((sites  (ref self 'sites))
-         (getters (with-rss-db self
-                    (map (lambda (site)
-                           (get-rss self (car site) (caddr site)))
-                         sites)))
-         (timeout (add-duration
+  (let* ([sites  (ref self 'sites)]
+         [getters (with-rss-db self
+                    (map (^[site] (get-rss self (car site) (caddr site)))
+                         sites))]
+         [timeout (add-duration
                    (current-time)
                    ;; NB: this requires fixed srfi-19.scm
-                   (make-time 'time-duration 0 (ref self 'fetch-timeout))))
-         )
-    (sort (append-map
-           (lambda (site getter)
-             (or (and-let* ((items (getter timeout)))
-                   (map (lambda (item)
-                          (make <rss-item>
-                            :site-id (car site) :site-url (cadr site)
-                            :title (car item) :link (cadr item)
-                            :date (caddr item)))
-                        items))
-                 '()))
-           sites getters)
-          (lambda (a b) (> (ref a 'date) (ref b 'date))))
-    ))
+                   (make-time 'time-duration 0 (ref self 'fetch-timeout)))])
+    (sort-by (append-map (^[site getter]
+                           (if-let1 items (getter timeout)
+                             (map (^[item]
+                                    (make <rss-item>
+                                      :site-id (car site) :site-url (cadr site)
+                                      :title (car item) :link (cadr item)
+                                      :date (caddr item)))
+                                  items)
+                             '()))
+                         sites getters)
+             (cut ~ <> 'date))))
 
 ;; Returns a procedure PROC, that takes a srfi-time and returns RSS data,
 ;; which is a list of (TITLE LINK UNIX-TIME).
@@ -260,55 +238,43 @@
 ;; Cache is updated accodringly within PROC.
 ;; NB: this is called from primordial thread, so we don't need to lock db.
 (define (get-rss self id rss-url)
-  (let* ((cached (and-let* ((body  (dbm-get (ref self 'db) id #f)))
-                   (read-from-string body)))
-         (timestamp (and cached (get-keyword :timestamp cached 0)))
-         (rss    (and cached (get-keyword :rss-cache cached #f)))
-         (now    (sys-time))
-         )
+  (let* ([cached (and-let* ((body  (dbm-get (ref self 'db) id #f)))
+                   (read-from-string body))]
+         [timestamp (and cached (get-keyword :timestamp cached 0))]
+         [rss    (and cached (get-keyword :rss-cache cached #f))]
+         [now    (sys-time)])
     (if (and rss (> timestamp (- now (ref self 'cache-life))))
-        (lambda (timeout) rss)  ;; active
-        (let1 t
-            (thread-start! (make-thread (make-thunk self id rss-url now) id))
-          (lambda (timeout)
-            (let1 r (thread-join! t timeout 'timeout)
-              (if (eq? r 'timeout)
-                  (begin (record-timeout self id) rss)
-                  r)))))
-    ))
+      (^[timeout] rss)  ;; active
+      (let1 t (thread-start! (make-thread (make-thunk self id rss-url now) id))
+        (^[timeout]
+          (let1 r (thread-join! t timeout 'timeout)
+            (if (eq? r 'timeout)
+              (begin (record-timeout self id) rss)
+              r)))))))
 
 ;; Record the fact that timeout occurred.  Must be called from main thread.
 (define (record-timeout self id)
   (with-rss-db self
-    (and-let* ((db (ref self 'db))
-               (cached (read-from-string (dbm-get db id "#f")))
-               (channel-title (get-keyword :channel-title cached #f))
-               (timestamp (get-keyword :timestamp cached #f))
-               (rss-cache (get-keyword :rss-cache cached #f))
-               (data (list :timestamp timestamp :rss-cache rss-cache
+    (and-let* ([db (ref self 'db)]
+               [cached (read-from-string (dbm-get db id "#f"))]
+               [channel-title (get-keyword :channel-title cached #f)]
+               [timestamp (get-keyword :timestamp cached #f)]
+               [rss-cache (get-keyword :rss-cache cached #f)]
+               [data (list :timestamp timestamp :rss-cache rss-cache
                            :channel-title channel-title
-                           :elapsed 'timeout)))
+                           :elapsed 'timeout)])
       (dbm-put! db id (write-to-string data)))))
                                 
 ;; Creates a thunk for thread.
 (define (make-thunk self id uri start-time)
-  (lambda ()
-    (with-error-handler
-        (lambda (e)
-          (display (ref e 'message) (current-error-port))
-          #f)
-      (lambda ()
-        (let1 rss (fetch uri)
-          (and rss
-               (let* ((now (sys-time))
-                      (data (list :timestamp now :rss-cache (cdr rss)
-                                  :channel-title (car rss)
-                                  :elapsed (- now start-time))))
-                 (with-rss-db self
-                   (dbm-put! (ref self 'db) id (write-to-string data)))
-                 (cdr rss)))
-          ))
-      )))
+  (^[] (guard (e [else (display (~ e 'message) (current-error-port)) #f])
+         (and-let* ([rss (fetch uri)]
+                    [now (sys-time)]
+                    [data (list :timestamp now :rss-cache (cdr rss)
+                                :channel-title (car rss)
+                                :elapsed (- now start-time))])
+           (with-rss-db self
+             (dbm-put! (~ self 'db) id (write-to-string data))) (cdr rss)))))
 
 ;; Fetch RSS from specified URI, parse it, and extract link information
 ;; with updated dates.  Returns list of items, in
@@ -316,14 +282,14 @@
 ;; where DATETIME is in time-utc.
 ;; When error, returns #f.
 (define (fetch uri)
-  (and-let* ((match  (#/^http:\/\/([^\/]+)/ uri))
-             (server (match 1))
-             (path   (match 'after)))
+  (and-let* ([match  (#/^http:\/\/([^\/]+)/ uri)]
+             [server (match 1)]
+             [path   (match 'after)])
     (receive (status headers body)
         (http-get server path :user-agent USER_AGENT)
-      (and-let* (((equal? status "200"))
-                 ((string? body))
-                 (encoding (body-encoding body)))
+      (and-let* ([ (equal? status "200") ]
+                 [ (string? body) ]
+                 [encoding (body-encoding body)])
         (extract-from-rdf
          (SSAX:XML->SXML
           (wrap-with-input-conversion (open-input-string body) encoding)
@@ -334,11 +300,10 @@
 ;; the body might be an incomplete string, so we have to be careful.
 ;; Returns #f if body is not a valid xml doc.
 (define (body-encoding body)
-  (and-let* ((body   (string-complete->incomplete body))
-             (before (string-scan body #*"?>" 'before))
-             (enc    (string-scan before #*"encoding=\"" 'after))
-             (enc2   (string-scan enc #*"\"" 'before)))
-    enc2))
+  (and-let* ([body   (string-complete->incomplete body)]
+             [before (string-scan body #*"?>" 'before)]
+             [enc    (string-scan before #*"encoding=\"" 'after)])
+    (string-scan enc #*"\"" 'before)))
 
 ;; Traverse RDF tree and obtain necessary info.
 ;; It would be better to use SXPath, but for now...
@@ -346,42 +311,42 @@
 
   (define (find-node tag parent)
     (and (pair? parent)
-         (find (lambda (n) (eq? (car n) tag)) (cdr parent))))
+         (find (^n (eq? (car n) tag)) (cdr parent))))
 
   (define (filter-node tag parent)
     (and (pair? parent)
-         (filter (lambda (n) (eq? (car n) tag)) (cdr parent))))
+         (filter (^n (eq? (car n) tag)) (cdr parent))))
 
   ;; NB: srfi-19's string->date fails to recognize time zone offset
   ;; with ':' between hours and minutes.  I need to parse it manually.
   (define (parse-date date)
     (and-let* 
-        ((match (#/^(\d\d\d\d)-(\d\d)-(\d\d)(?:T(\d\d):(\d\d)(?::(\d\d))?([+-]\d\d):(\d\d))?/ date)))
+        ([match (#/^(\d\d\d\d)-(\d\d)-(\d\d)(?:T(\d\d):(\d\d)(?::(\d\d))?([+-]\d\d):(\d\d))?/ date)])
       (receive (year month day hour minute second zh zm)
-          (apply values (map (lambda (i) (x->integer (match i))) (iota 8 1)))
+          (apply values (map (^i (x->integer (match i))) (iota 8 1)))
         (time-second
          (date->time-utc (make-date 0 second minute hour day month year
                                     (* (if (negative? zh) -1 1)
                                        (+ (* (abs zh) 3600) (* zm 60))))))
         )))
   
-  (let* ((rdf   (find-node 'rdf:RDF sxml))
-         (chan  (find-node 'rss:channel rdf))
-         (chan-title (find-node 'rss:title chan))
-         (items (filter-node 'rss:item rdf)))
+  (let* ([rdf   (find-node 'rdf:RDF sxml)]
+         [chan  (find-node 'rss:channel rdf)]
+         [chan-title (find-node 'rss:title chan)]
+         [items (filter-node 'rss:item rdf)])
     (cons
      (and (pair? chan-title)
           (if (and (pair? (cadr chan-title)) (eq? (caadr chan-title) '@))
               (caddr chan-title)
               (cadr chan-title)))
-     (filter-map (lambda (item)
-                   (let ((title (and-let* ((n (find-node 'rss:title item)))
-                                  (cadr n)))
-                         (link  (and-let* ((n (find-node 'rss:link item)))
-                                  (cadr n)))
-                         (date  (and-let* ((n (or (find-node 'dc:date item)
+     (filter-map (^[item]
+                   (let ([title (and-let* ((n (find-node 'rss:title item)))
+                                  (cadr n))]
+                         [link  (and-let* ((n (find-node 'rss:link item)))
+                                  (cadr n))]
+                         [date  (and-let* ((n (or (find-node 'dc:date item)
                                                   (find-node 'dc:pubDate item))))
-                                  (parse-date (cadr n)))))
+                                  (parse-date (cadr n)))])
                      (and title link date (list title link date))))
                  items)))
   )
