@@ -51,7 +51,7 @@
 (autoload dbm.gdbm <gdbm>)
 
 (define-constant USER_AGENT
-  "wiliki/rssmix http://www.shiro.dreamhost.com/scheme/wiliki/rssmix.cgi")
+  "wiliki/rssmix http://practical-scheme.net/wiliki/rssmix.cgi")
 
 (define-constant NAMESPACES
   '((rdf . "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
@@ -132,7 +132,7 @@
       (html:body
        (html:h1 (html-escape-string title))
        (html:div :align "right"
-                 "[" (html:a :href "http://www.shiro.dreamhost.com/scheme/wiliki/wiliki.cgi?WiLiKi:RSSMix" "What's This?") "]"
+                 "[" (html:a :href "http://practical-scheme.net/wiliki/wiliki.cgi?WiLiKi:RSSMix" "What's This?") "]"
                  "[" (html:a :href "?c=info" "Sources") "]")
        (html:hr)
        body))))
