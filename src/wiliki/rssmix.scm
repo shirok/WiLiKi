@@ -34,6 +34,7 @@
   (use srfi-14)
   (use srfi-19)
   (use rfc.http)
+  (use rfc.822)
   (use rfc.uri)
   (use text.html-lite)
   (use util.list)
@@ -318,36 +319,67 @@
     (and (pair? parent)
          (filter (^n (eq? (car n) tag)) (cdr parent))))
 
-  ;; NB: srfi-19's string->date fails to recognize time zone offset
-  ;; with ':' between hours and minutes.  I need to parse it manually.
   (define (parse-date date)
-    (and-let* 
-        ([match (#/^(\d\d\d\d)-(\d\d)-(\d\d)(?:T(\d\d):(\d\d)(?::(\d\d))?([+-]\d\d):(\d\d))?/ date)])
-      (receive (year month day hour minute second zh zm)
-          (apply values (map (^i (x->integer (match i))) (iota 8 1)))
-        (time-second
-         (date->time-utc (make-date 0 second minute hour day month year
-                                    (* (if (negative? zh) -1 1)
-                                       (+ (* (abs zh) 3600) (* zm 60))))))
-        )))
-  
-  (let* ([rdf   (find-node 'rdf:RDF sxml)]
-         [chan  (find-node 'rss:channel rdf)]
-         [chan-title (find-node 'rss:title chan)]
-         [items (filter-node 'rss:item rdf)])
-    (cons
-     (and (pair? chan-title)
-          (if (and (pair? (cadr chan-title)) (eq? (caadr chan-title) '@))
+    (cond
+     ;; NB: srfi-19's string->date fails to recognize time zone offset
+     ;; with ':' between hours and minutes.  I need to parse it manually.
+     [(#/^(\d\d\d\d)-(\d\d)-(\d\d)(?:T(\d\d):(\d\d)(?::(\d\d))?([+-]\d\d):(\d\d))?/ date)
+      => (^m (apply get-time (map (^i (x->integer (m i))) (iota 8 1))))]
+     [(rfc822-parse-date date) (^[yy . _] (number? yy))
+      => (^[year month day hour minute second tz dow]
+           (get-time year month day hour minute second
+                     (quotient tz 100)
+                     (abs (remainder tz 100))))]
+     [else #f]))
+
+  (define (get-time year month day hour minute second zh zm)
+    ($ time-second $ date->time-utc
+       $ make-date 0 second minute hour day month year
+                   (* (if (negative? zh) -1 1)
+                      (+ (* (abs zh) 3600) (* zm 60)))))
+
+  (define (parse-rdf rdf)               ;rss1.0
+    (let* ([chan  (find-node 'rss:channel rdf)]
+           [chan-title (find-node 'rss:title chan)]
+           [items (filter-node 'rss:item rdf)])
+      (cons
+       (and (pair? chan-title)
+            (if (and (pair? (cadr chan-title)) (eq? (caadr chan-title) '@))
               (caddr chan-title)
               (cadr chan-title)))
-     (filter-map (^[item]
-                   (let ([title (and-let* ((n (find-node 'rss:title item)))
-                                  (cadr n))]
-                         [link  (and-let* ((n (find-node 'rss:link item)))
-                                  (cadr n))]
-                         [date  (and-let* ((n (or (find-node 'dc:date item)
-                                                  (find-node 'dc:pubDate item))))
-                                  (parse-date (cadr n)))])
-                     (and title link date (list title link date))))
-                 items)))
-  )
+       (filter-map
+        (^[item]
+          (let ([title (and-let* ((n (find-node 'rss:title item)))
+                         (cadr n))]
+                [link  (and-let* ((n (find-node 'rss:link item)))
+                         (cadr n))]
+                [date  (and-let* ((n (or (find-node 'dc:date item)
+                                         (find-node 'dc:pubDate item))))
+                         (parse-date (cadr n)))])
+            (and title link date (list title link date))))
+        items))))
+
+  (define (parse-rss rss)               ;rss2.0
+    (let* ([chan (find-node 'channel rss)]
+           [chan-title (find-node 'title chan)]
+           [items (filter-node 'item chan)])
+      (cons
+       (and (pair? chan-title)
+            (if (and (pair? (cadr chan-title)) (eq? (caadr chan-title) '@))
+              (caddr chan-title)
+              (cadr chan-title)))
+       (filter-map
+        (^[item]
+          (let ([title (and-let* ((n (find-node 'title item)))
+                         (cadr n))]
+                [link  (and-let* ((n (find-node 'link item)))
+                         (cadr n))]
+                [date  (and-let* ((n (or (find-node 'date item)
+                                         (find-node 'pubDate item))))
+                         (parse-date (cadr n)))])
+            (and title link date (list title link date))))
+        items))))
+
+  (cond [(find-node 'rdf:RDF sxml) => parse-rdf]
+        [(find-node 'rss sxml) => parse-rss]
+        [else #f]))
