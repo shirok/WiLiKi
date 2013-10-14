@@ -59,8 +59,8 @@
 (define-reader-macro (srfi-implementors . maybe-num)
   (let* ((num   (x->integer
                  (get-optional maybe-num
-                               (or (and-let* ((t (ref (wiliki-current-page)
-                                                      'title))
+                               (or (and-let* ((p (wiliki-current-page))
+                                              (t (ref p 'title))
                                               (m (#/SRFI-(\d+)/ t)))
                                      (m 1))
                                    "-1"))))
