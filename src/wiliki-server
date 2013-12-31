@@ -1,6 +1,6 @@
 #!/usr/bin/gosh
 
-;; A simple script to run a small web server locally to try wiliki.
+;; A simple script to run a small web server locally to test wiliki.
 ;; Requires Gauche-makiki https://github.com/shirok/Gauche-makiki
 
 (use gauche.parseopt)

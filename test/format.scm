@@ -123,6 +123,12 @@
 (tp "strong(empty)" '(result (p "foo\n"))
     (page "''''''foo"))
 
+(tp "del" '(result (p "abc" (del "foo") "def\n"))
+    (page "abc~~~foo~~~def"))
+(tp "del" '(result (p "~~foo" (del "bar")))
+    (page "~~~foo~~~bar~~~"))
+
+
 (tp "url" '(result (p (a (@ (href "http://foo")) "http://foo")))
     (page "http://foo"))
 (tp "url" '(result (p (a (@ (href "http://foo?abc")) "http://foo?abc")))

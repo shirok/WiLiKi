@@ -1,3 +1,11 @@
+2013-12-30  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/parse.scm (fmt-line): Experimentally added
+	  delete (strikethrough) markup ~~~deleted-text~~~.  Note:
+	  If this markup appear at the beginning of line, null markup
+	  (e.g. '''') must be placed to avoid the first '~' from being
+	  interpreted as line continuation mark.
+
 2013-08-27  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/auth.scm: Check the owner of session files.  Read and

@@ -139,31 +139,23 @@
                  bracket
                  (^[match seed] (cons '(br) seed))
                  seed line))
-  ;; NB: we remove empty bold and italic, for backward compatibility
-  (define (italic line seed)
-    (regexp-fold #/''([^'].*?)?''/
-                 nl
-                 (^[match seed]
-                   (if (or (not (match 1)) (string-null? (match 1)))
-                     seed
-                     (cons `(em ,@(reverse! (nl (match 1) '()))) seed)))
-                 seed line))
-  (define (bold line seed)
-    (regexp-fold #/'''([^'].*?)?'''/
-                 italic
-                 (^[match seed]
-                   (if (or (not (match 1)) (string-null? (match 1)))
-                     seed
-                     (cons `(strong ,@(reverse! (nl (match 1) '()))) seed)))
-                 seed line))
-  (define (code line seed)
-    (regexp-fold #/"""([^\"].*?)?"""/
-                 bold
-                 (^[match seed]
-                   (if (or (not (match 1)) (string-null? (match 1)))
-                     seed
-                     (cons `(code ,@(reverse! (nl (match 1) '()))) seed)))
-                 seed line))
+  ;; Paired markup processor (e.g. ''italic'', '''bold''' etc.)
+  (define (paired-markup regexp type next)
+    (rec (self line seed)
+      ($ regexp-fold regexp next
+         (^[match seed]
+           ;; NB: we remove empty bold/italic etc, for backward compatibility
+           (if (or (not (match 1)) (string-null? (match 1)))
+             seed
+             (cons `(,type ,@(reverse! (self (match 1) '()))) seed)))
+         seed line)))
+  
+  (define italic (paired-markup #/''([^'].*?)?''/ 'em nl))
+  (define bold   (paired-markup #/'''([^'].*?)?'''/ 'strong italic))
+  (define code   (paired-markup #/"""([^\"].*?)?"""/ 'code bold))
+  (define del    (paired-markup #/~~~([^~].*?)?~~~/ 'del code))
+
+  ;; ##(...) macro
   (define (smacro line seed)
     (if (string-null? line)
       seed
@@ -175,7 +167,7 @@
             (if expr
               (smacro rest (cons `(wiki-macro ,@expr) (bold pre seed)))
               (smacro post (bold (string-append pre "##(") seed))))
-          (code line seed)))))
+          (del line seed)))))
   ;; Main body
   (cons "\n" (smacro line seed)))
 
