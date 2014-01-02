@@ -7,7 +7,8 @@
 
   - Put this file in gosh's load path.
 
-  - Prepare a password file by wiliki-passwd command. 
+  - Prepare a password file by wiliki-passwd command.  It is used for
+    authentication.
 
   - Create a cgi script something like this.
 
@@ -38,14 +39,18 @@
          :debug-level 1
          )))
 
-  - 'Login-command' value is used to access login screen.  To add
-     and edit blog contents, use the following url, where substituting
-     LOGIN-COMMAND to the word you give in this option.
+  - 'Login-command' value is used to access the login screen.  To add
+     and edit blog contents, you have to log in first.  Use the
+     following url, where substituting LOGIN-COMMAND to the word
+     you give in this option, to get to the login form.
 
      http://your-path-to-cgi-script/?c=LOGIN-COMMAND
 
-     This allows each blog script to have different login url, making
-     automated login attack more difficult.
+     This allows each blog script to have different url for login form,
+     making automated login attack more difficult.
+
+  - 'Auth-db-path' option points to the file created by wiliki-passwd
+     command, which contains username and hashed password pairs.
 
  Caveat:
    Currently we assume <blog> instance is created for every request.
