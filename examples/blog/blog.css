@@ -1,0 +1,207 @@
+* { padding: 0pt; margin: 0pt; }
+body {
+  font-family: verdana,ariel,helvetica,sans-serif;
+  color: black;
+  background-color: #ffffff;
+  padding: 10pt;
+}
+
+:link    { text-decoration: none; color: #0000ee; }
+:visited { text-decoration: none; color: #0000aa; }
+
+
+h1.blog-title {
+  display: block; font-size: 160%; color: #114477;
+  height: 100px; padding-top: 20px; padding-left: 20px;
+  background-image: url("/header-bg.png");
+  background-repeat: no-repeat;
+}
+h1.entry-date {
+  display: block; font-size: 90%; color: #114477;
+  margin-bottom: 0; border-bottom: solid thin;
+}
+div.entry-navi {
+    width: 100%; text-align: right; font-size: 70%; color: #aaaaaa;
+}
+div.entry-navi a { color: #aaaaee; }
+div.permalink { width: 100%; text-align: right; }
+div.permalink a {
+    font-size: 70%; padding: 0; margin: 0;
+    background-color: #dddddd;
+}
+div.n-entry-show { padding-bottom: 30px; }
+
+h2, h3, h4, h5, h6 { margin: 0 0 10px 0; }
+
+h2 { text-align: left; font-size: 130%; color: #005555; border: none; }
+
+h3, h4, h5, h6 { text-align: left; color: #005555; background: transparent; }
+h3 { font-size: 130% }
+h4 { font-size: 110% }
+h5 { font-size: 100% }
+h6 { font-size: 100%; font-style: italic }
+
+hr { width:0pt; color:#ffffff; margin: 1em; padding: 0;}
+
+pre { margin: 0.5em 2em 0.5em 2em; padding: 0; 
+      font-family: monospace; background-color: #ddeeee;
+      border: solid thin #aacccc; overflow: auto; }
+
+pre.macroerror { background-color: #ee5555; }
+blockquote { border-left: solid thick #ddbbaa; margin: 0 1em 0.8em 2em; }
+
+p { margin: 0.8em 1em 0.8em 1em; }
+ul, ol { margin: 0 1em 1em 2.5em; }
+li { margin: 0 0 0.4em 0; }
+
+p.archive-year-links { border-bottom: solid thin #ddddff; }
+p.archive-year-links span { font-size: 80%; padding: 0.1ex 0.7ex 0.1ex 0.7ex; }
+span.archive-year-link-hi { background-color: #ddddff; }
+
+table.content-table { table-layout : fixed; border-spacing : 0; }
+
+td.inbody { background: #ffffff }   /* used in formatted body */
+td.preview { background: #eeeeff }  /* used in preview page */
+
+div.footer { color: #aaaaaa; text-align: right; font-size:60%; }
+div.footer a:link    { color: #aaaaff }
+div.footer a:visited { color: #aaaaff }
+
+span.wiliki-alert { background-color: #ff8080; } /* used to warn internal error */
+
+
+td.main-pane { padding: 0pt 0pt 0pt 10pt; }
+td.main-pane .content { width: 600px; }
+
+/*
+ * Menu strip
+ */
+td.menu-strip { font-size: 80%; width: 180px; }
+
+td.menu-strip h2 {
+  background: #eeeeff;
+  color: #000044;
+  margin: 0pt;
+  padding: 5pt 2pt 1pt 2pt;
+  font-size: 100%;
+  border: none;
+}
+
+td.menu-strip p {
+  background: #eeeeff;
+  color: #000044;
+  margin : 0pt;
+  padding: 3pt 3pt 3pt 10pt;
+}
+
+td.menu-strip ul {
+  background: #eeeeff;
+  color: #000044;
+  margin: 0; padding: 0 0 0 5pt;
+  list-style-type: none;
+}
+td.menu-strip ul li { margin: 0; padding: 0; }
+
+td.menu-strip ul.recent-comments { font-size: 85%; }
+
+div.menu-title {
+  text-align : center;
+  font-weight: bold;
+  background: #aaddbb;
+}
+
+/*
+ * Comment
+ */
+
+div.comment { 
+  font-size: 90%;
+  padding: 0pt 3em 2em 3em;
+  margin: 0pt;
+  clear: both;
+}
+
+div.comment .comment-input {
+  margin-left: 20pt;
+}
+
+div.comment .comment-area {
+  width:  60ex;
+  height: 10ex;
+}
+
+div.comment > p.comment-caption {
+  border-left: solid 4px #006655;
+  border-bottom: solid 1px #006655;
+  padding: 0px 3px; margin: 8px 0px;
+}
+
+p.comment-entry-title {    /* Only appears in ManageComments screen */
+  font-size: 100%; font-weight: normal; font-style: italic;
+  padding: 3pt 0 3pt 0; margin: 0pt;
+}
+
+div.comment-past h2 {
+  font-size: 100%; font-weight: normal;
+  padding: 0pt; margin: 0pt;
+}
+
+div.comment-past h3 {
+  font-size: 100%; font-weight: normal;
+  padding: 0pt; margin: 0pt;
+}
+
+div.comment-past h4 {
+  font-size: 100%; font-weight: normal;
+  padding: 0pt; margin: 0pt;
+}
+
+div.comment-past h5 {
+  font-size: 100%; font-weight: normal;
+  padding: 0pt; margin: 0pt;
+}
+
+div.comment-past h6 {
+  font-size: 100%; font-weight: normal;
+  padding: 0pt; margin: 0pt;
+}
+
+div.comment-past > blockquote {
+  border: none;
+  padding: 0pt 20pt;
+  margin: 0pt 0pt 5pt 0pt;
+}
+
+div.comment-past > blockquote * {
+  padding: 0pt; margin-top: 0pt; margin-bottom: 0pt;
+}
+
+div.manage-comment-entry {
+  font-size: 90%;
+  border: solid thin #cccccc;
+  padding-left: 10pt;
+  margin-bottom: 5pt;
+}
+
+/*
+ * Tag
+ */
+
+span.tag-anchor {
+  background-color: #eeeeff; color: #777777;
+  font-size: 80%; font-style: italic; 
+  clear: both;
+}
+span.tag-anchor a:link    { color: #7777ff; }
+span.tag-anchor a:visited { color: #444444; }
+
+/*
+ * extra
+ */
+
+div.amazon {
+  padding: 5px 10px 5px 10px;
+  position:relative;
+  float:left;
+}
+

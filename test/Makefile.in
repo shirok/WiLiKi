@@ -1,6 +1,6 @@
 GOSH = "@GOSH@"
 TEST_OUT = test.log logger.log test.dbm _test
-TESTS = core.scm format.scm log.scm edit.scm rss.scm auth.scm test-wiliki.scm
+TESTS = core.scm format.scm log.scm edit.scm rss.scm auth.scm test-wiliki.scm test-blog.scm
 
 all: gosh-path
 

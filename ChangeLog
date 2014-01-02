@@ -1,3 +1,8 @@
+2014-01-01  Shiro Kawai  <shiro@acm.org>
+
+	* examples/blog/blog.scm: Added the blog script as an example of
+	  heavy WiLiKi customization.
+
 2013-12-30  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/parse.scm (fmt-line): Experimentally added
