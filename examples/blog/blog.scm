@@ -26,7 +26,7 @@
          ;; 'initialize' method of <blog>.
          :db-path "/path/to/blog-file.dbm"
          :log-file "blog-file.log"
-         :event-log-file "blog-shiro-events.log"
+         :event-log-file "blog-events.log"
          :top-page "My Blog"
          :title "My Blog"
          :description "My Blog"
