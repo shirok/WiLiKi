@@ -193,7 +193,7 @@
   (let* ([suffix (string-take key 6)]
          [hv     (string-drop key 6)]
          [path   (build-path (auth-session-directory) #`"wiliki-,suffix")])
-    (and (= (file-uid path) (sys-geteuid))
+    (and (eqv? (file-uid path) (sys-geteuid))
          (call-with-input-file path
            (^p (or (and p (match (read p)
                             [((? (cut string=? hv <>)) value)
@@ -207,7 +207,7 @@
   (and (>= (string-length key) 6)
        (let1 path (build-path (auth-session-directory)
                               #`"wiliki-,(string-take key 6)")
-         (and (= (file-uid path) (sys-geteuid))
+         (and (eqv? (file-uid path) (sys-geteuid))
               (sys-unlink path)))))
 
 ;; API

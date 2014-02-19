@@ -1,3 +1,9 @@
+2014-02-19  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/auth.scm (auth-get-session, auth-delete-session!):
+	  Fixed a bug: If the session file doesn't exist, file-uid returns
+	  #f, so we can't compare it with =.
+
 2014-01-01  Shiro Kawai  <shiro@acm.org>
 
 	* examples/blog/blog.scm: Added the blog script as an example of

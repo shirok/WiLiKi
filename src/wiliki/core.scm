@@ -123,7 +123,6 @@
    ;;   can be #f, #t or 'limited.
    (editable?   :accessor editable?      :init-keyword :editable?
                 :init-value #t)
-   ;; auth-token
    
    ;; style-sheet path
    (style-sheet :accessor style-sheet-of :init-keyword :style-sheet
