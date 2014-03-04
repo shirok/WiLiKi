@@ -479,7 +479,7 @@
                [ (> (string-length content) 0) ]
                [ (comment-post-in-valid-timerange? content) ]
                [cnt (+ (max-comment-count) 1)]
-               [comment-page (format "~a~3'0d" (comment-prefix cid) cnt)])
+               [comment-page (format "~a~3,'0d" (comment-prefix cid) cnt)])
       ;; ignore the result of cmd-commit-edit.  we'll redirect to the
       ;; main page anyway.
       (cmd-commit-edit comment-page
