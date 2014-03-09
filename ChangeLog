@@ -1,3 +1,10 @@
+2014-03-08  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki-server (run-wiliki-server): Fixed a bug that incorrectly
+	  set document-root.  start-http-server overrides document-root by
+	  :document-root keyword arg, so parameterizing it outside of
+	  start-http-server doesn't have effect.
+
 2014-02-19  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/auth.scm (auth-get-session, auth-delete-session!):

@@ -40,11 +40,11 @@
       [_ (usage)])))
 
 (define (run-wiliki-server port entry cgi-file docroot)
-  (parameterize ([document-root docroot])
-    (add-http-handler! (string->regexp (regexp-quote entry))
-                       (cgi-script cgi-file :script-name entry))
-    (add-http-handler! #/\// (file-handler))
-    (start-http-server :access-log #t :error-log #t :port port)))
+  (add-http-handler! (string->regexp (regexp-quote entry))
+                     (cgi-script cgi-file :script-name entry))
+  (add-http-handler! #/\// (file-handler))
+  (start-http-server :access-log #t :error-log #t :port port
+                     :document-root docroot))
 
 ;; Local variables:
 ;; mode: scheme
