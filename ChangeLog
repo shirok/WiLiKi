@@ -1,3 +1,9 @@
+2014-04-01  Shiro Kawai  <shiro@acm.org>
+
+	* examples/blog/blog.scm (<blog>, blog-option-ref): Added :blog-options
+	  slot to <blog>, to be used for various customization of macros.
+	  One initial example is amazon-affiliate-id.
+
 2014-03-08  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki-server (run-wiliki-server): Fixed a bug that incorrectly

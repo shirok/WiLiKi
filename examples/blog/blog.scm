@@ -85,7 +85,7 @@
   (use wiliki.edit)
   (use wiliki.rss)
   (use wiliki.log)
-  (export <blog>))
+  (export <blog> blog-option-ref))
 (select-module blog)
 
 ;;;
@@ -451,6 +451,10 @@
    ;; Set path for wiliki password db
    (auth-db-path         :init-keyword :auth-db-path
                          :init-value #f)
+   ;; Miscellaneous customization parameters (alist)
+   ;; Would be used by macros, e.g. amazon-affiliate-id
+   (blog-options         :init-keyword :options
+                         :init-value '())
    ))
 (define-class <blog-page> (<wiliki-page>) ())
 
@@ -484,6 +488,9 @@
                  (save-index)
                  (blog-recent-entry-add! key title))]
       [_ (blog-recent-comment-add! key page)])))
+
+(define-method blog-option-ref ((self <blog>) key :optional (fallback #f))
+  (assq-ref (~ self'blog-options) key fallback))
 
 ;;;
 ;;; Parts
@@ -621,6 +628,7 @@
                (charset "utf-8")))))
 
 (define-reader-macro (amazon-affiliate asin . opts)
+  (define aid (blog-option-ref (wiliki) 'amazon-affiliate-id))
   (let-macro-keywords* opts ([domain "jp"][float "left"])
     (if (equal? domain "us")
       #`"<div class=\"amazon\" style=\"float:,|float|;\"><iframe src=\"http://rcm.amazon.com/e/cm?\
@@ -631,17 +639,18 @@
           frameborder=\"0\"></iframe></div>"
       #`"<div class=\"amazon\" style=\"float:,|float|;\"><iframe src=\"http://rcm-jp.amazon.co.jp/e/cm?\
           lt1=_blank&bc1=000000&IS2=1&nou=1&bg1=FFFFFF&\
-          fc1=000000&lc1=0000FF&t=practicalsche-22&\
+          fc1=000000&lc1=0000FF&t=,|aid|&\
           o=9&p=8&l=as1&m=amazon&f=ifr&asins=,|asin|\" \
           style=\"width:120px;height:240px;\" \
           scrolling=\"no\" marginwidth=\"0\" marginheight=\"0\" \
           frameborder=\"0\"></iframe></div>")))
 
 (define-reader-macro (amazon-affiliate-link asin text)
+  (define aid (blog-option-ref (wiliki) 'amazon-affiliate-id))
   #`"<a href=\"http://www.amazon.co.jp/gp/product/,|asin|?\
-      ie=UTF8&tag=practicalsche-22&linkCode=as2&camp=247&\
+      ie=UTF8&tag=,|aid|&linkCode=as2&camp=247&\
       creative=1211&creativeASIN=,|asin|\">,|text|</a>\
-     <img src=\"http://www.assoc-amazon.jp/e/ir?t=practicalsche-22&\
+     <img src=\"http://www.assoc-amazon.jp/e/ir?t=,|aid|&\
       l=as2&o=9&a=,|asin|\" width=\"1\" height=\"1\" border=\"0\" \
       alt=\"\" style=\"border:none !important; margin:0px !important;\" />")
 
