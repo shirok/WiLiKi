@@ -11,12 +11,11 @@ while [ $# -gt 0 ]; do
 done
 
 if [ "$gen" = "yes" ]; then
-  autoconf
+  : # nothing to do
 fi
 
 if [ "$tgz" = "yes" ]; then
   if [ -f Makefile ]; then make maintainer-clean; fi
-  autoconf
   ./configure
   if [ ! -f VERSION ]; then echo "no VERSION -- something wrong?"; exit 1; fi
   VERSION=`cat VERSION`
