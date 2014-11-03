@@ -517,9 +517,9 @@
     [() (rel-base (wiliki))]
     [((? string? s)) (url-format #f s '())]
     [((? string? s) args ...) (url-format #f s args)]
-    [(:full) (abs-base (wiliki))]
-    [(:full (? string? s)) (url-format #t s '())]
-    [(:full (? string? s) args ...) (url-format #t s args)]
+    [(':full) (abs-base (wiliki))]
+    [(':full (? string? s)) (url-format #t s '())]
+    [(':full (? string? s) args ...) (url-format #t s args)]
     [else (error "invalid call to wiliki:url:" `(wiliki:url ,@args))]))
 
 ;;===================================================================
