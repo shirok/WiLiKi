@@ -215,10 +215,10 @@
        ;; Normal wiliki content never includes explicit HTML tags except
        ;; verbatim block.
        (and (string? content)
-            ($ #/<a [^>]*href=[\"' ]?\s*http/i
+            ($ #/<a [^>]*href=[\"' ]?/i
                $ regexp-replace-all #/\{\{\{\r?\n.*?\n\}\}\}\r?\n/ content "")
             "literal anchor tag in content")
-       (and (string? logmsg) (#/<a [^>]*href=[\"' ]?\s*http/i logmsg)
+       (and (string? logmsg) (#/<a [^>]*href=[\"' ]?/i logmsg)
             "literal anchor tag in logmsg")
        ;; Some spammer put the same string in content and logmsg.
        (and (not (equal? content "")) (equal? content logmsg)
