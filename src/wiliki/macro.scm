@@ -425,7 +425,7 @@
   ;; those heuristic spam filtering into one module.
   (define (filter-suspicious content)
     (cond [(or (not (string? content))
-               (#/<a\s+href=[\"'\s]*http/i content)
+               (#/<a\s+href=[\"'\s]/i content)
                (#/\[url=http:\/\/[\w\/.-]*\]/i content)
                (#/^\s*comment\d*\s*$/i content)  ; temporary
                (#/^\s*[\d\;_.tx]+\s*$/ content)) ; temporary
