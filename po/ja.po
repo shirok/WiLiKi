@@ -6,89 +6,89 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: WiLiKi-0.6_pre1\n"
+"Project-Id-Version: WiLiKi-0.7_pre1\n"
 "Report-Msgid-Bugs-To: shiro@acm.org\n"
-"POT-Creation-Date: 2007-05-02 02:49-1000\n"
+"POT-Creation-Date: 2014-11-20 20:39-1000\n"
 "PO-Revision-Date: 2006-04-26 19:08-1000\n"
-"Last-Translator: Shiro Kawai <shiro@acm.org\n"
+"Last-Translator: Shiro Kawai <shiro@acm.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=euc-jp\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ../src/wiliki.scm:292
+#: ../src/wiliki.scm:151
 msgid "Nonexistent page: "
 msgstr "ページが存在しません: "
 
-#: ../src/wiliki.scm:293
+#: ../src/wiliki.scm:152
 msgid "Create a new page: "
 msgstr "新規ページ作製: "
 
-#: ../src/wiliki.scm:316
+#: ../src/wiliki.scm:175
 msgid "All Pages"
 msgstr "一覧"
 
-#: ../src/wiliki.scm:327 ../src/wiliki.scm:428
+#: ../src/wiliki.scm:184 ../src/wiliki.scm:314
 msgid "Recent Changes"
 msgstr "最近の更新"
 
-#: ../src/wiliki.scm:350
+#: ../src/wiliki.scm:211
 #, scheme-format
 msgid "Search results of \"~a\""
 msgstr "\"~a\"の検索結果"
 
-#: ../src/wiliki.scm:410
+#: ../src/wiliki.scm:296
 msgid "Top"
 msgstr "トップ"
 
-#: ../src/wiliki.scm:415
+#: ../src/wiliki.scm:301
 msgid "Edit"
 msgstr "編集"
 
-#: ../src/wiliki.scm:420
+#: ../src/wiliki.scm:306
 msgid "History"
 msgstr "編集履歴"
 
-#: ../src/wiliki.scm:424
+#: ../src/wiliki.scm:310
 msgid "All"
 msgstr "一覧"
 
-#: ../src/wiliki.scm:436
+#: ../src/wiliki.scm:322
 msgid "Search"
 msgstr "検索"
 
-#: ../src/wiliki.scm:483
+#: ../src/wiliki.scm:369
 msgid "Last modified : "
 msgstr "最終更新 : "
 
-#: ../src/wiliki.scm:515
+#: ../src/wiliki.scm:389
 msgid "Epoch"
 msgstr "記録開始"
 
-#: ../src/wiliki/edit.scm:36
-msgid "Preview"
-msgstr "プレビュー"
-
-#: ../src/wiliki/edit.scm:37
-msgid "Commit without preview"
-msgstr "コミット(プレビュー無し)"
-
-#: ../src/wiliki/edit.scm:38
+#: ../src/wiliki/edit.scm:45
 msgid "Preview again"
 msgstr "もう一度プレビュー"
 
-#: ../src/wiliki/edit.scm:39
+#: ../src/wiliki/edit.scm:46
 msgid "Commit"
 msgstr "コミット"
 
-#: ../src/wiliki/edit.scm:43
+#: ../src/wiliki/edit.scm:47
+msgid "Preview"
+msgstr "プレビュー"
+
+#: ../src/wiliki/edit.scm:48
+msgid "Commit without preview"
+msgstr "コミット(プレビュー無し)"
+
+#: ../src/wiliki/edit.scm:52
 msgid "Don't update 'Recent Changes'"
 msgstr "「最近の更新」に登録しない"
 
-#: ../src/wiliki/edit.scm:59
+#: ../src/wiliki/edit.scm:69
 msgid "ChangeLog (brief summary of your edit for later reference):"
 msgstr "ChangeLog (変更箇所の簡単なメモ)："
 
-#: ../src/wiliki/edit.scm:69
+#: ../src/wiliki/edit.scm:79
 msgid ""
 "<h2>Text Formatting Rules</h2>\n"
 "      <p>No HTML.</p>\n"
@@ -121,6 +121,10 @@ msgid ""
 "         to emphasize.</p>\n"
 "      <p>Surround words by three single quotes (<tt>'''foo'''</tt>)\n"
 "         to emphasize more.</p>\n"
+"      <p>Surround words by three double quotes (<tt>\"\"\"foo\"\"\"</tt>)\n"
+"         for fixed-length typesetting.</p>\n"
+"      <p>Surround words by three tildes (<tt>~~~foo~~~</tt>)\n"
+"         for strikeout.</p>\n"
 "      <p>\"<tt>*</tt>\", \"<tt>**</tt>\" and \"<tt>***</tt>\"' ... \n"
 "         at the beginning of a line is a header.  Put a space\n"
 "         after the asterisk(s).</p>\n"
@@ -161,6 +165,10 @@ msgstr ""
 "      強調 (&lt;em&gt;)</p>\n"
 "   <p>3つのシングルクオートで囲む (<tt>'''ほげ'''</tt>) と\n"
 "      もっと強調 (&lt;strong&gt;)</p>\n"
+"   <p>3つのダブルクオートで囲む (<tt>\"\"\"ほげ\"\"\"</tt>) と\n"
+"      等幅フォント (&lt;tt&gt;)</p>\n"
+"   <p>3つのチルダで囲む (<tt>~~~ほげ~~~</tt>) と\n"
+"      打ち消し (&lt;del&gt;)</p>\n"
 "   <p>行頭の \"<tt>*</tt>\", \"<tt>**</tt>\", \"<tt>***</tt>\" …\n"
 "      は見出し。アスタリスクの後に空白が必要。</p>\n"
 "   <p>行頭に空白があるとプレフォーマットテキスト(&lt;pre&gt;)。\n"
@@ -176,20 +184,20 @@ msgstr ""
 "   <p>行頭に上記の特殊な文字をそのまま入れたい場合は、ダミーの強調項目\n"
 "       (6つの連続するシングルクオート)を行頭に入れると良い。</p>"
 
-#: ../src/wiliki/edit.scm:137
+#: ../src/wiliki/edit.scm:148
 #, scheme-format
 msgid "Preview of ~a"
 msgstr "~a のプレビュー"
 
-#: ../src/wiliki/edit.scm:236
+#: ../src/wiliki/edit.scm:268
 msgid "lines you added (or somebody else deleted)"
 msgstr "あなたが追加した行、もしくは他の人が削除した行"
 
-#: ../src/wiliki/edit.scm:238
+#: ../src/wiliki/edit.scm:270
 msgid "lines somebody else added (or you deleted)"
 msgstr "他の人が追加した行、もしくはあなたが削除した行"
 
-#: ../src/wiliki/edit.scm:241
+#: ../src/wiliki/edit.scm:273
 msgid ""
 "<p>The following shows what you are about to submit.  Please re-edit the "
 "content and submit again.</p>"
@@ -197,59 +205,88 @@ msgstr ""
 "<p>以下に示すのがあなたが更新しようとした内容です。再編集して再び更新して下さ"
 "い。</p>"
 
-#: ../src/wiliki/history.scm:117
+#: ../src/wiliki/history.scm:118
 msgid "Edit History"
 msgstr "編集履歴"
 
-#: ../src/wiliki/history.scm:129
+#: ../src/wiliki/history.scm:130
 #, scheme-format
 msgid "Edit history of ~a"
 msgstr "~aの編集履歴"
 
-#: ../src/wiliki/history.scm:141
+#: ../src/wiliki/history.scm:142
 msgid "added lines"
 msgstr "追加された行"
 
-#: ../src/wiliki/history.scm:142
+#: ../src/wiliki/history.scm:143
 msgid "deleted lines"
 msgstr "削除された行"
 
-#: ../src/wiliki/history.scm:146
+#: ../src/wiliki/history.scm:147
 #, scheme-format
 msgid "Changes of ~a since ~a"
 msgstr "~1@*~a以来の~0@*~aの変更箇所"
 
-#: ../src/wiliki/history.scm:164
+#: ../src/wiliki/history.scm:165
 #, scheme-format
 msgid "Changes of ~a between ~a and ~a"
 msgstr "~1@*~aと~2@*~a間の~0@*~aの変更箇所"
 
-#: ../src/wiliki/history.scm:174
+#: ../src/wiliki/history.scm:175
 msgid "Edit History:Diff"
 msgstr "編集履歴:差分"
 
-#: ../src/wiliki/history.scm:192
+#: ../src/wiliki/history.scm:193
 msgid "Edit History:View"
 msgstr "編集履歴:過去のバージョン"
 
-#: ../src/wiliki/history.scm:201
+#: ../src/wiliki/history.scm:202
 #, scheme-format
 msgid "Content of ~a at ~a"
 msgstr "~1@*~a時点での~0@*~aの内容"
 
-#: ../src/wiliki/history.scm:207
+#: ../src/wiliki/history.scm:208
 msgid "View diff from current version"
 msgstr "現在のバージョンとの差分を見る"
 
-#: ../src/wiliki/history.scm:211
+#: ../src/wiliki/history.scm:214
 msgid "Edit this version"
 msgstr "このバージョンを編集する"
 
-#: ../src/wiliki/history.scm:218
+#: ../src/wiliki/history.scm:221
 #, scheme-format
 msgid "No edit history available for page ~a"
 msgstr "~aのページには編集履歴情報がありません"
 
-#: ../src/wiliki/history.scm:224
+#: ../src/wiliki/history.scm:227
 msgid "Return to the edit history"
 msgstr "編集履歴ページに戻る"
+
+#: ../src/wiliki/macro.scm:144
+#, scheme-format
+msgid "Page(s) with tag ~s"
+msgstr ""
+
+#: ../src/wiliki/macro.scm:152
+msgid "The list is cached and updated occasionally."
+msgstr ""
+
+#: ../src/wiliki/macro.scm:156
+msgid "Update cache now"
+msgstr ""
+
+#: ../src/wiliki/macro.scm:342
+msgid "Post a comment"
+msgstr ""
+
+#: ../src/wiliki/macro.scm:352
+msgid "Name: "
+msgstr ""
+
+#: ../src/wiliki/macro.scm:363
+msgid "Submit Comment"
+msgstr ""
+
+#: ../src/wiliki/macro.scm:369
+msgid "Past comment(s)"
+msgstr ""
