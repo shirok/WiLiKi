@@ -42,10 +42,10 @@
 (define (edit-form preview pagename content mtime logmsg donttouch)
   (define (buttons)
     (if preview
-        `((input (@ (type submit) (name preview) (value ,($$ "Preview again"))))
-          (input (@ (type submit) (name commit) (value ,($$ "Commit")))))
-        `((input (@ (type submit) (name preview) (value ,($$ "Preview"))))
-          (input (@ (type submit) (name commit) (value ,($$ "Commit without preview")))))))
+      `((input (@ (type submit) (name preview) (value ,($$ "Preview again"))))
+        (input (@ (type submit) (name commit) (value ,($$ "Commit")))))
+      `((input (@ (type submit) (name preview) (value ,($$ "Preview"))))
+        (input (@ (type submit) (name commit) (value ,($$ "Commit without preview")))))))
   (define (donttouch-checkbox)
     `((input (@ (type checkbox) (name donttouch) (value on) (id donttouch)
                 ,@(if donttouch '((checked checked)) '())))
@@ -103,6 +103,10 @@
          to emphasize.</p>
       <p>Surround words by three single quotes (<tt>'''foo'''</tt>)
          to emphasize more.</p>
+      <p>Surround words by three double quotes (<tt>\"\"\"foo\"\"\"</tt>)
+         for fixed-length typesetting.</p>
+      <p>Surround words by three tildes (<tt>~~~foo~~~</tt>)
+         for strikeout.</p>
       <p>\"<tt>*</tt>\", \"<tt>**</tt>\" and \"<tt>***</tt>\"' ... 
          at the beginning of a line is a header.  Put a space
          after the asterisk(s).</p>
