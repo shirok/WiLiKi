@@ -146,7 +146,7 @@
    (debug-level :accessor debug-level    :init-keyword :debug-level
                 :init-value 0)
    ;; log file path.  if specified, logging & history feature becomes
-   ;; available.  If the name given doesn't hvae directory component,
+   ;; available.  If the name given doesn't have directory component,
    ;; it is regarded in the same directory as db-path.
    (log-file    :accessor log-file       :init-keyword :log-file
                 :init-value #f)
