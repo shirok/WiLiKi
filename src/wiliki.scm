@@ -278,6 +278,7 @@
     (receive (language label)
         (case (wiliki:lang)
           [(jp) (values 'en "->English")]
+          [(vi) (values 'vi "->Vietnamese")]
           [else (values 'jp "->Japanese")])
       `(a (@ (href ,(string-append (cgi-name-of (wiliki)) "?" target
                                    (lang-spec language '&))))

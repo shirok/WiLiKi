@@ -42,7 +42,7 @@
 (cf-subst 'GAUCHE_PKGLIBDIR  (gauche-config "--pkglibdir"))
 (cf-subst 'GAUCHE_PKGARCHDIR (gauche-config "--pkgarchdir"))
 
-(cf-subst 'ALL_LINGUAS "ja")
+(cf-subst 'ALL_LINGUAS "ja vi")
 
 ;; Output
 ;; TODO: Gauche-0.9.4 doesn't have cf-make-gpd.  Replace it after
