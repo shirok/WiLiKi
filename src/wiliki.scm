@@ -56,6 +56,7 @@
           wiliki:page-lines-fold
           wiliki:lang
           wiliki:version
+          wiliki:self-url
           )
   )
 (select-module wiliki)
