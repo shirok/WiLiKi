@@ -1,0 +1,290 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Shiro Kawai
+# This file is distributed under the same license as the PACKAGE package.
+# Nguyễn Thái Ngọc Duy <pclouds@gmail.com>, 2015.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: WiLiKi\n"
+"Report-Msgid-Bugs-To: pclouds@gmail.com\n"
+"POT-Creation-Date: 2015-02-08 09:19+0700\n"
+"PO-Revision-Date: 2015-04-23 18:56+0700\n"
+"Last-Translator: Nguyễn Thái Ngọc Duy <pclouds@gmail.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: ../src/wiliki.scm:151
+msgid "Nonexistent page: "
+msgstr "Trang không tồn tại: "
+
+#: ../src/wiliki.scm:152
+msgid "Create a new page: "
+msgstr "Tạo trang mới: "
+
+#: ../src/wiliki.scm:175
+msgid "All Pages"
+msgstr "Mọi trang"
+
+#: ../src/wiliki.scm:184 ../src/wiliki.scm:314
+msgid "Recent Changes"
+msgstr "Thay đổi gần đây"
+
+#: ../src/wiliki.scm:211
+#, scheme-format
+msgid "Search results of \"~a\""
+msgstr "Kết quả tìm kiếm về \"~a\""
+
+#: ../src/wiliki.scm:296
+msgid "Top"
+msgstr "Tranh chính"
+
+#: ../src/wiliki.scm:301
+msgid "Edit"
+msgstr "Sửa"
+
+#: ../src/wiliki.scm:306
+msgid "History"
+msgstr "Lịch sử"
+
+#: ../src/wiliki.scm:310
+msgid "All"
+msgstr "Tất cả"
+
+#: ../src/wiliki.scm:322
+msgid "Search"
+msgstr "Tìm"
+
+#: ../src/wiliki.scm:369
+msgid "Last modified : "
+msgstr "Lần sửa cuối: "
+
+#: ../src/wiliki.scm:389
+msgid "Epoch"
+msgstr ""
+
+#: ../src/wiliki/edit.scm:45
+msgid "Preview again"
+msgstr "Xem trước lần nữa"
+
+#: ../src/wiliki/edit.scm:46
+msgid "Commit"
+msgstr "Lưu"
+
+#: ../src/wiliki/edit.scm:47
+msgid "Preview"
+msgstr "Xem trước"
+
+#: ../src/wiliki/edit.scm:48
+msgid "Commit without preview"
+msgstr "Lưu không xem trước"
+
+#: ../src/wiliki/edit.scm:52
+msgid "Don't update 'Recent Changes'"
+msgstr "Không cập nhật \"Thay đổi gần đây\""
+
+#: ../src/wiliki/edit.scm:69
+msgid "ChangeLog (brief summary of your edit for later reference):"
+msgstr "ChangeLog (tóm tắt ngắn về thay đổi để tham khảo về sau):"
+
+#: ../src/wiliki/edit.scm:79
+msgid ""
+"<h2>Text Formatting Rules</h2>\n"
+"      <p>No HTML.</p>\n"
+"      <p>A line begins with \";;\" doesn't appear in the output (comment).</"
+"p>\n"
+"      <p>A line begins with \"~\" is treated as if it is continued\n"
+"         from the previous line, except comments.  (line continuation).</p>\n"
+"      <p>Empty line to separating paragraphs (&lt;p&gt;)</p>\n"
+"      <p>\"<tt>- </tt>\", \"<tt>-- </tt>\" and \"<tt>--- </tt>\" ... at the\n"
+"         beginning of a line for an item of unordered list (&lt;ul&gt;).\n"
+"         Put a space after dash(es).</p>\n"
+"      <p>\"<tt># </tt>\", \"<tt>## </tt>\", \"<tt>### </tt>\" ... at the\n"
+"         beginning of a line for an item of ordered list (&lt;ol&gt;).\n"
+"         Put a space after <tt>#</tt>'s.</p>\n"
+"      <p>A line with only \"<tt>----</tt>\" is &lt;hr&gt;.</p>\n"
+"      <p>\"<tt>:item:description</tt>\" at the beginning of a line is &lt;"
+"dl&gt;.\n"
+"         The item includes all colons but the last one.  If you want to "
+"include\n"
+"         a colon in the description, put it in the next line.</p>\n"
+"      <p><tt>[[Name]]</tt> to make \"Name\" a WikiName.  Note that\n"
+"         a simple mixed-case word doesn't become a WikiName.\n"
+"         \"Name\" beginning with \"$\" has special meanings (e.g. \n"
+"         \"[[$date]]\" is replaced for the time at the editing.)</p>\n"
+"      <p>A URL-like string beginning with \"<tt>http:</tt>\" becomes\n"
+"         a link.  \"<tt>[URL name]</tt>\" becomes a <tt>name</tt> that "
+"linked\n"
+"         to <tt>URL</tt>.</p>\n"
+"      <p>Surround words by two single quotes (<tt>''foo''</tt>)\n"
+"         to emphasize.</p>\n"
+"      <p>Surround words by three single quotes (<tt>'''foo'''</tt>)\n"
+"         to emphasize more.</p>\n"
+"      <p>Surround words by three double quotes (<tt>\"\"\"foo\"\"\"</tt>)\n"
+"         for fixed-length typesetting.</p>\n"
+"      <p>Surround words by three tildes (<tt>~~~foo~~~</tt>)\n"
+"         for strikeout.</p>\n"
+"      <p>\"<tt>*</tt>\", \"<tt>**</tt>\" and \"<tt>***</tt>\"' ... \n"
+"         at the beginning of a line is a header.  Put a space\n"
+"         after the asterisk(s).</p>\n"
+"      <p>Whitespace(s) at the beginning of line for preformatted text.</p>\n"
+"      <p>A line of \"{{{\" starts verbatim text, which ends with\n"
+"         a line of \"}}}\".\n"
+"         No formatting is done in verbatim text.  Even comments and line\n"
+"         continuation don't have effect.</p>\n"
+"      <p>A line begins with \"||\" and also ends with \"||\" becomes a\n"
+"         row of a table.  Consecutive rows forms a table.  Inside a row,\n"
+"         \"||\" delimits columns.</p>\n"
+"      <p>\"~%\" is replaced for \"&lt;br&gt;\".</p>\n"
+"      <p>If you want to use special characters at the\n"
+"         beginning of line, put six consecutive single quotes.\n"
+"         It emphasizes a null string, so it's effectively nothing.</p>"
+msgstr ""
+"<h2>Quy tắc định dạng</h2>\n"
+"      <p>Không HTML.</p>\n"
+"      <p>Dòng bắt đầu với \";;\" không xuất hiện ở đầu ra (ghi chú).</p>\n"
+"      <p>Dòng bắt đầu bằng \"~\" coi như nối tiếp từ dòng trước đó,\n"
+"         trừ khi đó là ghi chú.  (tiếp nối dòng).</p>\n"
+"      <p>Dòng trống ngăn cách các đoạn (&lt;p&gt;)</p>\n"
+"      <p>\"<tt>- </tt>\", \"<tt>-- </tt>\" and \"<tt>--- </tt>\" ... ở đầu\n"
+"         dòng của các mục thuộc danh sách không thứ tự (&lt;ul&gt;).\n"
+"         Thêm khoảng trắng sau dấu gạch ngang.</p>\n"
+"      <p>\"<tt># </tt>\", \"<tt>## </tt>\", \"<tt>### </tt>\" ... ở đầu\n"
+"         dòng của các mục thuộc danh sách có thứ tự (&lt;ol&gt;).\n"
+"         Thêm khoảng trắng sau <tt>#</tt>.</p>\n"
+"      <p>Dòng chỉ có \"<tt>----</tt>\" là &lt;hr&gt;.</p>\n"
+"      <p>\"<tt>:mục:mô tả</tt>\" ở đầu dòng là &lt;dl&gt;.\n"
+"         Mục bao gồm tất cả dấu hai chấm trừ cái cuối cùng. Để thêm dấu hai\n"
+"         chấm vào mô tả, thêm vào ở hàng kế.</p>\n"
+"      <p><tt>[[Tên]]</tt> tạo WikiName tên \"Tên\". Một từ trộn lẫn chữ hoa\n"
+"         và chữ thường không tự động biến thành WikiName.\n"
+"         \"Tên\" bắt đầu bằng \"$\" có ý nghĩa đặc biết (v.d.\n"
+"         \"[[$date]]\" được thay bằng ngày thay đổi.)</p>\n"
+"      <p>Chuỗi dạng URL bắt đầu với \"<tt>http:</tt>\" biến thành một liên\n"
+"         kết.  \"<tt>[URL tên]</tt>\" biến thành <tt>tên</tt> và được liên\n"
+"         kết đến <tt>URL</tt>.</p>\n"
+"      <p>Hai nháy đơn bao quanh từ (<tt>''foo''</tt>) để nhấn mạnh.</p>\n"
+"      <p>Ba nháy đơn bao quanh từ (<tt>'''foo'''</tt>) để nhấn mạnh hơn nữa.</p>\n"
+"      <p>Ba nháy kép bao quanh từ (<tt>\"\"\"foo\"\"\"</tt>) để dùng phông chữ có\n"
+"         độ rộng cố định.</p>\n"
+"      <p>Ba dấu ngã bao quanh từ (<tt>~~~foo~~~</tt>) để gạch đè.</p>\n"
+"      <p>\"<tt>*</tt>\", \"<tt>**</tt>\" and \"<tt>***</tt>\"' ... \n"
+"         ở đầu dòng là tiêu đề.  Thêm khoảng trắng sau dấu sao cuối cùng.</p>\n"
+"      <p>Khoảng trắng ở đầu dòng cho văn bản định dạng sẵn.</p>\n"
+"      <p>Dòng \"{{{\" bắt đầu nguyên văn, kết thúc ở dòng \"}}}\".\n"
+"         Nguyên văn không được định dạng lại.  Thậm chí ghi chú và tiếp nối\n"
+"         dòng cũng không có tác dụng.</p>\n"
+"      <p>Dòng bắt đầu bằng \"||\" và kết thúc bằng \"||\" biến thành một hàng\n"
+"         trong bảng.  Các hàng liên tục tạo thành một bảng. \"||\" dùng để phân\n"
+"         cột trong mỗi dòng.</p>\n"
+"      <p>\"~%\" được dùng thay cho \"&lt;br&gt;\".</p>\n"
+"      <p>Để dùng ký tự đặc biệt ở đầu dùng, thêm sáu dấu nháy đơn liên tiếp.\n"
+"         Đây là mã để nhấn mạnh chuỗi rỗng, nên trên thực tế không có hiệu ứng\n"
+"         gì.</p>"
+
+#: ../src/wiliki/edit.scm:148
+#, scheme-format
+msgid "Preview of ~a"
+msgstr "Xem trước ~a"
+
+#: ../src/wiliki/edit.scm:268
+msgid "lines you added (or somebody else deleted)"
+msgstr "dòng bạn thêm (hoặc ai đó xoá)"
+
+#: ../src/wiliki/edit.scm:270
+msgid "lines somebody else added (or you deleted)"
+msgstr "dòng ai đó thêm (hoặc bạn xoá)"
+
+#: ../src/wiliki/edit.scm:273
+msgid ""
+"<p>The following shows what you are about to submit.  Please re-edit the "
+"content and submit again.</p>"
+msgstr ""
+
+#: ../src/wiliki/history.scm:118
+msgid "Edit History"
+msgstr "Nhật ký thay đổi"
+
+#: ../src/wiliki/history.scm:130
+#, scheme-format
+msgid "Edit history of ~a"
+msgstr "Nhật ký thay đổi của ~a"
+
+#: ../src/wiliki/history.scm:142
+msgid "added lines"
+msgstr "dòng được thêm"
+
+#: ../src/wiliki/history.scm:143
+msgid "deleted lines"
+msgstr "dòng bị xoá"
+
+#: ../src/wiliki/history.scm:147
+#, scheme-format
+msgid "Changes of ~a since ~a"
+msgstr "Thay đổi của ~a từ ~a"
+
+#: ../src/wiliki/history.scm:165
+#, scheme-format
+msgid "Changes of ~a between ~a and ~a"
+msgstr "Thay đổi của ~a giữa ~a và ~a"
+
+#: ../src/wiliki/history.scm:175
+msgid "Edit History:Diff"
+msgstr "Nhật ký thay đổi:Xem khác biệt"
+
+#: ../src/wiliki/history.scm:193
+msgid "Edit History:View"
+msgstr "Nhật ký thay đổi:Xem"
+
+#: ../src/wiliki/history.scm:202
+#, scheme-format
+msgid "Content of ~a at ~a"
+msgstr "Nội dung của ~a lúc ~a"
+
+#: ../src/wiliki/history.scm:208
+msgid "View diff from current version"
+msgstr "Xem khác biệc so với phiên bản hiện thời"
+
+#: ../src/wiliki/history.scm:214
+msgid "Edit this version"
+msgstr "Sửa phiên bản này"
+
+#: ../src/wiliki/history.scm:221
+#, scheme-format
+msgid "No edit history available for page ~a"
+msgstr "Không có nhật ký thay đổi cho trang ~a"
+
+#: ../src/wiliki/history.scm:227
+msgid "Return to the edit history"
+msgstr "Trở về nhật ký thay đổi"
+
+#: ../src/wiliki/macro.scm:144
+#, scheme-format
+msgid "Page(s) with tag ~s"
+msgstr "Trang với thẻ ~s"
+
+#: ../src/wiliki/macro.scm:152
+msgid "The list is cached and updated occasionally."
+msgstr "Danh sách được lưu tạm và cập nhật định kỳ."
+
+#: ../src/wiliki/macro.scm:156
+msgid "Update cache now"
+msgstr "Cập nhật ngay"
+
+#: ../src/wiliki/macro.scm:342
+msgid "Post a comment"
+msgstr "Gửi nhận xét"
+
+#: ../src/wiliki/macro.scm:352
+msgid "Name: "
+msgstr "Tên: "
+
+#: ../src/wiliki/macro.scm:363
+msgid "Submit Comment"
+msgstr "Gửi nhận xét"
+
+#: ../src/wiliki/macro.scm:369
+msgid "Past comment(s)"
+msgstr "Nhận xét trước"

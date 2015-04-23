@@ -8,6 +8,7 @@
 (use util.match)
 (use file.util)
 (use makiki)
+(use makiki.cgi)
 
 (define (usage)
   (print "Usage: wiliki-server [-p port][-e entry-path][-d document-root] cgi-script")
