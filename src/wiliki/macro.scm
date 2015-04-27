@@ -102,11 +102,12 @@
 ;; Old format:
 ;;  $$img url [alt-text]
 ;; New format:
-;;  $$img url [alt=alt-text] [caption=caption]
+;;  $$img url [alt=alt-text] [caption=caption] [float=float]
 
 (define-reader-macro (img url . args)
   (let-macro-keywords* args ([alt "[image]"]
-                             [caption #f])
+                             [caption #f]
+                             [float #f])
     ;; support old style alt-text
     (when (and (equal? alt "[image]")
                (pair? args)
@@ -116,11 +117,14 @@
       (if caption
         ;; figcaption is html5; for now we use a element trick.
         ;; NB: If caption is given, the whole unit becomes a block element.
-        `((div 
+        `((div
+           ,@(cond-list [float `(@ (style ,#"float:~float"))])
            (a (@ (style "display:inline-block;text-decolation:none"))
               (img (@ (src ,url) (alt ,alt)))
               (div (@ (style "text-align:center")) ,caption))))
-        `((img (@ (src ,url) (alt ,alt)))))
+        `((img
+           ,@(cond-list [float `(@ (style ,#"float:~float"))])
+           (@ (src ,url) (alt ,alt)))))
       ;; If image isn't allowed to display, we just place a link.
       `((a (@ (href ,url)) ,alt)))))
 
