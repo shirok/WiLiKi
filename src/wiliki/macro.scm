@@ -117,7 +117,7 @@
         ;; figcaption is html5; for now we use a element trick
         `((a (@ (style "text-decolation:none"))
              (img (@ (src ,url) (alt ,alt)))
-             ,caption))
+             (div (@ (style "text-align:center")) ,caption)))
         `((img (@ (src ,url) (alt ,alt)))))
       `((a (@ (href ,url)) ,alt)))))
 
