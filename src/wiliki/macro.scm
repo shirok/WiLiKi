@@ -99,21 +99,36 @@
 ;;---------------------------------------------------------------
 ;; $$img
 ;;
-(define-reader-macro (img url . maybe-alt)
-  (define (alt) (if (null? maybe-alt) "[image]" (string-join maybe-alt " ")))
-  (define (badimg) `((a (@ (href ,url)) ,(alt))))
-  (let loop ((urls (ref (wiliki)'image-urls)))
-    (if (pair? urls)
-      (receive (pred action)
-          (if (pair? (car urls))
-            (values (caar urls) (cadar urls))
-            (values (car urls) 'allow))
-        (if (pred url)
-          (if (eq? action 'allow)
-            `((img (@ (src ,url) (alt ,(alt)))))
-            (badimg))
-          (loop (cdr urls))))
-      (badimg))))
+;; Old format:
+;;  $$img url [alt-text]
+;; New format:
+;;  $$img url [alt=alt-text] [caption=caption]
+
+(define-reader-macro (img url . args)
+  (let-macro-keywords* args ([alt "[image]"]
+                             [caption #f])
+    ;; support old style alt-text
+    (when (and (equal? alt "[image]")
+               (pair? args)
+               (not (#/.*=/ (car args))))
+      (set! alt (string-join args " ")))
+    (if (image-url-allowed? url)
+      (if caption
+        ;; figcaption is html5; for now we use a element trick
+        `((a (@ (style "text-decolation:none"))
+             (img (@ (src ,url) (alt ,alt)))
+             ,caption))
+        `((img (@ (src ,url) (alt ,alt)))))
+      `((a (@ (href ,url)) ,alt)))))
+
+(define (image-url-allowed? url)
+  (let loop ([urls (~ (wiliki)'image-urls)])
+    (match urls
+      [() #f]
+      [((pred action) . rest)
+       (if (pred url) (eq? action 'allow) (loop rest))]
+      [(pred . rest)
+       (if (pred url) #t (loop rest))])))
 
 ;;---------------------------------------------------------------
 ;; $$tag

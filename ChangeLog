@@ -1,3 +1,9 @@
+2015-04-26  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/macro.scm (img): Changed $$img macro to take 'alt'
+	  and 'caption' arguments, e.g.
+	  [[$$img url alt=image "caption=foo bar"]]
+
 2014-04-01  Shiro Kawai  <shiro@acm.org>
 
 	* examples/blog/blog.scm (<blog>, blog-option-ref): Added :blog-options
