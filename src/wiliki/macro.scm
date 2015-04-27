@@ -114,11 +114,14 @@
       (set! alt (string-join args " ")))
     (if (image-url-allowed? url)
       (if caption
-        ;; figcaption is html5; for now we use a element trick
-        `((a (@ (style "text-decolation:none"))
-             (img (@ (src ,url) (alt ,alt)))
-             (div (@ (style "text-align:center")) ,caption)))
+        ;; figcaption is html5; for now we use a element trick.
+        ;; NB: If caption is given, the whole unit becomes a block element.
+        `((div 
+           (a (@ (style "display:inline-block;text-decolation:none"))
+              (img (@ (src ,url) (alt ,alt)))
+              (div (@ (style "text-align:center")) ,caption))))
         `((img (@ (src ,url) (alt ,alt)))))
+      ;; If image isn't allowed to display, we just place a link.
       `((a (@ (href ,url)) ,alt)))))
 
 (define (image-url-allowed? url)
