@@ -75,26 +75,24 @@
 ;;
 (define-reader-macro (index prefix)
   `((ul
-     ,@(map (lambda (key) `(li ,(wiliki:wikiname-anchor (car key))))
+     ,@(map (^[key] `(li ,(wiliki:wikiname-anchor (car key))))
             (wiliki:db-search
-             (lambda (k v) (string-prefix? prefix k))
-             (lambda (a b)
-               (string<? (car a) (car b))))))))
+             (^[k v] (string-prefix? prefix k))
+             (^[a b] (string<? (car a) (car b))))))))
 
 (define-reader-macro (cindex prefix . maybe-delim)
   (intersperse (get-optional maybe-delim " ")
-               (map (lambda (key) (wiliki:wikiname-anchor (car key)))
+               (map (^[key] (wiliki:wikiname-anchor (car key)))
                     (wiliki:db-search
-                     (lambda (k v) (string-prefix? prefix k))
-                     (lambda (a b)
-                       (string<? (car a) (car b)))))))
+                     (^[k v] (string-prefix? prefix k))
+                     (^[a b] (string<? (car a) (car b)))))))
 
 ;;---------------------------------------------------------------
 ;; $$include
 ;;
 (define-reader-macro (include page)
-  (cond ((wiliki:db-get page) => wiliki:format-content)
-        (else (list #`"[[$$include ,page]]"))))
+  (cond [(wiliki:db-get page) => wiliki:format-content]
+        [else (list #`"[[$$include ,page]]")]))
 
 ;;---------------------------------------------------------------
 ;; $$img
@@ -146,7 +144,7 @@
           ,(format "Tag~a: " (match tagnames [(_) ""] [else "s"]))
           ,@(intersperse
              ", "
-             (map (lambda (tagname)
+             (map (^[tagname]
                     `(a (@ (href ,(wiliki:url "p=Tag:~a" tagname))) ,tagname))
                   tagnames)))
     ))
@@ -165,7 +163,7 @@
   
   `((h2 ,(format (gettext "Page(s) with tag ~s") tagname))
     (ul
-     ,@(map (lambda (key&attr)
+     ,@(map (^[key&attr]
               `(li ,@(wiliki:format-wikiname (car key&attr))
                    "(" ,(how-long-since (get-keyword :mtime (cdr key&attr)))
                    " ago)"))
@@ -192,11 +190,11 @@
       [#/\[\[$$tag\s+(.*?)\]\]/ (_ args)
        (member tagname (or (wiliki:parse-macro-args args) '()))]
       [else #f]))
-  (let* ((w (wiliki))
-         (pages (wiliki:db-search (lambda (key content)
+  (let* ([w (wiliki)]
+         [pages (wiliki:db-search (^[key content]
                                     (and (not (string-prefix? " " key))
                                          (wiliki:db-record-content-find
-                                          w content find-tag))))))
+                                          w content find-tag))))])
     (wiliki:with-db 
      (cut wiliki:db-raw-put! (%tag-cache-name tagname)
           (write-to-string (cons (sys-time) pages)))
@@ -207,8 +205,8 @@
 ;; $$toc
 ;;
 (define-reader-macro (toc . maybe-page)
-  (let* ((name (get-optional maybe-page #f))
-         (page (if name (wiliki:db-get name #f) (wiliki-current-page))))
+  (let* ([name (get-optional maybe-page #f)]
+         [page (if name (wiliki:db-get name #f) (wiliki-current-page))])
     (if (not page)
       (if (pair? maybe-page)
         (list #`"[[$$toc ,(car maybe-page)]]")
@@ -224,26 +222,26 @@
         ;; Since it's reversed, we can scan forward to find the heading
         ;; nesting.
         (define (make-ul hs cur items cont)
-          (cond ((null? hs)
-                 (cont '() `(ul ,@items)))
-                ((= (caar hs) cur) ;; same level
+          (cond [(null? hs)
+                 (cont '() `(ul ,@items))]
+                [(= (caar hs) cur) ;; same level
                  (make-ul (cdr hs) cur
                           (cons (make-anchor (nestings hs)) items)
-                          cont))
-                ((> (caar hs) cur) ;; deeper level
+                          cont)]
+                [(> (caar hs) cur) ;; deeper level
                  (make-ul hs (+ cur 1) '()
                           (lambda (hs ul)
-                            (make-ul hs cur (cons ul items) cont))))
-                (else ;; we finished the current level and under.  pass
+                            (make-ul hs cur (cons ul items) cont)))]
+                [else ;; we finished the current level and under.  pass
                       ;; the result to the continuation proc.
-                 (cont hs `(ul ,@items)))))
+                 (cont hs `(ul ,@items))]))
 
         (define (nestings hs)
           (reverse!
            (cdr
-            (fold (lambda (elt seed)
-                    (let ((level (car elt))
-                          (cur-level (car seed)))
+            (fold (^[elt seed]
+                    (let ([level (car elt)]
+                          [cur-level (car seed)])
                       (if (< level cur-level)
                         (list* level (cdr elt) (cdr seed))
                         seed)))
@@ -251,30 +249,28 @@
                   hs))))
 
         (define (make-anchor headings)
-          (let ((id (wiliki:calculate-heading-id headings)))
+          (let1 id (wiliki:calculate-heading-id headings)
             `(li (a (@ (href ,#`",(wiliki:url \"~a\" pagename)#,id"))
                     ,@(wiliki:format-line-plainly (car headings))))))
 
         (let1 headings
             (wiliki:page-lines-fold
              page
-             (lambda (l r)
-               (cond ((#/^(\*{1,}) / l)
-                      => (lambda (m)
-                           (acons (string-length (m 1)) (m 'after) r)))
-                     (else r)))
+             (^[l r] (if-let1 m (#/^(\*{1,}) / l)
+                       (acons (string-length (m 1)) (m 'after) r)
+                       r))
              '()
              :follow-includes? #t
              :skip-verbatim? #t)
-          (make-ul headings 1 '() (lambda (_ ul) (list ul))))
+          (make-ul headings 1 '() (^[_ ul] (list ul))))
         ))))
 
 ;;---------------------------------------------------------------
 ;; $$breadcrumb-links
 ;;
 (define-reader-macro (breadcrumb-links . opts)
-  (let-optionals* opts ((name #f)
-                        (delim ":"))
+  (let-optionals* opts ([name #f]
+                        [delim ":"])
     (let1 page (if name (wiliki:db-get name #f) (wiliki-current-page))
       (if (not page)
         (if name
@@ -324,10 +320,10 @@
 ;;        Either "top", "bottom", or "none" (do not allow adding comments).
 
 (define-reader-macro (comment . opts)
-  (let-macro-keywords* opts ((id (and-let* ([p (wiliki-current-page)])
-                                   (ref p'key)))
-                             (order "old->new")
-                             (textarea "bottom"))
+  (let-macro-keywords* opts ([id (and-let* ([p (wiliki-current-page)])
+                                   (ref p'key))]
+                             [order "old->new"]
+                             [textarea "bottom"])
     ;; argument check
     (unless (member order '("old->new" "new->old"))
       (error "$$comment: Invalid 'order' argument (must be either old->new or new->old):" order))
@@ -349,13 +345,13 @@
          (sorter (if (equal? order "old->new") string<? string>?))
          ;; NB: sort procedure assumes we have up to 1000 comments.
          (comment-pages (wiliki:db-search
-                         (lambda (k v) (string-prefix? prefix k))
-                         (lambda (a b) (sorter (car a) (car b)))))
+                         (^[k v] (string-prefix? prefix k))
+                         (^[a b] (sorter (car a) (car b)))))
          (timestamp (sys-time))
          )
     (define (past-comments)
-      (parameterize ((wiliki:reader-macros '()))
-        (append-map (lambda (p) (wiliki:get-formatted-page-content (car p)))
+      (parameterize ([wiliki:reader-macros '()])
+        (append-map (^p (wiliki:get-formatted-page-content (car p)))
                     comment-pages)))
     (define (st x)
       (if (= x answer) '(class "comment-area") '(style "display: none")))
@@ -399,11 +395,10 @@
     ))
 
 (define (comment-summary id)
-  (let* ((prefix (comment-prefix id))
-         (num-comments (length
+  (let* ([prefix (comment-prefix id)]
+         [num-comments (length
                         (wiliki:db-search
-                         (lambda (k v) (string-prefix? prefix k)))))
-         )
+                         (^[k v] (string-prefix? prefix k))))])
     `((div (@ (class "comment"))
            (p (@ (class "comment-summary"))
               (a (@ (href ,(wiliki:url "~a#~a" (ref (wiliki-current-page)'key)
@@ -433,12 +428,12 @@
   ;; Pick the valid textarea contents.  If there's any text in the
   ;; dummy textarea, we assume it is from automated spammer.
   (define (get-legal-post-content)
-    (and-let* (( (> rkey 0) )
-               (answer (modulo (ash rkey -11) 7)))
-      (fold (lambda (content n r)
-              (cond ((= n answer) content)
-                    ((equal? content "") r)
-                    (else #f)))
+    (and-let* ([ (> rkey 0) ]
+               [answer (modulo (ash rkey -11) 7)])
+      (fold (^[content n r]
+              (cond [(= n answer) content]
+                    [(equal? content "") r]
+                    [else #f]))
             #f
             (list c0 c1 c2 c3 c4 c5 c6)
             (iota 7))))
@@ -463,9 +458,8 @@
                                           #/[\t-@\[-^`\{-\x7f]/ ""))
                             (string-size content))
                   (and (< p 0.24) p)))
-           => (lambda (p)
-                (wiliki:log-event "too much urls in comment (ratio=~a)" p)
-                #f)]
+           => (^p (wiliki:log-event "too much urls in comment (ratio=~a)" p)
+                  #f)]
           ;; See if there are too many URLs (we should allow many URLs in
           ;; the main content, but for the comment, we may say it's too
           ;; suspicious.)
@@ -477,10 +471,10 @@
   ;; Find maximum comment count
   (define (max-comment-count)
     (let1 rx (string->regexp #`"^,(regexp-quote (comment-prefix cid))(\\d+)$")
-      (wiliki:db-fold (lambda (k v maxval)
-                        (cond [(rx k)
-                               => (lambda (m) (max maxval (x->integer (m 1))))]
-                              [else maxval]))
+      (wiliki:db-fold (^[k v maxval]
+                        (if-let1 m (rx k)
+                          (max maxval (x->integer (m 1)))
+                          maxval))
                       -1)))
 
   (define (comment-post-in-valid-timerange? content)
@@ -524,10 +518,9 @@
 
 (define-virtual-page (#/^RecentChanges$/ (_))
   `((table
-     ,@(map (lambda (p)
-              `(tr (td ,(wiliki:format-time (cdr p)))
-                   (td "(" ,(how-long-since (cdr p)) " ago)")
-                   (td ,(wiliki:wikiname-anchor (car p)))))
+     ,@(map (^p `(tr (td ,(wiliki:format-time (cdr p)))
+                     (td "(" ,(how-long-since (cdr p)) " ago)")
+                     (td ,(wiliki:wikiname-anchor (car p)))))
             (wiliki:db-recent-changes)))))
 
 (define-virtual-page (#/^\|comments:(.*)(?!::\d+$)/ (_ p))
