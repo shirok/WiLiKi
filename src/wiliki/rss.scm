@@ -76,11 +76,11 @@
                 [(raw-partial)  (cut raw-content <> #t)]
                 [(html)         (cut html-content <> #f)]
                 [(html-partial) (cut html-content <> #t)]
-                [else (lambda (e) "")])))
+                [else (^_ "")])))
 
 (define (rss-format entries item-description-proc)
-  (let* ((self (wiliki))
-         (full-url (wiliki:url :full)))
+  (let* ([self (wiliki)]
+         [full-url (wiliki:url :full)])
     `("Content-type: text/xml\n\n"
       "<?xml version=\"1.0\" encoding=\"" ,(wiliki:output-charset) "\" ?>\n"
       "<rdf:RDF
@@ -94,27 +94,26 @@
         (rdf-title (ref (wiliki)'title))
         (rdf-link  full-url)
         (rdf-description (ref (wiliki)'description))
-        (rdf-items-seq (map (lambda (e) (rdf-li (entry->url e))) entries)))
-      ,(map (lambda (e)
-              (let1 url (entry->url e)
-                (rdf-item url
-                          (rdf-title (entry->title e))
-                          (rdf-link url)
-                          (item-description-proc (entry->key e))
-                          (dc-date  (entry->timestamp e)))))
+        (rdf-items-seq (map (^e (rdf-li (entry->url e))) entries)))
+      ,(map (^e (let1 url (entry->url e)
+                  (rdf-item url
+                            (rdf-title (entry->title e))
+                            (rdf-link url)
+                            (item-description-proc (entry->key e))
+                            (dc-date  (entry->timestamp e)))))
             entries)
       "</rdf:RDF>\n")))
 
 (define (raw-content entry partial?)
-  (or (and-let* ([page (wiliki:db-get entry)])
-        (rdf-description (trim-content (ref page 'content) partial?)))
-      ""))
+  (if-let1 page (wiliki:db-get entry)
+    (rdf-description (trim-content (ref page 'content) partial?))
+    ""))
 
 (define (html-content entry partial?)
-  (or (and-let* ([page (wiliki:db-get entry)])
-        ($ rdf-content $ tree->string $ map wiliki:sxml->stree
-           $ wiliki:format-content $ trim-content (~ page'content) partial?))
-      ""))
+  (if-let1 page (wiliki:db-get entry)
+    ($ rdf-content $ tree->string $ map wiliki:sxml->stree
+       $ wiliki:format-content $ trim-content (~ page'content) partial?)
+    ""))
 
 (define (trim-content raw-text partial?)
   (if partial?
