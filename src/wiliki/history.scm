@@ -99,7 +99,7 @@
           (append-map
            (cut history-table-row (car entries) <> <> <>)
            (take* entries HISTORY_SIZE)
-           (fold-right (lambda (e r) (cons (ref e 'timestamp) r))
+           (fold-right (^[e r] (cons (ref e 'timestamp) r))
                        '(0) (drop* entries 1))
            (iota (length entries)))
           '())
@@ -119,14 +119,13 @@
      :extra-head-elements
      '((meta (@ (name "robots") (content "noindex,nofollow"))))
      :content
-     (or (and-let* ((logfile (wiliki:log-file-path (wiliki)))
-                    (logs (wiliki-log-pick-from-file pagename logfile))
-                    (picked (take* (if (= start-count 0)
+     (or (and-let* ([logfile (wiliki:log-file-path (wiliki))]
+                    [logs (wiliki-log-pick-from-file pagename logfile)]
+                    [picked (take* (if (= start-count 0)
                                      logs
                                      (drop* logs start-count))
-                                   (+ HISTORY_SIZE 1)))
-                    ( (not (null? picked)) )
-                    )
+                                   (+ HISTORY_SIZE 1))]
+                    [ (not (null? picked)) ])
            `((h2 (stree ,(format ($$ "Edit history of ~a")
                                  (wiliki:wikiname-anchor-string pagename))))
              ,(history-table
@@ -143,7 +142,7 @@
          (li ,(wiliki:format-diff-line `(- . ,($$ "deleted lines"))))))
   
   (define (diff-to-current entries current)
-    (let* ((diffpage (wiliki-log-diff* entries current)))
+    (let* ([diffpage (wiliki-log-diff* entries current)])
       `((h2 (stree ,(format ($$ "Changes of ~a since ~a")
                             (wiliki:wikiname-anchor-string pagename)
                             (wiliki:format-time old-time))))
@@ -152,16 +151,14 @@
         ,(wiliki:format-diff-pre diffpage))))
 
   (define (diff2 entries current)
-    (let* ((oldpage (wiliki-log-revert* entries current))
-           (newpage (wiliki-log-revert*
-                     (take-while (lambda (e)
-                                   (< new-time (ref e 'timestamp)))
-                                 entries)
-                     current))
-           (rdiff (lcs-fold (cut acons '- <> <>)
+    (let* ([oldpage (wiliki-log-revert* entries current)]
+           [newpage (wiliki-log-revert*
+                     (take-while (^e (< new-time (ref e 'timestamp))) entries)
+                     current)]
+           [rdiff (lcs-fold (cut acons '- <> <>)
                             (cut acons '+ <> <>)
                             cons
-                            '() oldpage newpage)))
+                            '() oldpage newpage)])
       `((h2 (stree ,(format ($$ "Changes of ~a between ~a and ~a")
                             (wiliki:wikiname-anchor-string pagename)
                             (wiliki:format-time old-time)
@@ -176,10 +173,10 @@
      :extra-head-elements
      '((meta (@ (name "robots") (content "noindex,nofollow"))))
      :content
-     (or (and-let* ((logfile (wiliki:log-file-path (wiliki)))
-                    (page    (wiliki:db-get pagename))
-                    (picked  (wiliki-log-pick-from-file pagename logfile)))
-           (let ((entries  (wiliki-log-entries-after picked old-time)))
+     (or (and-let* ([logfile (wiliki:log-file-path (wiliki))]
+                    [page    (wiliki:db-get pagename)]
+                    [picked  (wiliki-log-pick-from-file pagename logfile)])
+           (let1 entries (wiliki-log-entries-after picked old-time)
              (if (>= old-time new-time)
                (diff-to-current entries (ref page 'content))
                (diff2 entries (ref page 'content)))))
@@ -194,11 +191,11 @@
      :extra-head-elements
      '((meta (@ (name "robots") (content "noindex,nofollow"))))
      :content
-     (or (and-let* ((logfile (wiliki:log-file-path (wiliki)))
-                    (page    (wiliki:db-get pagename))
-                    (reverted (wiliki-log-recover-content pagename logfile
+     (or (and-let* ([logfile (wiliki:log-file-path (wiliki))]
+                    [page    (wiliki:db-get pagename)]
+                    [reverted (wiliki-log-recover-content pagename logfile
                                                           (ref page 'content)
-                                                          old-time)))
+                                                          old-time)])
            `((h2 (stree ,(format ($$ "Content of ~a at ~a")
                                  (wiliki:wikiname-anchor-string pagename)
                                  (wiliki:format-time old-time))))
