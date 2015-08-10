@@ -123,7 +123,7 @@
     (print "A"
            (string-join (map (^[elt] (if (number? elt)
                                        (x->string elt)
-                                       #`",(car elt)-,(cadr elt)"))
+                                       #"~(car elt)-~(cadr elt)"))
                              (compact-ordinal-list (reverse! add-lines)))
                         ",")))
   (unless (null? del-lines)
@@ -175,7 +175,7 @@
 
   (dolist [line entry-lines]
     (cond [(string-prefix? "C " line)
-           (let1 l (read-from-string #`"(,line)")
+           (let1 l (read-from-string #"(~line)")
              (set! (ref entry 'pagename) (ref l 1))
              (set! (ref entry 'timestamp) (ref l 2))
              (set! (ref entry 'remote-addr) (ref l 3))

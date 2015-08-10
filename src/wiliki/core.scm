@@ -219,7 +219,7 @@
               [(cgi-get-metavariable "HTTP_ACCEPT_LANGUAGE")
                => (^v (rxmatch-case v
                         [#/^\s*([a-zA-Z]+)(?:-([a-zA-Z]+))?/ (_ pri sec)
-                               (if sec #`",|pri|_,|sec|" pri)]
+                               (if sec #"~|pri|_~|sec|" pri)]
                         [else #f]))]
               [else (~ wiliki 'language)])
     (textdomain "WiLiKi" (x->string lang) (~ wiliki 'gettext-paths))))
@@ -269,7 +269,7 @@
   (wiliki:with-db (^[]
                     (wiliki:std-page
                      (make <wiliki-page>
-                       :title #`",(title-of (wiliki)) : Error"
+                       :title #"~(title-of (wiliki)) : Error"
                        :content
                        `((p ,(~ e 'message))
                          ,@(if (positive? (debug-level (wiliki)))
@@ -468,7 +468,7 @@
 (define (wiliki:std-page page . args)
   (list
    (cgi-header
-    :content-type #`"text/html; charset=,(wiliki:output-charset)"
+    :content-type #"text/html; charset=~(wiliki:output-charset)"
     :content-style-type  "text/css")
    (html-doctype :type :transitional)
    (wiliki:sxml->stree (apply wiliki:format-page page args))))
@@ -496,16 +496,16 @@
                     (and (= (~ w'server-port) 443)
                          (string=? (~ w'protocol) "https")))
               ""
-              #`":,(~ w'server-port)")
+              #":~(~ w'server-port)")
             (~ w'script-name)))
   (define (lang-spec language prefix)
     (if (equal? language (~ (wiliki)'language))
       ""
-      #`",|prefix|l=,|language|"))
+      #"~|prefix|l=~|language|"))
   (define (url-format full? fmt args)
     (let* ([w (wiliki)]
            [fstr (if fmt
-                   #`"?,|fmt|,(lang-spec (wiliki:lang) '&)"
+                   #"?~|fmt|~(lang-spec (wiliki:lang) '&)"
                    (lang-spec (wiliki:lang) '?))])
       (string-append
        (if full? (abs-base w) (rel-base w))
@@ -573,7 +573,7 @@
   (guard (e [else
              (if (positive? (~ (wiliki) 'debug-level))
                `((pre (@ (class "macroerror"))
-                      ,#`"Macro error in [[,|name|]]:\n"
+                      ,#"Macro error in [[~|name|]]:\n"
                       ,(call-with-output-string
                          (cut with-error-to-port <>
                               (cut report-error e)))))
@@ -608,7 +608,7 @@
 ;;
 
 (define (unrecognized-macro name)
-  (list #`"[[,name]]"))
+  (list #"[[~name]]"))
 
 (define-syntax define-reader-macro 
   (syntax-rules ()
@@ -672,7 +672,7 @@
           [else default]))
   `(let* ,(map (match-lambda
                  [(var default)
-                  `(,var (,get-macro-arg-with-key ,#`",|var|=" ,default ,args))])
+                  `(,var (,get-macro-arg-with-key ,#"~|var|=" ,default ,args))])
                binds)
      ,@body))
 

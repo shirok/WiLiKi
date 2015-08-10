@@ -92,7 +92,7 @@
 ;;
 (define-reader-macro (include page)
   (cond [(wiliki:db-get page) => wiliki:format-content]
-        [else (list #`"[[$$include ,page]]")]))
+        [else (list #"[[$$include ~page]]")]))
 
 ;;---------------------------------------------------------------
 ;; $$img
@@ -182,7 +182,7 @@
     [else #f])
   (wiliki:redirect-page pagename))
 
-(define (%tag-cache-name tagname) #`" %Tag:,tagname")
+(define (%tag-cache-name tagname) #" %Tag:~tagname")
 
 (define (%tag-update-cache tagname)
   (define (find-tag line)
@@ -209,7 +209,7 @@
          [page (if name (wiliki:db-get name #f) (wiliki-current-page))])
     (if (not page)
       (if (pair? maybe-page)
-        (list #`"[[$$toc ,(car maybe-page)]]")
+        (list #"[[$$toc ~(car maybe-page)]]")
         (list "[[$$toc]]"))
       (let1 pagename (and page (ref page 'key))
 
@@ -250,7 +250,7 @@
 
         (define (make-anchor headings)
           (let1 id (wiliki:calculate-heading-id headings)
-            `(li (a (@ (href ,#`",(wiliki:url \"~a\" pagename)#,id"))
+            `(li (a (@ (href ,#"~(wiliki:url \"~a\" pagename)#~id"))
                     ,@(wiliki:format-line-plainly (car headings))))))
 
         (let1 headings
@@ -274,7 +274,7 @@
     (let1 page (if name (wiliki:db-get name #f) (wiliki-current-page))
       (if (not page)
         (if name
-          (list #`"[[$$breadcrumb-links ,(car opts)]]")
+          (list #"[[$$breadcrumb-links ~(car opts)]]")
           (list "[[$$breadcrumb-links]]"))
         (wiliki:breadcrumb-links page delim)))))
 
@@ -408,7 +408,7 @@
                           num-comments)))))
     ))
 
-(define (comment-prefix id) #`"|comments:,|id|::")
+(define (comment-prefix id) #"|comments:~|id|::")
 
 (define-wiliki-action post-comment
   :write (pagename
@@ -470,7 +470,7 @@
 
   ;; Find maximum comment count
   (define (max-comment-count)
-    (let1 rx (string->regexp #`"^,(regexp-quote (comment-prefix cid))(\\d+)$")
+    (let1 rx (string->regexp #"^~(regexp-quote (comment-prefix cid))(\\d+)$")
       (wiliki:db-fold (^[k v maxval]
                         (if-let1 m (rx k)
                           (max maxval (x->integer (m 1)))

@@ -154,7 +154,7 @@
       `((h2 "Create new entry")
         (form (@ (method POST) (action ,(wiliki:url)))
               (input (@ (type hidden) (name c) (value n)))
-              (input (@ (type text) (name p) (value ,#`",|now|,|suffix|-")
+              (input (@ (type text) (name p) (value ,#"~|now|~|suffix|-")
                         (size 50)))
               (input (@ (type submit) (name submit) (value "Create")))))
       '())))
@@ -345,7 +345,7 @@
      (cond [(authenticated?)
             (match-let1 (root first last) (read-index)
               (define (ent entry)
-                `(li (a (@ (href ,#`",(wiliki:url)/,(index-entry-key entry)"))
+                `(li (a (@ (href ,#"~(wiliki:url)/~(index-entry-key entry)"))
                         ,(index-entry-key entry)" : ",(index-entry-title entry))))
               (define (d-ent dnode)
                 `(li ,(x->string (car dnode))
@@ -432,7 +432,7 @@
   `((ul (@ (class recent-comments))
         ,@(map (^e (match-let1 (key title poster time) e
                      `(li ,poster " on "
-                          (a (@ (href ,#`",(wiliki:url)/,key")) ,title)
+                          (a (@ (href ,#"~(wiliki:url)/~key")) ,title)
                           " (" ,(sys-strftime "%Y/%m/%d" (sys-localtime time))
                           ")")))
                (take* (blog-recent-comments) n)))))
@@ -523,7 +523,7 @@
 
 (define (entry-header entry :key (show-navi #t))
   (define (entry-anchor e)
-    `(a (@ (href ,#`",(wiliki:url)/,(index-entry-key e)"))
+    `(a (@ (href ,#"~(wiliki:url)/~(index-entry-key e)"))
         ,(if (string-null? (index-entry-title e))
            (index-entry-key e)
            (index-entry-title e))))
@@ -539,9 +539,9 @@
     (rxmatch-let (#/^(\d\d\d\d)(\d\d)(\d\d)/ key)
         (_ y m d)
       `(,@(entry-navi)
-        (h1 (@ (class entry-date)) ,#`",|y|/,|m|/,|d|")
+        (h1 (@ (class entry-date)) ,#"~|y|/~|m|/~|d|")
         (div (@ (class permalink))
-             (a (@(href ,#`",(wiliki:url)/,key")) "#permalink"))))))
+             (a (@(href ,#"~(wiliki:url)/~key")) "#permalink"))))))
 
 (define (show-n-entries entries)
   (define dummy-page (make <blog-page>)) ;to make comment macro use compact form
@@ -555,11 +555,11 @@
        entries))
 
 (define (show-more-entry-link start)
-  `(p (a (@ (href ,#`",(wiliki:url)/Browse/,start"))
+  `(p (a (@ (href ,#"~(wiliki:url)/Browse/~start"))
          "More entries ...")))
 
 (define (show-archive-links entries)
-  `((ul ,@(map (^e `(li (a (@ (href ,#`",(wiliki:url)/,(index-entry-key e)"))
+  `((ul ,@(map (^e `(li (a (@ (href ,#"~(wiliki:url)/~(index-entry-key e)"))
                            ,(let1 ymd (decompose-key (index-entry-key e))
                               (apply format "~4d/~2,'0d/~2,'0d" ymd))
                            " : " ,(index-entry-title e))))
@@ -570,17 +570,17 @@
        ,@(map (^y `(span (@ (class ,(if (eqv? y hilite-year)
                                       "archive-year-link-hi"
                                       "archive-year-link-lo")))
-                         (a (@ (href ,#`",(wiliki:url)/Archive/,y"))
+                         (a (@ (href ,#"~(wiliki:url)/Archive/~y"))
                             ,(x->string y))))
               (sort (map car (blog-index-root)) >)))))
 
 (define-reader-macro (recent-entries)
   (define n 10)
   `((ul (@ (class recent-entries))
-        ,@(map (^e `(li (a (@ (href ,#`",(wiliki:url)/,(index-entry-key e)"))
+        ,@(map (^e `(li (a (@ (href ,#"~(wiliki:url)/~(index-entry-key e)"))
                            ,(index-entry-title e))))
                (take-entries (blog-index-last) n index-entry-prev)))
-    (p (a (@ (href ,#`",(wiliki:url)/Archive/l0")) "More..."))))
+    (p (a (@ (href ,#"~(wiliki:url)/Archive/l0")) "More..."))))
 
 (define *entries-in-page* 5)
 (define *archive-links-in-page* 50)
@@ -609,10 +609,10 @@
       ,@(show-archive-links es)
       ,@(cond-list
          [(= (length es) n)
-          `(a (@ (href ,#`",(wiliki:url)/Archive/l,(+ s n)")) "More...")]))))
+          `(a (@ (href ,#"~(wiliki:url)/Archive/l~(+ s n)")) "More...")]))))
 
 (define-virtual-page (#/^Archive\/(\d{4})/ (_ year))
-  (define rx (string->regexp #`"^,year"))
+  (define rx (string->regexp #"^~year"))
   (let1 es (span-entries (blog-index-last)
                          (^e (rx (index-entry-key e)))
                          index-entry-prev)
@@ -624,39 +624,39 @@
 ;;;
 
 (define-reader-macro (chaton-badge room-uri)
-  `((script (@ (type "text/javascript") (src ,#`",|room-uri|/b")
+  `((script (@ (type "text/javascript") (src ,#"~|room-uri|/b")
                (charset "utf-8")))))
 
 (define-reader-macro (amazon-affiliate asin . opts)
   (define aid (blog-option-ref (wiliki) 'amazon-affiliate-id))
   (let-macro-keywords* opts ([domain "jp"][float "left"])
     (if (equal? domain "us")
-      #`"<div class=\"amazon\" style=\"float:,|float|;\"><iframe src=\"http://rcm.amazon.com/e/cm?\
-          t=practschem-20&o=1&p=8&l=as1&asins=,|asin|&\
+      #"<div class=\"amazon\" style=\"float:~|float|;\"><iframe src=\"http://rcm.amazon.com/e/cm?\
+          t=practschem-20&o=1&p=8&l=as1&asins=~|asin|&\
           fc1=000000&IS2=1&lt1=_blank&m=amazon&lc1=0000FF&\
           bc1=000000&bg1=FFFFFF&f=ifr\" style=\"width:120px;height:240px;\" \
           scrolling=\"no\" marginwidth=\"0\" marginheight=\"0\" \
           frameborder=\"0\"></iframe></div>"
-      #`"<div class=\"amazon\" style=\"float:,|float|;\"><iframe src=\"http://rcm-jp.amazon.co.jp/e/cm?\
+      #"<div class=\"amazon\" style=\"float:~|float|;\"><iframe src=\"http://rcm-jp.amazon.co.jp/e/cm?\
           lt1=_blank&bc1=000000&IS2=1&nou=1&bg1=FFFFFF&\
           fc1=000000&lc1=0000FF&t=,|aid|&\
-          o=9&p=8&l=as1&m=amazon&f=ifr&asins=,|asin|\" \
+          o=9&p=8&l=as1&m=amazon&f=ifr&asins=~|asin|\" \
           style=\"width:120px;height:240px;\" \
           scrolling=\"no\" marginwidth=\"0\" marginheight=\"0\" \
           frameborder=\"0\"></iframe></div>")))
 
 (define-reader-macro (amazon-affiliate-link asin text)
   (define aid (blog-option-ref (wiliki) 'amazon-affiliate-id))
-  #`"<a href=\"http://www.amazon.co.jp/gp/product/,|asin|?\
-      ie=UTF8&tag=,|aid|&linkCode=as2&camp=247&\
-      creative=1211&creativeASIN=,|asin|\">,|text|</a>\
-     <img src=\"http://www.assoc-amazon.jp/e/ir?t=,|aid|&\
-      l=as2&o=9&a=,|asin|\" width=\"1\" height=\"1\" border=\"0\" \
+  #"<a href=\"http://www.amazon.co.jp/gp/product/~|asin|?\
+      ie=UTF8&tag=~|aid|&linkCode=as2&camp=247&\
+      creative=1211&creativeASIN=,|asin|\">~|text|</a>\
+     <img src=\"http://www.assoc-amazon.jp/e/ir?t=~|aid|&\
+      l=as2&o=9&a=~|asin|\" width=\"1\" height=\"1\" border=\"0\" \
       alt=\"\" style=\"border:none !important; margin:0px !important;\" />")
 
 (define-reader-macro (gist id)
   (if (#/^\d+$/ id)
-    #`"<div style='font-size:75%'><a style=\"background-color: #ececec;\" href=\"https://gist.github.com/,|id|\">https://gist.github.com/,|id|</a><script src=\"https://gist.github.com/,|id|.js\"> </script><noscript><a href=\"https://gist.github.com/,|id|\">https://gist.github.com/,|id|</a></noscript></div>"
+    #"<div style='font-size:75%'><a style=\"background-color: #ececec;\" href=\"https://gist.github.com/~|id|\">https://gist.github.com/~|id|</a><script src=\"https://gist.github.com/~|id|.js\"> </script><noscript><a href=\"https://gist.github.com/~|id|\">https://gist.github.com/~|id|</a></noscript></div>"
     ""))
 
 (define-reader-macro (google-map title . params)
@@ -691,7 +691,7 @@
 
 (define-method wiliki:format-head-title ((fmt <blog-formatter>) page . opts)
   (cond [(get-index-entry (~ page'key))
-         => (^e #`",(~ (wiliki)'title) - ,(index-entry-title e)")]
+         => (^e #"~(~ (wiliki)'title) - ~(index-entry-title e)")]
         [else (~ page'title)]))
 
 (define-method wiliki:format-page-header ((fmt <blog-formatter>) page . opts)
@@ -767,7 +767,7 @@
   (define (pick-comments start count)
     (let loop ([entries ($ filter-map
                            (^[ls] (and (string-prefix? "A" (cadr ls))
-                                       (read-from-string #`"(,(car ls))")))
+                                       (read-from-string #"(~(car ls))")))
                            $ wiliki-log-pick-from-file #/^\|comments:/
                            $ wiliki:log-file-path $ wiliki)]
                [r '()] [s 0] [c 0])

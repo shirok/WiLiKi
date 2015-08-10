@@ -157,14 +157,14 @@
 (define-wiliki-action lv :read (pagename)
   (let ((page (wiliki:db-get pagename #f)))
     `(,(cgi-header
-        :content-type #`"text/plain; charset=,(output-charset)")
-      ,#`"title: ,|pagename|\n"
-      ,#`"wiliki-lwp-version: ,|*lwp-version*|\n"
+        :content-type #"text/plain; charset=~(output-charset)")
+      ,#"title: ~|pagename|\n"
+      ,#"wiliki-lwp-version: ~|*lwp-version*|\n"
       ,(if page
-         `(,#`"mtime: ,(~ page 'mtime)\n"
+         `(,#"mtime: ~(~ page 'mtime)\n"
            "\n"
            ,(~ page 'content))
-         `(,#`"mtime: 0\n"
+         `("mtime: 0\n"
            "\n")))))
 
 ;;
@@ -216,7 +216,7 @@
         ,@(map (^p `(li
                      ,(wiliki:wikiname-anchor (car p))
                      ,(or (and-let* ([mtime (get-keyword :mtime (cdr p) #f)])
-                            #`"(,(how-long-since mtime))")
+                            #"(~(how-long-since mtime))")
                           "")))
                (wiliki:db-search-content key))))
      )))
@@ -395,7 +395,7 @@
 (define (default-format-wikiname name)
   (define (inter-wikiname-prefix head)
     (and-let* ([page (wiliki:db-get "InterWikiName")]
-               [rx   (string->regexp #`"^:,(regexp-quote head):\\s*")])
+               [rx   (string->regexp #"^:~(regexp-quote head):\\s*")])
       (call-with-input-string (~ page 'content)
         (^p (let loop ((line (read-line p)))
               (cond [(eof-object? line) #f]

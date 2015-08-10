@@ -123,7 +123,7 @@
 
 (define-method rss-page ((self <rssmix>) title body)
   `("Content-Style-Type: text/css\n"
-    ,(cgi-header :content-type #`"text/html; charset=\",(gauche-character-encoding)\"")
+    ,(cgi-header :content-type #"text/html; charset=\"~(gauche-character-encoding)\"")
     ,(html-doctype :type :transitional)
     ,(html:html
       (html:head
@@ -154,7 +154,7 @@
                       [len (- (ref self 'max-title-width)
                               (+ (string-width id) titlew))])
                  (when (negative? len)
-                   (set! title #`",(string-chop title (+ titlew len)) ..."))
+                   (set! title #"~(string-chop title (+ titlew len)) ..."))
                  (list
                   (html:a :href (ref item 'site-url) (html-escape-string id))
                   ": "

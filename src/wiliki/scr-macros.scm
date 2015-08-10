@@ -14,7 +14,7 @@
 (define-reader-macro (srfis . numbers)
   `((p "Implementing " ,@(wiliki:format-wikiname "SRFI") "s: "
        ,@(append-map (lambda (num)
-                       (cons " " (wiliki:format-wikiname #`"SRFI-,num")))
+                       (cons " " (wiliki:format-wikiname #"SRFI-~num")))
                      numbers))))
 
 (define (pick-srfis-macro page-record)
@@ -45,12 +45,12 @@
                                   ((7 8) "#ffaaaa")
                                   (else "#ff8888"))))
                   `(tr
-                    (td (@ (style ,#`"background-color: ,bgcolor"))
-                        ,@(wiliki:format-wikiname #`"SRFI-,num")
+                    (td (@ (style ,#"background-color: ~bgcolor"))
+                        ,@(wiliki:format-wikiname #"SRFI-~num")
                         ": ")
-                    (td (@ (style ,#`"background-color: ,bgcolor"))
+                    (td (@ (style ,#"background-color: ~bgcolor"))
                         ,title)
-                    (td (@ (style ,#`"background-color: ,bgcolor ; font-size: 60%"))
+                    (td (@ (style ,#"background-color: ~bgcolor ; font-size: 60%"))
                         ,(format "[~a implementation~a]"
                                  popularity
                                  (if (= popularity 1) "" "s"))))))
@@ -84,7 +84,7 @@
 #|
 (use rfc.http)
 (define (get-srfi-info kind)
-  (receive (s h c) (http-get "srfi.schemers.org" #`"/,|kind|-srfis.html")
+  (receive (s h c) (http-get "srfi.schemers.org" #"/~|kind|-srfis.html")
     (unless (string=? s "200")
       (errorf "couldn't retrieve ~a srfi data (~a)" kind s))
     (with-input-from-string c

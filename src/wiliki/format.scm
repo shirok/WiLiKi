@@ -81,7 +81,7 @@
    ;; They won't be supported officially in future versions; use
    ;; subclassing & methods instead.
    (bracket       :init-keyword :bracket
-                  :init-value (^[name] (list #`"[[,|name|]]")))
+                  :init-value (^[name] (list #"[[~|name|]]")))
    (macro         :init-keyword :macro
                   :init-value (^[expr context] `("##" ,(write-to-string expr))))
    (time          :init-keyword :time

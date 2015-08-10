@@ -116,7 +116,7 @@
              [path   (match 4)]
              [openp  (match 1)]
              [name   (match 8)])
-         (let1 url (if server #`",|scheme|:,|server|,|path|" path)
+         (let1 url (if server #"~|scheme|:~|server|~|path|" path)
            (if (and openp name)
              (cons `(a (@ (href ,url)) ,name) seed)
              (list* (if openp "[" "")

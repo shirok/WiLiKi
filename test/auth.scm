@@ -86,7 +86,7 @@
     (test* "new-session" #t
            (begin (set! key (auth-new-session "ahi poke"))
                   (file-exists? (build-path (auth-session-directory)
-                                            #`"wiliki-,(string-take key 6)"))))
+                                            #"wiliki-~(string-take key 6)"))))
     (test* "get-session" "ahi poke" (auth-get-session key))
 
     (test* "another session" "opah"

@@ -96,7 +96,7 @@
                       a lock.  If you believe there's no such process, remove \
                       ~a and try again." (~ e'lock-file-name))]
             [else (raise e)])
-    (with-lock-file #`",(auth-db-path).lock"
+    (with-lock-file #"~(auth-db-path).lock"
                     (^[] (proc (read-passwd-file) write-passwd-file)))))
 
 (define (user-exists? db user) (assoc user db))
@@ -192,7 +192,7 @@
     (error <auth-failure> "invalid session key"))
   (let* ([suffix (string-take key 6)]
          [hv     (string-drop key 6)]
-         [path   (build-path (auth-session-directory) #`"wiliki-,suffix")])
+         [path   (build-path (auth-session-directory) #"wiliki-~suffix")])
     (and (eqv? (file-uid path) (sys-geteuid))
          (call-with-input-file path
            (^p (or (and p (match (read p)
@@ -206,7 +206,7 @@
 (define (auth-delete-session! key)
   (and (>= (string-length key) 6)
        (let1 path (build-path (auth-session-directory)
-                              #`"wiliki-,(string-take key 6)")
+                              #"wiliki-~(string-take key 6)")
          (and (eqv? (file-uid path) (sys-geteuid))
               (sys-unlink path)))))
 
