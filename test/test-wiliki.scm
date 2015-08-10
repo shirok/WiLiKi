@@ -28,7 +28,7 @@
 (define (generate-cgi . params)
   (with-output-to-file *cgi-path*
     (lambda ()
-      (print #`"#!,*gosh-path*")
+      (print #"#!~*gosh-path*")
       (write '(add-load-path "../src"))
       (write '(use wiliki))
       (write `(define (main args)
