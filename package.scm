@@ -5,8 +5,6 @@
   :maintainers ("shiro@acm.org")
   :authors ("Shiro Kawai <shiro@acm.org>")
   :homepage "http://practical-scheme.net/wiliki/wiliki.cgi"
-  :repository "https://github.com/WiLiKi"
+  :repository "https://github.com/shirok/WiLiKi"
   :licenses ("BSD")
   )
-  
-  
