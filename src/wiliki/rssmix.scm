@@ -39,6 +39,7 @@
   (use text.html-lite)
   (use util.list)
   (use sxml.ssax)
+  (use sxml.sxpath)
   (use gauche.threads)
   (use gauche.uvector)
   (use gauche.regexp)
@@ -55,9 +56,10 @@
   "wiliki/rssmix http://practical-scheme.net/wiliki/rssmix.cgi")
 
 (define-constant NAMESPACES
-  '((rdf . "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
-    (rss . "http://purl.org/rss/1.0/")
-    (dc  . "http://purl.org/dc/elements/1.1/")))
+  '((rdf  . "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+    (rss  . "http://purl.org/rss/1.0/")
+    (atom . "http://www.w3.org/2005/Atom")
+    (dc   . "http://purl.org/dc/elements/1.1/")))
 
 (define-class <rssmix> ()
   ((sites :init-keyword :sites :init-value '())
@@ -380,6 +382,19 @@
             (and title link date (list title link date))))
         items))))
 
+  (define (parse-atom feed)
+    (cons
+     ((if-car-sxpath '(atom:title *text*)) feed)
+     (filter-map
+      (^[entry]
+        (let ([title ((if-car-sxpath '(atom:title *text*)) entry)]
+              [link  ((if-car-sxpath '(atom:link @ href *text*)) entry)]
+              [date  (and-let1 t ((if-car-sxpath '(atom:updated *text*)) entry)
+                       (parse-date t))])
+          (and title link date (list title link date))))
+      ((sxpath '(// atom:entry)) feed))))
+
   (cond [(find-node 'rdf:RDF sxml) => parse-rdf]
         [(find-node 'rss sxml) => parse-rss]
+        [(find-node 'atom:feed sxml) => parse-atom]
         [else #f]))
