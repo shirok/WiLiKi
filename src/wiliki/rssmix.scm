@@ -29,7 +29,6 @@
 
 (define-module wiliki.rssmix
   (use srfi-1)
-  (use srfi-2)
   (use srfi-13)
   (use srfi-14)
   (use srfi-19)
@@ -37,7 +36,6 @@
   (use rfc.822)
   (use rfc.uri)
   (use text.html-lite)
-  (use util.list)
   (use sxml.ssax)
   (use sxml.sxpath)
   (use gauche.threads)
@@ -52,10 +50,10 @@
 
 (autoload dbm.gdbm <gdbm>)
 
-(define-constant USER_AGENT
+(define-constant +user-agent+
   "wiliki/rssmix http://practical-scheme.net/wiliki/rssmix.cgi")
 
-(define-constant NAMESPACES
+(define-constant +namespaces+
   '((rdf  . "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
     (rss  . "http://purl.org/rss/1.0/")
     (atom . "http://www.w3.org/2005/Atom")
@@ -64,7 +62,7 @@
 (define-class <rssmix> ()
   ((sites :init-keyword :sites :init-value '())
    ;; - list of monitoring sites.  Each entry should be
-   ;;     (IDENT HOME-URI RSS-URI)
+    ;;     (IDENT HOME-URI RSS-URI)
    (num-items :init-keyword :num-items :init-value 70)
    ;; - # of entries to show
    (title :init-keyword :title :init-value "Recent Changes")
@@ -290,14 +288,14 @@
              [server (match 1)]
              [path   (match 'after)])
     (receive (status headers body)
-        (http-get server path :user-agent USER_AGENT)
+        (http-get server path :user-agent +user-agent+)
       (and-let* ([ (equal? status "200") ]
                  [ (string? body) ]
                  [encoding (body-encoding body)])
         (extract-from-rdf
-         (SSAX:XML->SXML
+         (ssax:xml->sxml
           (wrap-with-input-conversion (open-input-string body) encoding)
-          NAMESPACES))))
+          +namespaces+))))
     ))
 
 ;; Figure out the encoding of the returned body.  At this point,
@@ -313,16 +311,9 @@
 ;; It would be better to use SXPath, but for now...
 (define (extract-from-rdf sxml)
 
-  (define (find-node tag parent)
-    (and (pair? parent)
-         (find (^n (eq? (car n) tag)) (cdr parent))))
-
-  (define (filter-node tag parent)
-    (and (pair? parent)
-         (filter (^n (eq? (car n) tag)) (cdr parent))))
-
   (define (parse-date date)
     (cond
+     [(not date) #f] ;; easier handling of failure case
      ;; NB: srfi-19's string->date fails to recognize time zone offset
      ;; with ':' between hours and minutes.  I need to parse it manually.
      [(#/^(\d\d\d\d)-(\d\d)-(\d\d)(?:T(\d\d):(\d\d)(?::(\d\d))?([+-]\d\d):(\d\d))?/ date)
@@ -341,46 +332,30 @@
                       (+ (* (abs zh) 3600) (* zm 60)))))
 
   (define (parse-rdf rdf)               ;rss1.0
-    (let* ([chan  (find-node 'rss:channel rdf)]
-           [chan-title (find-node 'rss:title chan)]
-           [items (filter-node 'rss:item rdf)])
-      (cons
-       (and (pair? chan-title)
-            (if (and (pair? (cadr chan-title)) (eq? (caadr chan-title) '@))
-              (caddr chan-title)
-              (cadr chan-title)))
-       (filter-map
-        (^[item]
-          (let ([title (and-let* ((n (find-node 'rss:title item)))
-                         (cadr n))]
-                [link  (and-let* ((n (find-node 'rss:link item)))
-                         (cadr n))]
-                [date  (and-let* ((n (or (find-node 'dc:date item)
-                                         (find-node 'dc:pubDate item))))
-                         (parse-date (cadr n)))])
-            (and title link date (list title link date))))
-        items))))
+    (cons
+     ((if-car-sxpath '(rss:channel rss:title *text*)) rdf)
+     (filter-map
+      (^[item]
+        (let ([title ((if-car-sxpath '(// rss:title *text*)) item)]
+              [link  ((if-car-sxpath '(// rss:link *text*)) item)]
+              [date  (parse-date
+                      ((if-car-sxpath '(// (or@ dc:date dc:pubDate) *text*))
+                       item))])
+          (and title link date (list title link date))))
+      ((sxpath '(// rss:item)) rdf))))
 
   (define (parse-rss rss)               ;rss2.0
-    (let* ([chan (find-node 'channel rss)]
-           [chan-title (find-node 'title chan)]
-           [items (filter-node 'item chan)])
-      (cons
-       (and (pair? chan-title)
-            (if (and (pair? (cadr chan-title)) (eq? (caadr chan-title) '@))
-              (caddr chan-title)
-              (cadr chan-title)))
-       (filter-map
-        (^[item]
-          (let ([title (and-let* ((n (find-node 'title item)))
-                         (cadr n))]
-                [link  (and-let* ((n (find-node 'link item)))
-                         (cadr n))]
-                [date  (and-let* ((n (or (find-node 'date item)
-                                         (find-node 'pubDate item))))
-                         (parse-date (cadr n)))])
-            (and title link date (list title link date))))
-        items))))
+    (cons
+     ((if-car-sxpath '(channel title *text*)) rss)
+     (filter-map
+      (^[item]
+        (let ([title ((if-car-sxpath '(// title *text*)) item)]
+              [link  ( item)]
+              [date  (parse-date
+                      ((if-car-sxpath '(// (or@ date pubDate) *text*))
+                       item))])
+          (and title link date (list title link date))))
+      ((sxpath '(// item)) rss))))
 
   (define (parse-atom feed)
     (cons
@@ -389,12 +364,12 @@
       (^[entry]
         (let ([title ((if-car-sxpath '(atom:title *text*)) entry)]
               [link  ((if-car-sxpath '(atom:link @ href *text*)) entry)]
-              [date  (and-let1 t ((if-car-sxpath '(atom:updated *text*)) entry)
-                       (parse-date t))])
+              [date  (parse-date ((if-car-sxpath '(atom:updated *text*))
+                                  entry))])
           (and title link date (list title link date))))
       ((sxpath '(// atom:entry)) feed))))
 
-  (cond [(find-node 'rdf:RDF sxml) => parse-rdf]
-        [(find-node 'rss sxml) => parse-rss]
-        [(find-node 'atom:feed sxml) => parse-atom]
+  (cond [((if-car-sxpath '(rdf:RDF)) sxml) => parse-rdf]
+        [((if-car-sxpath '(rss)) sxml) => parse-rss]
+        [((if-car-sxpath '(atom:feed)) sxml) => parse-atom]
         [else #f]))
