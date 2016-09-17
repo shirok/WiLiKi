@@ -293,5 +293,3 @@
       (call-with-output-file logfile (^p (display content p) (flush p))
                              :if-exists :append))))
 
-(provide "wiliki/edit")
-

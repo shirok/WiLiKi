@@ -440,5 +440,3 @@
                   (begin (ungetline line) (string-concatenate-reverse r)))]
                )))
   )
-
-(provide "wiliki/parse")

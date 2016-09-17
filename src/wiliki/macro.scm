@@ -525,5 +525,3 @@
 
 (define-virtual-page (#/^\|comments:(.*)(?!::\d+$)/ (_ p))
   `((p "See " ,@(wiliki:format-wikiname p))))
-
-(provide "wiliki/macro")

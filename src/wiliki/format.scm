@@ -326,5 +326,3 @@
         [(eq? (car line) '+) (aline "+ " (cdr line) "\n")]
         [(eq? (car line) '-) (dline "- " (cdr line) "\n")]
         [else "???"]))
-
-(provide "wiliki/format")

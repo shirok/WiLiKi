@@ -59,5 +59,3 @@
         (pl diff "second")))
       )))
 
-(provide "wiliki/pasttime")
-

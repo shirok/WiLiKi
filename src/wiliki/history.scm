@@ -223,4 +223,3 @@
       (a (@ (href ,(url "~a&c=h" (cv-out pagename))))
          ,($$ "Return to the edit history"))))
 
-(provide "wiliki/history")

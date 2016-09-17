@@ -111,5 +111,3 @@
 (define wiliki-current-page wiliki:current-page)
 (define wiliki-page-circular? wiliki:page-circular?)
 
-(provide "wiliki/page")
-

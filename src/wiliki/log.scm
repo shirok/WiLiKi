@@ -487,7 +487,3 @@
   (if (string? string-or-list)
     (call-with-input-string string-or-list port->string-list)
     string-or-list))
-
-
-(provide "wiliki/log")
-

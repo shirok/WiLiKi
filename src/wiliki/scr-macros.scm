@@ -117,8 +117,3 @@
                   ;; we'll add link later.
                   `(a ,x))
                  xs)))))
-
-
-
-
-

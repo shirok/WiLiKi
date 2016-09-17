@@ -27,4 +27,4 @@
 ;; This module is only kept for backward compatibility.
 ;; use wiliki.core 
 
-(provide "wiliki/util")
+(define-module wiliki.util)
