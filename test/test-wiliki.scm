@@ -1,7 +1,6 @@
 ;;
 ;; test for wiliki
 ;;
-;; $Id: test-wiliki.scm,v 1.15 2007-11-05 21:38:00 shirok Exp $
 
 (use srfi-1)
 (use srfi-13)

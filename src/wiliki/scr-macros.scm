@@ -1,7 +1,7 @@
 ;;
 ;; Macros used in SchemeCrossReference site
 ;; included for the reference
-;; $Id: scr-macros.scm,v 1.4 2006-04-05 12:38:20 shirok Exp $
+;;
 
 (select-module wiliki.macro)
 (use srfi-1)

@@ -1,5 +1,4 @@
 ;; test wiliki tool
-;; $Id: test-bin.scm,v 1.1 2004-04-03 13:42:54 shirok Exp $
 
 (use gauche.test)
 (use gauche.process)

@@ -5,7 +5,6 @@
 ;;  Copyright (c) 2003 Time Intermedia Corporation, All rights reserved.
 ;;  See COPYING for terms and conditions of using this software
 ;;
-;; $Id: xml-test.scm,v 1.1 2004-03-20 04:52:35 shirok Exp $
 
 ;; This module provides the means of test the result of HTML
 ;; generating code, such as CGI programs.   The output of
