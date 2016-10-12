@@ -45,24 +45,7 @@
 (cf-subst 'ALL_LINGUAS "ja vi")
 
 ;; Output
-;; TODO: Gauche-0.9.4 doesn't have cf-make-gpd.  Replace it after
-;; releasing Gauche-0.9.5
-(if (global-variable-bound? (find-module 'gauche.configure) 'cf-make-gpd)
-  (cf-make-gpd)
-  (begin
-    (use gauche.process)
-    (use gauche.package)
-    (let1 gpd-file #"~(cf$ 'PACKAGE_NAME).gpd"
-      (cf-echo #"creating ~gpd-file")
-      (with-output-to-file gpd-file
-        (cut write-gauche-package-description
-             (make <gauche-package-description>
-               :name (cf$ 'PACKAGE_NAME)
-               :version (cf$ 'PACKAGE_VERSION)
-               :configure ($ string-join $ cons "./configure"
-                             $ map shell-escape-string
-                             $ cdr $ command-line)))))))
-
+(cf-make-gpd)
 (cf-echo (cf$ 'PACKAGE_VERSION) > "VERSION")
 (cf-output "Makefile" "src/Makefile" "doc/Makefile" "test/Makefile" "po/Makefile")
 
