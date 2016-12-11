@@ -36,7 +36,7 @@
   (use util.match)
   (use text.html-lite)
   (use text.tree)
-  (export rss-page rss-item-count rss-item-description 
+  (export rss-page rss-item-count rss-item-description rss-item-extra-elements
           rss-partial-content-lines rss-source rss-url-format))
 (select-module wiliki.rss)
 
@@ -65,6 +65,9 @@
 
 ;; Whether the url in RSS should be in the format of url?key or url/key
 (define rss-url-format (make-parameter 'query))
+
+;; If not #f, this is inserted as is into each <item>...</item>
+(define rss-item-extra-elements (make-parameter #f))
 
 ;; Main entry
 (define (rss-page :key
@@ -100,7 +103,9 @@
                             (rdf-title (entry->title e))
                             (rdf-link url)
                             (item-description-proc (entry->key e))
-                            (dc-date  (entry->timestamp e)))))
+                            (dc-date  (entry->timestamp e))
+                            (or (rss-item-extra-elements) "")
+                            )))
             entries)
       "</rdf:RDF>\n")))
 
