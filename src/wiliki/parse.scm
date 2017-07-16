@@ -255,11 +255,17 @@
   ;; Table
   (define (table tok ctx cont)
     (let loop ([tok tok]
-               [r '()])
+               [r '()]
+               [opts '()])
       (if (eq? (token-type tok) 'table)
-        (loop (next-token ctx) (cons (table-row ctx (token-value tok)) r))
+        (if (string-prefix? "|@" ((token-value tok) 1)) ;; table options
+          (loop (next-token ctx) r (table-options (token-value tok)))
+          (loop (next-token ctx) (cons (table-row ctx (token-value tok)) r)
+                opts))
         (cont tok ctx
-              `(table (@ (class "inbody") (border 1) (cellspacing 0))
+              `(table (@ (class "inbody")
+                         (border ,(assq-ref opts 'border 1))
+                         (cellspacing ,(assq-ref opts 'cellspacing 0)))
                       ,@(reverse! r))))))
 
   (define (table-row ctx m)
@@ -267,6 +273,15 @@
          ,@(map (^[seq] `(td (@ (class "inbody"))
                              ,@(reverse! (fmt-line ctx seq '()))))
                 (string-split (m 1) "||"))))
+
+  (define (table-options m)  ;; options: |@attr=val,attr=val
+    ;; TODO: Allow per-column options, e.g. text-align.
+    (let1 attr=vals (string-split (string-drop (m 1) 2) #/,\s*/)
+      (map (^z (rxmatch-case z
+                 [#/([^=]+)=(.*)/ (_ attr val)
+                    (cons (string->symbol attr) val)]
+                 [_ (cons (string->symbol z) z)]))
+           attr=vals)))
 
   ;; Blockquote
   (define (blockquote ctx cont)

@@ -612,6 +612,20 @@
           "||d||"
           ">>>"))
 
+(tp "table options"
+    '(result (table (@ (class "inbody") (cellspacing "0") (border "0"))
+                    (tr (@ (class "inbody"))
+                        (td (@ (class "inbody")) "a\n")
+                        (td (@ (class "inbody")) "b\n")
+                        (td (@ (class "inbody")) "c\n"))
+                    (tr (@ (class "inbody"))
+                        (td (@ (class "inbody")) "d\n")
+                        (td (@ (class "inbody")) "e\n")
+                        (td (@ (class "inbody")) "f\n"))))
+    (page "|||@border=0||"
+          "||a||b||c||"
+          "||d||e||f||"))
+
 ;;------------------------------------------------
 (test-section "block elements (hr)")
 
