@@ -15,6 +15,7 @@
 (auth-db-path (sys-normalize-pathname "pw.o" :absolute #t))
 
 (sys-unlink (auth-db-path))
+(sys-unlink #"~(auth-db-path).lock") ;; in case if it remains from prev pass
 
 (test-section "password management")
 
