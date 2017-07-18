@@ -1,3 +1,11 @@
+2017-07-18  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/auth.scm (<auth-failure>): Make it inherit <error>,
+	  for the unwind-protect doesn't see non-serious-conditions as
+	  escaping condition, and that leads to unexpected behavior when
+	  combined with with-lock-file that uses unwind-protect to remove
+	  lock files.
+
 2017-07-16  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/parse.scm (table): Experimenting table options.

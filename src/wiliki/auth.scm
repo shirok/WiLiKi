@@ -53,7 +53,7 @@
           auth-delete-session! auth-clean-sessions!))
 (select-module wiliki.auth)
 
-(define-condition-type <auth-failure> <message-condition> #f)
+(define-condition-type <auth-failure> <error> #f)
 
 ;;;
 ;;; Password management
