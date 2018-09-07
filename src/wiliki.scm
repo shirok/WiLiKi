@@ -307,6 +307,11 @@
        (wiliki:persistent-page? page)
        (wiliki:make-navi-button `((p ,(~ page 'key)) (c h)) ($$ "History"))))
 
+(define (wiliki:back-link page)
+  (and (wiliki:persistent-page? page)
+       (wiliki:make-navi-button `((key ,#"[[~(~ page'key)]]") (c s))
+                                ($$ "Links to here"))))
+
 (define (wiliki:all-link page)
   (and (not (equal? (~ page 'command) "c=a"))
        (wiliki:make-navi-button '((c a)) ($$ "All"))))
@@ -348,15 +353,13 @@
             [(wiliki:top-link page) => td]
             [(wiliki:edit-link page) => td]
             [(wiliki:history-link page) => td]
+            [(wiliki:back-link page) => td]
             [(wiliki:all-link page) => td]
             [(wiliki:recent-link page) => td])
          (td ,@(wiliki:search-box))))))
 
 (define (wiliki:page-title page)
-  `((h1 ,(if (wiliki:persistent-page? page)
-           `(a (@ (href ,(url "c=s&key=[[~a]]" (~ page 'key))))
-               ,(~ page 'title))
-           (~ page 'title)))))
+  `((h1 ,(~ page 'title))))
 
 (define (wiliki:default-page-header page opts)
   `(,@(wiliki:page-title page)

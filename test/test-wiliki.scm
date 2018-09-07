@@ -64,7 +64,7 @@
                (base (@ (href "http://localhost/wiliki.cgi")))
                ?*)
          (body ?@
-               (h1 (a (@ (href "wiliki.cgi?c=s&key=[[TEST]]")) "TEST"))
+               (h1 "TEST")
                (div ?*)
                (div ?*)
                (hr)
