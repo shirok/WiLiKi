@@ -1,3 +1,12 @@
+2018-09-07  Shiro Kawai  <shiro@acm.org>
+
+	* Release 0.8
+
+	* src/wiliki.scm: Stop making the page title a link to search
+	  'back link' to the page.  Lots of crawers follow that link
+	  and kicks search every time.  The back link feature is
+	  available in the navigation button.
+
 2017-07-18  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/auth.scm (<auth-failure>): Make it inherit <error>,
