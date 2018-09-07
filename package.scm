@@ -1,5 +1,5 @@
 (define-gauche-package "WiLiKi"
-  :version "0.7"
+  :version "0.8"
   :description "WikiClone written in Scheme."
   :require (("Gauche" (>= "0.9.5")))
   :maintainers ("shiro@acm.org")
