@@ -1,3 +1,9 @@
+2018-09-08  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm: Run search only via POST method, to avoid
+	  crawlers trigger it.  GET request shows a search box with the
+	  key filled in.
+
 2018-09-07  Shiro Kawai  <shiro@acm.org>
 
 	* Release 0.8
