@@ -325,7 +325,7 @@
   (and (not (equal? (~ page 'command) "c=r"))
        (wiliki:make-navi-button '((c r)) ($$ "Recent Changes"))))
 
-(define (wiliki:search-box :optional key)
+(define (wiliki:search-box :optional (key #f))
   `((form (@ (method POST) (action ,(cgi-name-of (wiliki)))
              (style "margin:0pt; padding:0pt"))
           (input (@ (type hidden) (name c) (value s)))
