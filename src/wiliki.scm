@@ -204,22 +204,27 @@
 ;;
 ;; Search
 ;;
-(define-wiliki-action s :read (_
-                               (key :convert cv-in))
-  (html-page
-   (make <wiliki-page>
-     :title (string-append (title-of (wiliki))": "
-                           (format ($$ "Search results of \"~a\"") key))
-     :command (format #f "c=s&key=~a" (html-escape-string key))
-     :content
-     `((ul
-        ,@(map (^p `(li
-                     ,(wiliki:wikiname-anchor (car p))
-                     ,(or (and-let* ([mtime (get-keyword :mtime (cdr p) #f)])
-                            #"(~(how-long-since mtime))")
-                          "")))
-               (wiliki:db-search-content key))))
-     )))
+(define-wiliki-action s :read (_ (key :convert cv-in))
+  (if (equal? (cgi-get-metavariable "REQUEST_METHOD") "POST")
+    (html-page
+     (make <wiliki-page>
+       :title (string-append (title-of (wiliki))": "
+                             (format ($$ "Search results of \"~a\"") key))
+       :command (format #f "c=s&key=~a" (html-escape-string key))
+       :content
+       `((ul
+          ,@(map (^p `(li
+                       ,(wiliki:wikiname-anchor (car p))
+                       ,(or (and-let* ([mtime (get-keyword :mtime (cdr p) #f)])
+                              #"(~(how-long-since mtime))")
+                            "")))
+                 (wiliki:db-search-content key))))
+       ))
+    (html-page
+     (make <wiliki-page>
+       :title (string-append (title-of (wiliki))": search")
+       :command (format #f "c=s&key=~a" (html-escape-string key))
+       :content (wiliki:search-box key)))))
 
 ;;
 ;; Edit and commit
@@ -320,11 +325,13 @@
   (and (not (equal? (~ page 'command) "c=r"))
        (wiliki:make-navi-button '((c r)) ($$ "Recent Changes"))))
 
-(define (wiliki:search-box)
+(define (wiliki:search-box :optional key)
   `((form (@ (method POST) (action ,(cgi-name-of (wiliki)))
              (style "margin:0pt; padding:0pt"))
           (input (@ (type hidden) (name c) (value s)))
           (input (@ (type text) (name key) (size 15)
+                    ,@(cond-list
+                       [key `(value ,key)])
                     (class "search-box")))
           (input (@ (type submit) (name search) (value ,($$ "Search"))
                     (class "navi-button")))

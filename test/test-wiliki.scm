@@ -404,14 +404,27 @@
                    1)
        (test-sxml-select-matcher '(html body)))
 
-(test* "Search result"
+(test* "Search result (GET)"
+       `(body
+         (!contain
+          (form
+           (!contain (input (@ (value "dreamhost") ?*))))))
+       (values-ref (run-cgi-script->sxml
+                    *cgi-path*
+                    :environment '((REQUEST_METHOD . "GET"))
+                    :parameters '((c . s) (key . "dreamhost")))
+                   1)
+       (test-sxml-select-matcher '(html body)))
+
+
+(test* "Search result (POST)"
        `(body
          (!contain (h1 "Test: Search results of \"dreamhost\"")
                    (ul
                     (li (a (@ (href "wiliki.cgi?InterWikiName")) ?*) ?*))))
        (values-ref (run-cgi-script->sxml
                     *cgi-path*
-                    :environment '((REQUEST_METHOD . "GET"))
+                    :environment '((REQUEST_METHOD . "POST"))
                     :parameters '((c . s) (key . "dreamhost")))
                    1)
        (test-sxml-select-matcher '(html body)))
