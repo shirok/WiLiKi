@@ -59,10 +59,14 @@ TARGET = $(MO_FILES)
 all : $(TARGET)
 
 $(PACKAGE).pot : $(POTFILES)
-	xgettext -d$(PACKAGE) -LScheme -k'$$$$' -o$(PACKAGE).pot \
-	         --copyright-holder='Shiro Kawai' \
-	         --msgid-bugs-address='@PACKAGE_BUGREPORT@' \
-	         $(POTFILES)
+	if [ -n "$(XGETTEXT_SIM)" ]; then                            \
+	    gosh xgettext-sim.scm -o $(PACKAGE).pot $(POTFILES);     \
+	else                                                         \
+	    xgettext -d$(PACKAGE) -LScheme -k'$$$$' -o$(PACKAGE).pot \
+	             --copyright-holder='Shiro Kawai'                \
+	             --msgid-bugs-address='@PACKAGE_BUGREPORT@'      \
+	             $(POTFILES);                                    \
+	fi
 
 update-po: $(PACKAGE).pot
 	for lingua in $(ALL_LINGUAS); do \
