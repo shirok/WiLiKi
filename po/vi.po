@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WiLiKi\n"
 "Report-Msgid-Bugs-To: pclouds@gmail.com\n"
-"POT-Creation-Date: 2015-02-08 09:19+0700\n"
+"POT-Creation-Date: 2018-10-06 15:59+0900\n"
 "PO-Revision-Date: 2015-04-23 18:56+0700\n"
 "Last-Translator: Nguyễn Thái Ngọc Duy <pclouds@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -16,52 +16,56 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: ../src/wiliki.scm:151
+#: ../src/wiliki.scm:152
 msgid "Nonexistent page: "
 msgstr "Trang không tồn tại: "
 
-#: ../src/wiliki.scm:152
+#: ../src/wiliki.scm:153
 msgid "Create a new page: "
 msgstr "Tạo trang mới: "
 
-#: ../src/wiliki.scm:175
+#: ../src/wiliki.scm:176
 msgid "All Pages"
 msgstr "Mọi trang"
 
-#: ../src/wiliki.scm:184 ../src/wiliki.scm:314
+#: ../src/wiliki.scm:185 ../src/wiliki.scm:326
 msgid "Recent Changes"
 msgstr "Thay đổi gần đây"
 
-#: ../src/wiliki.scm:211
+#: ../src/wiliki.scm:212
 #, scheme-format
 msgid "Search results of \"~a\""
 msgstr "Kết quả tìm kiếm về \"~a\""
 
-#: ../src/wiliki.scm:296
+#: ../src/wiliki.scm:303
 msgid "Top"
 msgstr "Tranh chính"
 
-#: ../src/wiliki.scm:301
+#: ../src/wiliki.scm:308
 msgid "Edit"
 msgstr "Sửa"
 
-#: ../src/wiliki.scm:306
+#: ../src/wiliki.scm:313
 msgid "History"
 msgstr "Lịch sử"
 
-#: ../src/wiliki.scm:310
+#: ../src/wiliki.scm:318
+msgid "Links to here"
+msgstr ""
+
+#: ../src/wiliki.scm:322
 msgid "All"
 msgstr "Tất cả"
 
-#: ../src/wiliki.scm:322
+#: ../src/wiliki.scm:336
 msgid "Search"
 msgstr "Tìm"
 
-#: ../src/wiliki.scm:369
+#: ../src/wiliki.scm:381
 msgid "Last modified : "
 msgstr "Lần sửa cuối: "
 
-#: ../src/wiliki.scm:389
+#: ../src/wiliki.scm:401
 msgid "Epoch"
 msgstr ""
 
@@ -166,28 +170,46 @@ msgstr ""
 "         kết.  \"<tt>[URL tên]</tt>\" biến thành <tt>tên</tt> và được liên\n"
 "         kết đến <tt>URL</tt>.</p>\n"
 "      <p>Hai nháy đơn bao quanh từ (<tt>''foo''</tt>) để nhấn mạnh.</p>\n"
-"      <p>Ba nháy đơn bao quanh từ (<tt>'''foo'''</tt>) để nhấn mạnh hơn nữa.</p>\n"
-"      <p>Ba nháy kép bao quanh từ (<tt>\"\"\"foo\"\"\"</tt>) để dùng phông chữ có\n"
+"      <p>Ba nháy đơn bao quanh từ (<tt>'''foo'''</tt>) để nhấn mạnh hơn nữa."
+"</p>\n"
+"      <p>Ba nháy kép bao quanh từ (<tt>\"\"\"foo\"\"\"</tt>) để dùng phông "
+"chữ có\n"
 "         độ rộng cố định.</p>\n"
 "      <p>Ba dấu ngã bao quanh từ (<tt>~~~foo~~~</tt>) để gạch đè.</p>\n"
 "      <p>\"<tt>*</tt>\", \"<tt>**</tt>\" and \"<tt>***</tt>\"' ... \n"
-"         ở đầu dòng là tiêu đề.  Thêm khoảng trắng sau dấu sao cuối cùng.</p>\n"
+"         ở đầu dòng là tiêu đề.  Thêm khoảng trắng sau dấu sao cuối cùng.</"
+"p>\n"
 "      <p>Khoảng trắng ở đầu dòng cho văn bản định dạng sẵn.</p>\n"
 "      <p>Dòng \"{{{\" bắt đầu nguyên văn, kết thúc ở dòng \"}}}\".\n"
 "         Nguyên văn không được định dạng lại.  Thậm chí ghi chú và tiếp nối\n"
 "         dòng cũng không có tác dụng.</p>\n"
-"      <p>Dòng bắt đầu bằng \"||\" và kết thúc bằng \"||\" biến thành một hàng\n"
-"         trong bảng.  Các hàng liên tục tạo thành một bảng. \"||\" dùng để phân\n"
+"      <p>Dòng bắt đầu bằng \"||\" và kết thúc bằng \"||\" biến thành một "
+"hàng\n"
+"         trong bảng.  Các hàng liên tục tạo thành một bảng. \"||\" dùng để "
+"phân\n"
 "         cột trong mỗi dòng.</p>\n"
 "      <p>\"~%\" được dùng thay cho \"&lt;br&gt;\".</p>\n"
-"      <p>Để dùng ký tự đặc biệt ở đầu dùng, thêm sáu dấu nháy đơn liên tiếp.\n"
-"         Đây là mã để nhấn mạnh chuỗi rỗng, nên trên thực tế không có hiệu ứng\n"
+"      <p>Để dùng ký tự đặc biệt ở đầu dùng, thêm sáu dấu nháy đơn liên "
+"tiếp.\n"
+"         Đây là mã để nhấn mạnh chuỗi rỗng, nên trên thực tế không có hiệu "
+"ứng\n"
 "         gì.</p>"
 
 #: ../src/wiliki/edit.scm:148
 #, scheme-format
 msgid "Preview of ~a"
 msgstr "Xem trước ~a"
+
+#: ../src/wiliki/edit.scm:260
+msgid "Update Conflict"
+msgstr ""
+
+#: ../src/wiliki/edit.scm:262
+msgid ""
+"<p>It seems that somebody has updated this page\n"
+"       while you're editing.  The difference is snown below.\n"
+"       Please revise <a href=\"#edit\">your edit</a> and commit again.</p>"
+msgstr ""
 
 #: ../src/wiliki/edit.scm:268
 msgid "lines you added (or somebody else deleted)"
@@ -207,84 +229,84 @@ msgstr ""
 msgid "Edit History"
 msgstr "Nhật ký thay đổi"
 
-#: ../src/wiliki/history.scm:130
+#: ../src/wiliki/history.scm:129
 #, scheme-format
 msgid "Edit history of ~a"
 msgstr "Nhật ký thay đổi của ~a"
 
-#: ../src/wiliki/history.scm:142
+#: ../src/wiliki/history.scm:141
 msgid "added lines"
 msgstr "dòng được thêm"
 
-#: ../src/wiliki/history.scm:143
+#: ../src/wiliki/history.scm:142
 msgid "deleted lines"
 msgstr "dòng bị xoá"
 
-#: ../src/wiliki/history.scm:147
+#: ../src/wiliki/history.scm:146
 #, scheme-format
 msgid "Changes of ~a since ~a"
 msgstr "Thay đổi của ~a từ ~a"
 
-#: ../src/wiliki/history.scm:165
+#: ../src/wiliki/history.scm:162
 #, scheme-format
 msgid "Changes of ~a between ~a and ~a"
 msgstr "Thay đổi của ~a giữa ~a và ~a"
 
-#: ../src/wiliki/history.scm:175
+#: ../src/wiliki/history.scm:172
 msgid "Edit History:Diff"
 msgstr "Nhật ký thay đổi:Xem khác biệt"
 
-#: ../src/wiliki/history.scm:193
+#: ../src/wiliki/history.scm:190
 msgid "Edit History:View"
 msgstr "Nhật ký thay đổi:Xem"
 
-#: ../src/wiliki/history.scm:202
+#: ../src/wiliki/history.scm:199
 #, scheme-format
 msgid "Content of ~a at ~a"
 msgstr "Nội dung của ~a lúc ~a"
 
-#: ../src/wiliki/history.scm:208
+#: ../src/wiliki/history.scm:205
 msgid "View diff from current version"
 msgstr "Xem khác biệc so với phiên bản hiện thời"
 
-#: ../src/wiliki/history.scm:214
+#: ../src/wiliki/history.scm:211
 msgid "Edit this version"
 msgstr "Sửa phiên bản này"
 
-#: ../src/wiliki/history.scm:221
+#: ../src/wiliki/history.scm:218
 #, scheme-format
 msgid "No edit history available for page ~a"
 msgstr "Không có nhật ký thay đổi cho trang ~a"
 
-#: ../src/wiliki/history.scm:227
+#: ../src/wiliki/history.scm:224
 msgid "Return to the edit history"
 msgstr "Trở về nhật ký thay đổi"
 
-#: ../src/wiliki/macro.scm:144
+#: ../src/wiliki/macro.scm:164
 #, scheme-format
 msgid "Page(s) with tag ~s"
 msgstr "Trang với thẻ ~s"
 
-#: ../src/wiliki/macro.scm:152
+#: ../src/wiliki/macro.scm:172
 msgid "The list is cached and updated occasionally."
 msgstr "Danh sách được lưu tạm và cập nhật định kỳ."
 
-#: ../src/wiliki/macro.scm:156
+#: ../src/wiliki/macro.scm:176
 msgid "Update cache now"
 msgstr "Cập nhật ngay"
 
-#: ../src/wiliki/macro.scm:342
+#: ../src/wiliki/macro.scm:360
 msgid "Post a comment"
 msgstr "Gửi nhận xét"
 
-#: ../src/wiliki/macro.scm:352
+#: ../src/wiliki/macro.scm:370
 msgid "Name: "
 msgstr "Tên: "
 
-#: ../src/wiliki/macro.scm:363
+#: ../src/wiliki/macro.scm:381
 msgid "Submit Comment"
 msgstr "Gửi nhận xét"
 
-#: ../src/wiliki/macro.scm:369
+#: ../src/wiliki/macro.scm:387
 msgid "Past comment(s)"
 msgstr "Nhận xét trước"
