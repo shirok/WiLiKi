@@ -1,7 +1,7 @@
 ;; -*- coding: utf-8 -*-
 ;;
 ;; xgettext-sim.scm
-;; 2018-10-6 v1.01
+;; 2018-10-7 v1.02
 ;;
 ;; Usage:
 ;;   gosh xgettext-sim.scm -o outfile infile1 infile2 ...
@@ -61,7 +61,7 @@
       ;; single-line item
       ;;   ($$      "data"
       ;;   (gettext "data"
-      ((#/\((?:$$|gettext)\s*(\"(?:(?<!\\)(?:\\\\)*\\\"|.)*\")/ line)
+      ((#/\((?:$$|gettext)\s*(\"(?:(?<!\\)(?:\\\\)*\\\"|[^\"])*\")/ line)
        => (lambda (m)
             (let1 data1 (rxmatch-substring m 1)
               (cond
@@ -81,7 +81,7 @@
       ;; start of multi-line item
       ;;   ($$      "data ...
       ;;   (gettext "data ...
-      ((#/\((?:$$|gettext)\s*(\"(?:(?<!\\)(?:\\\\)*\\\"|.)*)$/ line)
+      ((#/\((?:$$|gettext)\s*(\"(?:(?<!\\)(?:\\\\)*\\\"|[^\"])*)$/ line)
        => (lambda (m)
             (let1 data1 (rxmatch-substring m 1)
               (cond
