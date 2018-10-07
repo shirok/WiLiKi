@@ -30,19 +30,21 @@ MO_FILES = $(addsuffix .gmo,$(ALL_LINGUAS))
 
 MSGDIR = "$(DESTDIR)$(datadir)/locale/$$lingua/LC_MESSAGES/"
 
-POTFILES = $(top_srcdir)/src/wiliki.scm \
-           $(top_srcdir)/src/wiliki/db.scm \
-           $(top_srcdir)/src/wiliki/edit.scm \
-           $(top_srcdir)/src/wiliki/format.scm \
-           $(top_srcdir)/src/wiliki/history.scm \
-           $(top_srcdir)/src/wiliki/log.scm \
-           $(top_srcdir)/src/wiliki/macro.scm \
-           $(top_srcdir)/src/wiliki/page.scm \
-           $(top_srcdir)/src/wiliki/parse.scm \
-           $(top_srcdir)/src/wiliki/pasttime.scm \
-           $(top_srcdir)/src/wiliki/rss.scm \
-           $(top_srcdir)/src/wiliki/rssmix.scm \
-           $(top_srcdir)/src/wiliki/util.scm
+POTFILES = src/wiliki.scm \
+           src/wiliki/db.scm \
+           src/wiliki/edit.scm \
+           src/wiliki/format.scm \
+           src/wiliki/history.scm \
+           src/wiliki/log.scm \
+           src/wiliki/macro.scm \
+           src/wiliki/page.scm \
+           src/wiliki/parse.scm \
+           src/wiliki/pasttime.scm \
+           src/wiliki/rss.scm \
+           src/wiliki/rssmix.scm \
+           src/wiliki/util.scm
+
+CONVDIR = conv1001
 
 # Module-specific stuff
 PACKAGE   = WiLiKi
@@ -58,13 +60,22 @@ TARGET = $(MO_FILES)
 
 all : $(TARGET)
 
-$(PACKAGE).pot : $(POTFILES)
+# NB: xgettext doesn't recognize Gauche's extensional syntax.
+# So we replace them before processing.
+generate-pot:
+	for f in $(POTFILES); do                               \
+	  mkdir -p `dirname "$(CONVDIR)/$$f"`;                 \
+	  cp -f $(top_srcdir)/$$f $(CONVDIR)/$$f;              \
+	  sed -i -e 's@#"@"@g' $(CONVDIR)/$$f;                 \
+	  sed -i -E 's@#/(\\/|[^/])*/i?@#//@g' $(CONVDIR)/$$f; \
+	done
 	xgettext -d$(PACKAGE) -LScheme -k'$$$$' -o$(PACKAGE).pot \
 	         --copyright-holder='Shiro Kawai' \
 	         --msgid-bugs-address='@PACKAGE_BUGREPORT@' \
-	         $(POTFILES)
+	         $(POTFILES:%=$(CONVDIR)/%)
+	sed -i -e '/^"Report-Msgid-Bugs-To:/d' $(PACKAGE).pot
 
-update-po: $(PACKAGE).pot
+update-po: generate-pot
 	for lingua in $(ALL_LINGUAS); do \
 	  if [ ! -r $$lingua.po ]; \
 	    then cp $(PACKAGE).pot $$lingua.po; \
@@ -89,6 +100,7 @@ uninstall :
 # a problem.  (msgfmt 0.10.40 doesn't handle encoding info well.)
 clean:
 	rm -f $(PACKAGE).pot *~
+	rm -fr $(CONVDIR)
 
 distclean: clean
 	rm -f Makefile
