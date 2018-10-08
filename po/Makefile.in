@@ -66,9 +66,9 @@ $(PACKAGE).pot : $(POTFILES)
 	rm -rf tmp
 	mkdir -p tmp/wiliki/
 	for f in $(POTFILES); do                               \
-	  sed -e 's@#"@"@g'                                    \
-              -e 's@#/(\\/|[^/])*/i?@#//@g'                    \
-              $$f > `echo $$f|sed 'sx.*/src/x./tmp/x'`;        \
+	  sed -e 's@#"@"@g' $$f |                              \
+	  sed -E 's@#/(\\/|[^/])*/i?@#//@g'                    \
+	      > `echo $$f|sed 'sx.*/src/x./tmp/x'`;            \
 	done
 	xgettext -d$(PACKAGE) -LScheme -k'$$$$' -o$(PACKAGE).pot \
 	         --copyright-holder='Shiro Kawai' \

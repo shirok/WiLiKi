@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WiLiKi\n"
 "Report-Msgid-Bugs-To: pclouds@gmail.com\n"
-"POT-Creation-Date: 2018-10-07 13:55-1000\n"
+"POT-Creation-Date: 2018-10-07 19:04-1000\n"
 "PO-Revision-Date: 2015-04-23 18:56+0700\n"
 "Last-Translator: Nguyễn Thái Ngọc Duy <pclouds@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -199,6 +199,17 @@ msgstr ""
 #, scheme-format
 msgid "Preview of ~a"
 msgstr "Xem trước ~a"
+
+#: tmp/wiliki/edit.scm:260
+msgid "Update Conflict"
+msgstr ""
+
+#: tmp/wiliki/edit.scm:262
+msgid ""
+"<p>It seems that somebody has updated this page\n"
+"       while you're editing.  The difference is snown below.\n"
+"       Please revise <a href=\"#edit\">your edit</a> and commit again.</p>"
+msgstr ""
 
 #: tmp/wiliki/edit.scm:268
 msgid "lines you added (or somebody else deleted)"
