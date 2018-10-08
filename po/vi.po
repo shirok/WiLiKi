@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: WiLiKi\n"
 "Report-Msgid-Bugs-To: pclouds@gmail.com\n"
-"POT-Creation-Date: 2018-10-06 21:46+0900\n"
+"POT-Creation-Date: 2018-10-07 13:55-1000\n"
 "PO-Revision-Date: 2015-04-23 18:56+0700\n"
 "Last-Translator: Nguyễn Thái Ngọc Duy <pclouds@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -16,84 +16,84 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: ../src/wiliki.scm:152
+#: tmp/wiliki.scm:152
 msgid "Nonexistent page: "
 msgstr "Trang không tồn tại: "
 
-#: ../src/wiliki.scm:153
+#: tmp/wiliki.scm:153
 msgid "Create a new page: "
 msgstr "Tạo trang mới: "
 
-#: ../src/wiliki.scm:176
+#: tmp/wiliki.scm:176
 msgid "All Pages"
 msgstr "Mọi trang"
 
-#: ../src/wiliki.scm:185 ../src/wiliki.scm:326
+#: tmp/wiliki.scm:185 tmp/wiliki.scm:326
 msgid "Recent Changes"
 msgstr "Thay đổi gần đây"
 
-#: ../src/wiliki.scm:212
+#: tmp/wiliki.scm:212
 #, scheme-format
 msgid "Search results of \"~a\""
 msgstr "Kết quả tìm kiếm về \"~a\""
 
-#: ../src/wiliki.scm:303
+#: tmp/wiliki.scm:303
 msgid "Top"
 msgstr "Tranh chính"
 
-#: ../src/wiliki.scm:308
+#: tmp/wiliki.scm:308
 msgid "Edit"
 msgstr "Sửa"
 
-#: ../src/wiliki.scm:313
+#: tmp/wiliki.scm:313
 msgid "History"
 msgstr "Lịch sử"
 
-#: ../src/wiliki.scm:318
+#: tmp/wiliki.scm:318
 msgid "Links to here"
 msgstr ""
 
-#: ../src/wiliki.scm:322
+#: tmp/wiliki.scm:322
 msgid "All"
 msgstr "Tất cả"
 
-#: ../src/wiliki.scm:336
+#: tmp/wiliki.scm:336
 msgid "Search"
 msgstr "Tìm"
 
-#: ../src/wiliki.scm:381
+#: tmp/wiliki.scm:381
 msgid "Last modified : "
 msgstr "Lần sửa cuối: "
 
-#: ../src/wiliki.scm:401
+#: tmp/wiliki.scm:401
 msgid "Epoch"
 msgstr ""
 
-#: ../src/wiliki/edit.scm:45
+#: tmp/wiliki/edit.scm:45
 msgid "Preview again"
 msgstr "Xem trước lần nữa"
 
-#: ../src/wiliki/edit.scm:46
+#: tmp/wiliki/edit.scm:46
 msgid "Commit"
 msgstr "Lưu"
 
-#: ../src/wiliki/edit.scm:47
+#: tmp/wiliki/edit.scm:47
 msgid "Preview"
 msgstr "Xem trước"
 
-#: ../src/wiliki/edit.scm:48
+#: tmp/wiliki/edit.scm:48
 msgid "Commit without preview"
 msgstr "Lưu không xem trước"
 
-#: ../src/wiliki/edit.scm:52
+#: tmp/wiliki/edit.scm:52
 msgid "Don't update 'Recent Changes'"
 msgstr "Không cập nhật \"Thay đổi gần đây\""
 
-#: ../src/wiliki/edit.scm:69
+#: tmp/wiliki/edit.scm:69
 msgid "ChangeLog (brief summary of your edit for later reference):"
 msgstr "ChangeLog (tóm tắt ngắn về thay đổi để tham khảo về sau):"
 
-#: ../src/wiliki/edit.scm:79
+#: tmp/wiliki/edit.scm:79
 msgid ""
 "<h2>Text Formatting Rules</h2>\n"
 "      <p>No HTML.</p>\n"
@@ -195,118 +195,107 @@ msgstr ""
 "ứng\n"
 "         gì.</p>"
 
-#: ../src/wiliki/edit.scm:148
+#: tmp/wiliki/edit.scm:148
 #, scheme-format
 msgid "Preview of ~a"
 msgstr "Xem trước ~a"
 
-#: ../src/wiliki/edit.scm:260
-msgid "Update Conflict"
-msgstr ""
-
-#: ../src/wiliki/edit.scm:262
-msgid ""
-"<p>It seems that somebody has updated this page\n"
-"       while you're editing.  The difference is snown below.\n"
-"       Please revise <a href=\"#edit\">your edit</a> and commit again.</p>"
-msgstr ""
-
-#: ../src/wiliki/edit.scm:268
+#: tmp/wiliki/edit.scm:268
 msgid "lines you added (or somebody else deleted)"
 msgstr "dòng bạn thêm (hoặc ai đó xoá)"
 
-#: ../src/wiliki/edit.scm:270
+#: tmp/wiliki/edit.scm:270
 msgid "lines somebody else added (or you deleted)"
 msgstr "dòng ai đó thêm (hoặc bạn xoá)"
 
-#: ../src/wiliki/edit.scm:273
+#: tmp/wiliki/edit.scm:273
 msgid ""
 "<p>The following shows what you are about to submit.  Please re-edit the "
 "content and submit again.</p>"
 msgstr ""
 
-#: ../src/wiliki/history.scm:118
-msgid "Edit History"
-msgstr "Nhật ký thay đổi"
-
-#: ../src/wiliki/history.scm:129
-#, scheme-format
-msgid "Edit history of ~a"
-msgstr "Nhật ký thay đổi của ~a"
-
-#: ../src/wiliki/history.scm:141
-msgid "added lines"
-msgstr "dòng được thêm"
-
-#: ../src/wiliki/history.scm:142
-msgid "deleted lines"
-msgstr "dòng bị xoá"
-
-#: ../src/wiliki/history.scm:146
-#, scheme-format
-msgid "Changes of ~a since ~a"
-msgstr "Thay đổi của ~a từ ~a"
-
-#: ../src/wiliki/history.scm:162
-#, scheme-format
-msgid "Changes of ~a between ~a and ~a"
-msgstr "Thay đổi của ~a giữa ~a và ~a"
-
-#: ../src/wiliki/history.scm:172
-msgid "Edit History:Diff"
-msgstr "Nhật ký thay đổi:Xem khác biệt"
-
-#: ../src/wiliki/history.scm:190
-msgid "Edit History:View"
-msgstr "Nhật ký thay đổi:Xem"
-
-#: ../src/wiliki/history.scm:199
-#, scheme-format
-msgid "Content of ~a at ~a"
-msgstr "Nội dung của ~a lúc ~a"
-
-#: ../src/wiliki/history.scm:205
-msgid "View diff from current version"
-msgstr "Xem khác biệc so với phiên bản hiện thời"
-
-#: ../src/wiliki/history.scm:211
-msgid "Edit this version"
-msgstr "Sửa phiên bản này"
-
-#: ../src/wiliki/history.scm:218
-#, scheme-format
-msgid "No edit history available for page ~a"
-msgstr "Không có nhật ký thay đổi cho trang ~a"
-
-#: ../src/wiliki/history.scm:224
-msgid "Return to the edit history"
-msgstr "Trở về nhật ký thay đổi"
-
-#: ../src/wiliki/macro.scm:164
+#: tmp/wiliki/macro.scm:164
 #, scheme-format
 msgid "Page(s) with tag ~s"
 msgstr "Trang với thẻ ~s"
 
-#: ../src/wiliki/macro.scm:172
+#: tmp/wiliki/macro.scm:172
 msgid "The list is cached and updated occasionally."
 msgstr "Danh sách được lưu tạm và cập nhật định kỳ."
 
-#: ../src/wiliki/macro.scm:176
+#: tmp/wiliki/macro.scm:176
 msgid "Update cache now"
 msgstr "Cập nhật ngay"
 
-#: ../src/wiliki/macro.scm:360
+#: tmp/wiliki/macro.scm:360
 msgid "Post a comment"
 msgstr "Gửi nhận xét"
 
-#: ../src/wiliki/macro.scm:370
+#: tmp/wiliki/macro.scm:370
 msgid "Name: "
 msgstr "Tên: "
 
-#: ../src/wiliki/macro.scm:381
+#: tmp/wiliki/macro.scm:381
 msgid "Submit Comment"
 msgstr "Gửi nhận xét"
 
-#: ../src/wiliki/macro.scm:387
+#: tmp/wiliki/macro.scm:387
 msgid "Past comment(s)"
 msgstr "Nhận xét trước"
+
+#: tmp/wiliki/history.scm:118
+msgid "Edit History"
+msgstr "Nhật ký thay đổi"
+
+#: tmp/wiliki/history.scm:129
+#, scheme-format
+msgid "Edit history of ~a"
+msgstr "Nhật ký thay đổi của ~a"
+
+#: tmp/wiliki/history.scm:141
+msgid "added lines"
+msgstr "dòng được thêm"
+
+#: tmp/wiliki/history.scm:142
+msgid "deleted lines"
+msgstr "dòng bị xoá"
+
+#: tmp/wiliki/history.scm:146
+#, scheme-format
+msgid "Changes of ~a since ~a"
+msgstr "Thay đổi của ~a từ ~a"
+
+#: tmp/wiliki/history.scm:162
+#, scheme-format
+msgid "Changes of ~a between ~a and ~a"
+msgstr "Thay đổi của ~a giữa ~a và ~a"
+
+#: tmp/wiliki/history.scm:172
+msgid "Edit History:Diff"
+msgstr "Nhật ký thay đổi:Xem khác biệt"
+
+#: tmp/wiliki/history.scm:190
+msgid "Edit History:View"
+msgstr "Nhật ký thay đổi:Xem"
+
+#: tmp/wiliki/history.scm:199
+#, scheme-format
+msgid "Content of ~a at ~a"
+msgstr "Nội dung của ~a lúc ~a"
+
+#: tmp/wiliki/history.scm:205
+msgid "View diff from current version"
+msgstr "Xem khác biệc so với phiên bản hiện thời"
+
+#: tmp/wiliki/history.scm:211
+msgid "Edit this version"
+msgstr "Sửa phiên bản này"
+
+#: tmp/wiliki/history.scm:218
+#, scheme-format
+msgid "No edit history available for page ~a"
+msgstr "Không có nhật ký thay đổi cho trang ~a"
+
+#: tmp/wiliki/history.scm:224
+msgid "Return to the edit history"
+msgstr "Trở về nhật ký thay đổi"
