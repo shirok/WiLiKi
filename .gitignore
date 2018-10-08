@@ -1,0 +1,7 @@
+Makefile
+VERSION
+WiLiKi.gpd
+
+po/*.gmo
+
+src/wiliki/version.scm
