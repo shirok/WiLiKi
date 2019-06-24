@@ -789,11 +789,17 @@
         (@ (class "manage-comment-entry"))
         (div (@ (class "comment-past"))
              (p (@ (class "comment-entry-title"))
-                (input (@ (type checkbox) (name ,(~(car page&ip)'key))))
-                "Comment for " ,(parent-page-link parent-key)
-                " from " ,(cdr page&ip))
+                (input (@ (type checkbox) 
+                          (name ,(~(car page&ip)'key))
+                          (id  ,(~(car page&ip)'key))))
+                (label (@ (for ,(~(car page&ip)'key)))
+                       "Comment for " ,(parent-page-link parent-key)
+                       " from " ,(ip-ban-link (cdr page&ip))))
              ,@(parameterize ([wiliki:reader-macros '()])
                  (wiliki:format-content (car page&ip)))))))
+  (define (ip-ban-link ipaddr)
+    `(a (@ (href ,(wiliki:url "c=manage-comment-del&from-ip=~a" ipaddr)))
+        ,ipaddr))
   (define (parent-page-link parent-key)
     (let1 parent-page (wiliki:db-get parent-key)
       (if parent-page
@@ -817,13 +823,29 @@
                '()))))
       '())))
 
-(define-wiliki-action manage-comment-del :write (pagename params
-                                                          (confirm :default #f))
+(define-wiliki-action manage-comment-del :write (pagename 
+                                                 params
+                                                 (from-ip :default #f)
+                                                 (confirm :default #f))
   (define (comment-entry key)
     `(div (@ (class manage-comment-entry))
           (div (@ (class comment-past))
                ,@(wiliki:get-formatted-page-content key))))
-  (let1 page-keys (filter #/^\|comments:/ (map car params))
+  (define (keys-to-delete)
+    (if from-ip
+      (keys-of-comments-from-ip from-ip)
+      (filter #/^\|comments:/ (map car params))))
+  (define (keys-of-comments-from-ip from-ip)
+    ($ (cut take* <> 30)
+       $ filter-map (match-lambda [(_ pagename _ ip . _)
+                                   (and (equal? ip from-ip) 
+                                        (wiliki:db-exists? pagename)
+                                        pagename)])
+       $ filter-map (^[ls] (and (string-prefix? "A" (cadr ls))
+                                (read-from-string #"(~(car ls))")))
+       $ wiliki-log-pick-from-file #/^\|comments:/
+       $ wiliki:log-file-path $ wiliki))
+  (let1 page-keys (keys-to-delete)
     (if confirm
       (begin
         (dolist [page page-keys]

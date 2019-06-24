@@ -1,3 +1,8 @@
+2019-06-24  Shiro Kawai  <shiro@acm.org>
+
+	* examples/blob/blog.scm: Allow comment manager to batch delete
+	  comments from a specific IP address.
+
 2018-10-07  Shiro Kawai  <shiro@acm.org>
 
 	* po/Makefile.in (update-po): preprocess source files to remove
