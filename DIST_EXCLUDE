@@ -1,7 +1,1 @@
-DIST
-DIST_EXCLUDE
-DIST_EXCLUDE_X
-autom4te.cache
-config.status
-config.log
 debian

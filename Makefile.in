@@ -30,7 +30,7 @@ SCMFILES  =
 HEADERS   = 
 
 CONFIG_GENERATED = Makefile config.cache config.log config.status \
-		   configure.lineno autom4te*.cache $(PACKAGE).gpd
+		   configure.lineno autom4te*.cache $(PACKAGE).gpd VERSION
 
 HEADER_INSTALL_DIR  = "$(DESTDIR)@GAUCHE_PKGINCDIR@"
 SCM_INSTALL_DIR     = "$(DESTDIR)@GAUCHE_PKGLIBDIR@"

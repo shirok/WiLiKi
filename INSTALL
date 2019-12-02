@@ -1,13 +1,13 @@
 [Quick instruction to install wiliki]
 
   See the following URL for detailed instruction in Japanese:
-  http://practical-scheme.net/wiliki/wiliki.cgi?WiLiKi%3a%a5%ea%a5%d5%a5%a1%a5%ec%a5%f3%a5%b9%a5%de%a5%cb%a5%e5%a5%a2%a5%eb
+  https://practical-scheme.net/wiliki/wiliki.cgi?WiLiKi%3a%a5%ea%a5%d5%a5%a1%a5%ec%a5%f3%a5%b9%a5%de%a5%cb%a5%e5%a5%a2%a5%eb
 
 
 Requirements
 ------------
 
-  Gauche 0.9 or later
+  Gauche 0.9.5 or later
 
 
 Installation
