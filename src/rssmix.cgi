@@ -33,11 +33,11 @@
   (rss-main
    (make <rssmix>
      :sites '(("WiLiKi"
-               "http://www.shiro.dreamhost.com/scheme/wiliki/wiliki.cgi"
-               "http://www.shiro.dreamhost.com/scheme/wiliki/wiliki.cgi?c=rss")
+               "http://practical-scheme.net/wiliki/wiliki.cgi"
+               "http://practical-scheme.net/wiliki/wiliki.cgi?c=rss")
               ("SchemeXref"
-               "http://www.shiro.dreamhost.com/scheme/wiliki/schemexref.cgi"
-               "http://www.shiro.dreamhost.com/scheme/wiliki/schemexref.cgi?c=rss")
+               "http://practical-scheme.net/wiliki/schemexref.cgi"
+               "http://practical-scheme.net/wiliki/schemexref.cgi?c=rss")
               )
      :title "RSSMix: Recent Entries")))
 

@@ -317,7 +317,7 @@
    :environment '((REQUEST_METHOD . "GET"))
    :parameters `((c . c) (p . "InterWikiName") (commit . "Commit")
                  (mtime . "")
-                 (content . ":WiLiKi:shiro.dreamhost.com/scheme/wiliki/wiliki.cgi?")))
+                 (content . ":WiLiKi:practical-scheme.net/wiliki/wiliki.cgi?")))
 
   ((test-sxml-select-matcher
     '(html body form input)
@@ -340,7 +340,7 @@
 
   (test* "InterWikiName reference"
          '(!contain
-           (p (a (@ (href "http://shiro.dreamhost.com/scheme/wiliki/wiliki.cgi?Shiro"))
+           (p (a (@ (href "http://practical-scheme.net/wiliki/wiliki.cgi?Shiro"))
                 "WiLiKi:Shiro")))
          (values-ref (run-cgi-script->sxml
                       *cgi-path*
@@ -408,24 +408,24 @@
        `(body
          (!contain
           (form
-           (!contain (input (@ (value "dreamhost") ?*))))))
+           (!contain (input (@ (value "practical-scheme") ?*))))))
        (values-ref (run-cgi-script->sxml
                     *cgi-path*
                     :environment '((REQUEST_METHOD . "GET"))
-                    :parameters '((c . s) (key . "dreamhost")))
+                    :parameters '((c . s) (key . "practical-scheme")))
                    1)
        (test-sxml-select-matcher '(html body)))
 
 
 (test* "Search result (POST)"
        `(body
-         (!contain (h1 "Test: Search results of \"dreamhost\"")
+         (!contain (h1 "Test: Search results of \"practical-scheme\"")
                    (ul
                     (li (a (@ (href "wiliki.cgi?InterWikiName")) ?*) ?*))))
        (values-ref (run-cgi-script->sxml
                     *cgi-path*
                     :environment '((REQUEST_METHOD . "POST"))
-                    :parameters '((c . s) (key . "dreamhost")))
+                    :parameters '((c . s) (key . "practical-scheme")))
                    1)
        (test-sxml-select-matcher '(html body)))
 

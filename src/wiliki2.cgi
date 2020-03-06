@@ -26,10 +26,10 @@
     (div (@ (class "footer") (style "text-align:right"))
          "Last modified : " ,(wiliki:format-time (ref page 'mtime))
          (br)
-         (a (@ (href "http://www.shiro.dreamhost.com/scheme/wiliki/wiliki.cgi"))
+         (a (@ (href "http://practical-scheme.net/wiliki/wiliki.cgi"))
             "WiLiKi " ,(wiliki:version))
          " running on "
-         (a (@ (href "http://www.shiro.dreamhost.com/scheme/gauche/"))
+         (a (@ (href "http://practical-scheme.net/gauche/"))
             "Gauche ",(gauche-version)))))
 
 (define-method wiliki:format-page-content ((fmt <my-formatter>) page . opts)
