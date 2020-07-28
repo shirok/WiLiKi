@@ -252,7 +252,8 @@
     (185 . "Linear adjustable-length strings")
     (186 . "Transcoders and transcoded ports")
     (188 . "Splicing binding constructs for syntactic keywords")
-    (190 . "Coroutine Generators")))
+    (189 . "Maybe and Either: optional container types")
+    (190 . "Coroutine Generators"))))
 
 ;;---------------------------------------------------------------
 ;; Category macros
