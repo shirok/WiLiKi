@@ -789,7 +789,7 @@
         (@ (class "manage-comment-entry"))
         (div (@ (class "comment-past"))
              (p (@ (class "comment-entry-title"))
-                (input (@ (type checkbox) 
+                (input (@ (type checkbox)
                           (name ,(~(car page&ip)'key))
                           (id  ,(~(car page&ip)'key))))
                 (label (@ (for ,(~(car page&ip)'key)))
@@ -806,7 +806,7 @@
         `(a (@ (href ,(wiliki:url "~a" (~ parent-page'key))))
             ,(entry-title (~ parent-page'key) (~ parent-page'content)))
         (format "~s (deleted)" parent-key))))
-  
+
   ;; body
   (let1 start (x->integer s)
     (if (authenticated?)
@@ -823,7 +823,7 @@
                '()))))
       '())))
 
-(define-wiliki-action manage-comment-del :write (pagename 
+(define-wiliki-action manage-comment-del :write (pagename
                                                  params
                                                  (from-ip :default #f)
                                                  (confirm :default #f))
@@ -838,7 +838,7 @@
   (define (keys-of-comments-from-ip from-ip)
     ($ (cut take* <> 30)
        $ filter-map (match-lambda [(_ pagename _ ip . _)
-                                   (and (equal? ip from-ip) 
+                                   (and (equal? ip from-ip)
                                         (wiliki:db-exists? pagename)
                                         pagename)])
        $ filter-map (^[ls] (and (string-prefix? "A" (cadr ls))
@@ -871,4 +871,3 @@
 ;; Local variables:
 ;; mode: scheme
 ;; end:
-

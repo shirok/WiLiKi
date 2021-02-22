@@ -110,4 +110,3 @@
 (define wiliki-page-stack wiliki:page-stack)
 (define wiliki-current-page wiliki:current-page)
 (define wiliki-page-circular? wiliki:page-circular?)
-

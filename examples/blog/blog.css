@@ -43,7 +43,7 @@ h6 { font-size: 100%; font-style: italic }
 
 hr { width:0pt; color:#ffffff; margin: 1em; padding: 0;}
 
-pre { margin: 0.5em 2em 0.5em 2em; padding: 0; 
+pre { margin: 0.5em 2em 0.5em 2em; padding: 0;
       font-family: monospace; background-color: #ddeeee;
       border: solid thin #aacccc; overflow: auto; }
 
@@ -114,7 +114,7 @@ div.menu-title {
  * Comment
  */
 
-div.comment { 
+div.comment {
   font-size: 90%;
   padding: 0pt 3em 2em 3em;
   margin: 0pt;
@@ -189,7 +189,7 @@ div.manage-comment-entry {
 
 span.tag-anchor {
   background-color: #eeeeff; color: #777777;
-  font-size: 80%; font-style: italic; 
+  font-size: 80%; font-style: italic;
   clear: both;
 }
 span.tag-anchor a:link    { color: #7777ff; }
@@ -204,4 +204,3 @@ div.amazon {
   position:relative;
   float:left;
 }
-

@@ -483,4 +483,3 @@
 (define html-page wiliki:std-page) ; for backward compatibility
 
 (provide "wiliki")
-

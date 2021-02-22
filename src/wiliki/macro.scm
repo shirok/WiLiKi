@@ -42,7 +42,7 @@
   )
 (select-module wiliki.macro)
 
-;; Delay loading some modules 
+;; Delay loading some modules
 (autoload srfi-27
           random-integer  random-source-randomize! default-random-source)
 (autoload wiliki.pasttime how-long-since)
@@ -160,7 +160,7 @@
              (and (integer? timestamp) (> (+ timestamp 3600) now) pages)]
             [else #f]))
         (%tag-update-cache tagname)))
-  
+
   `((h2 ,(format (gettext "Page(s) with tag ~s") tagname))
     (ul
      ,@(map (^[key&attr]
@@ -195,7 +195,7 @@
                                     (and (not (string-prefix? " " key))
                                          (wiliki:db-record-content-find
                                           w content find-tag))))])
-    (wiliki:with-db 
+    (wiliki:with-db
      (cut wiliki:db-raw-put! (%tag-cache-name tagname)
           (write-to-string (cons (sys-time) pages)))
      :rwmode :write)
@@ -386,7 +386,7 @@
         '()
         `((p (@(class"comment-caption")),(gettext "Past comment(s)"))
           (div (@(class"comment-past")) ,@(past-comments)))))
-    
+
     `((div (@ (class "comment"))
            (a (@(name ,prefix)))
            ,@(if (equal? textarea "top") (show-textarea) '())

@@ -79,7 +79,7 @@
         (if (= (length cols) 2)
           cols
           (errorf <auth-failure> "bad record in password file ~a: ~a"
-                  (auth-db-path) line))))))  
+                  (auth-db-path) line))))))
 
 (define (write-passwd-file db)
   (receive (port path) (sys-mkstemp (auth-db-path))
@@ -171,7 +171,7 @@
 
 ;; API
 ;;   A parameter points to a directory where session records are stored.
-;;   In future, it may be extended to hold 
+;;   In future, it may be extended to hold
 (define auth-session-directory (make-parameter (temporary-directory)))
 
 ;; API

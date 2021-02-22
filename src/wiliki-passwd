@@ -55,7 +55,7 @@
 (define (set-pass passwdfile user pass)
   (auth-db-path passwdfile)
   (auth-add-user! user pass :allow-override #t))
-         
+
 
 ;; Local variables:
 ;; mode: scheme

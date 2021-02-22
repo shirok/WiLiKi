@@ -18,7 +18,7 @@
   (print "        to be related to the actual cgi script file.  The default")
   (print "        is '/cgi-script', where 'cgi-script' is the basename of the")
   (print "        script given to the command-line argument.")
-         
+
   (print "  -d|document-root <local-path>")
   (print "        If the URL points something other than the cgi script")
   (print "        specified by -e option, the staic document is served from")

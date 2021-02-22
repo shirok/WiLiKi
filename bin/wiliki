@@ -211,7 +211,7 @@
          )
     (parameterize ((file-page-alist file&page))
       (for-each process paths file&page))))
-      
+
 (define (get-text-content in)
   (let1 s (port->string-list in)
     (when (null? s)

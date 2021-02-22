@@ -279,7 +279,7 @@
       (loop (cdr entries) (wiliki-log-revert (car entries) page)))))
 
 ;; Convenience function.  Returns the content of the page (in list of lines)
-;; at the specified time, or #f if the log of the specified time isn't 
+;; at the specified time, or #f if the log of the specified time isn't
 ;; available.
 (define (wiliki-log-recover-content pagename logfile current-content time)
   (and-let* ([ logfile ]

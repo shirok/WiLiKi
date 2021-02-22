@@ -112,7 +112,7 @@
                                      (+ start-count HISTORY_SIZE))))
                       "Older histories..."))
                 "]"))))
-  
+
   (html-page
    (make <wiliki-page>
      :title ($$ "Edit History")
@@ -140,7 +140,7 @@
   (define (explanation)
     `(ul (li ,(wiliki:format-diff-line `(+ . ,($$ "added lines"))))
          (li ,(wiliki:format-diff-line `(- . ,($$ "deleted lines"))))))
-  
+
   (define (diff-to-current entries current)
     (let* ([diffpage (wiliki-log-diff* entries current)])
       `((h2 (stree ,(format ($$ "Changes of ~a since ~a")
@@ -222,4 +222,3 @@
   `(p (@ (style "text-align:right"))
       (a (@ (href ,(url "~a&c=h" (cv-out pagename))))
          ,($$ "Return to the edit history"))))
-

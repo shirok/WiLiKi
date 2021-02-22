@@ -27,7 +27,7 @@
 ;;
 ;; Provides core functionality for WiLiKi web application;
 ;; will be referred by internal submodules, such as wiliki.macro.
-;; 
+;;
 
 (define-module wiliki.core
   (use srfi-1)
@@ -49,7 +49,7 @@
   (extend wiliki.format) ;; temporary
   (export <wiliki> wiliki-main
           wiliki wiliki:lang
-          
+
           wiliki:output-charset wiliki:cv-in wiliki:cv-out
           wiliki:wikiname-anchor wiliki:wikiname-anchor-string
           wiliki:page-lines-fold wiliki:recent-changes-alist
@@ -58,7 +58,7 @@
           wiliki:redirect-page
           wiliki:log-file-path
           wiliki:std-page
-          
+
           wiliki:action-ref define-wiliki-action wiliki:run-action
 
           wiliki:reader-macros wiliki:writer-macros wiliki:virtual-pages
@@ -123,7 +123,7 @@
    ;;   can be #f, #t or 'limited.
    (editable?   :accessor editable?      :init-keyword :editable?
                 :init-value #t)
-   
+
    ;; style-sheet path
    (style-sheet :accessor style-sheet-of :init-keyword :style-sheet
                 :init-value #f)
@@ -153,7 +153,7 @@
 
    ;; extra event log for diagnosis.
    (event-log-file :init-keyword :event-log-file :init-value #f)
-   
+
    ;; additional paths to search localized messages by gettext.
    ;; (e.g. /usr/local/share/locale)
    (gettext-paths :accessor gettext-paths :init-keyword :gettext-paths
@@ -207,9 +207,9 @@
 ;;     we just take the first one.
 ;;  3. Otherwise, we take the language slot of <wiliki>.
 
-;; NB: HTTP_ACCEPT_LANGUAGE sends language-range (language-tag), 
+;; NB: HTTP_ACCEPT_LANGUAGE sends language-range (language-tag),
 ;; which has rather complicated syntax & semantics.  We just cheat
-;; by taking primary tag and first sub tag (if any), and assumes 
+;; by taking primary tag and first sub tag (if any), and assumes
 ;; they are language and country code.
 
 (define (setup-textdomain wiliki param-lang)
@@ -398,7 +398,7 @@
    (wiliki:sxml->stree
     (apply wiliki:wikiname-anchor wikiname maybe-anchor-string))))
 
-;; Calls proc over each line of page. 
+;; Calls proc over each line of page.
 (define (wiliki:page-lines-fold page proc seed
                                 :key (follow-includes? #f) (skip-verbatim? #f))
   (define (content-fold line seed)
@@ -464,7 +464,7 @@
          filename
          (build-path (sys-dirname (~ wiliki'db-path)) filename))))
 
-;; Standard page 
+;; Standard page
 (define (wiliki:std-page page . args)
   (list
    (cgi-header
@@ -553,7 +553,7 @@
                       (^[] (assoc (car args) (wiliki:reader-macros)))
                       (^p (apply (cdr p) (cdr args))))
     (unrecognized-macro name)))
-      
+
 
 (define (handle-writer-macro name)
   (if-let1 args (wiliki:parse-macro-args name)
@@ -610,7 +610,7 @@
 (define (unrecognized-macro name)
   (list #"[[~name]]"))
 
-(define-syntax define-reader-macro 
+(define-syntax define-reader-macro
   (syntax-rules ()
     [(_ (name . args) . body)
      (wiliki:reader-macros
@@ -622,7 +622,7 @@
             (wiliki:reader-macros)))]
     ))
 
-(define-syntax define-writer-macro 
+(define-syntax define-writer-macro
   (syntax-rules ()
     [(_ (name . args) . body)
      (wiliki:writer-macros
@@ -651,7 +651,7 @@
 
 (define (virtual-page? name)
   (not (not (get-virtual-page name))))
-  
+
 (define (arity-matches? list formals)
   (cond [(null? list)
          (or (null? formals) (not (pair? formals)))]

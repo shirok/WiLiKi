@@ -175,4 +175,3 @@
 (define (dc-date secs)
   (rdf-simple-1 "dc:date"
                 (sys-strftime "%Y-%m-%dT%H:%M:%S+00:00" (sys-gmtime secs))))
-

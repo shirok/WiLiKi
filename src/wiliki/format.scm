@@ -138,7 +138,7 @@
         (cons (sxml-node (car n) (cdr n)) r))]
      [else
       ;; badly formed node.  we show it for debugging ease.
-      (cons (list "<span class=\"wiliki-alert\">" 
+      (cons (list "<span class=\"wiliki-alert\">"
                   (html-escape-string (format "~,,,,50:s" n))
                   "</span\n>")
             r)]))
@@ -156,7 +156,7 @@
 
 ;; Backward compatibility
 (define wiliki:format-line-plainly wiliki-remove-markup)
-  
+
 ;; Page ======================================================
 
 (define (wiliki:format-content page)
@@ -175,7 +175,7 @@
         [else page]))
 
 ;; [SXML] -> [SXML], expanding wiki-name and wiki-macro nodes.
-;; 
+;;
 (define (expand-page sxmls)
   (let rec ([sxmls sxmls]
             [hctx '()])                 ;;headings context
@@ -272,7 +272,7 @@
   ((~ fmt 'header) page options))
 (define-method wiliki:format-page-header ((page <wiliki-page>) . opts)
   (apply wiliki:format-page-header (the-formatter) page opts))
-  
+
 (define-method wiliki:format-page-footer ((fmt  <wiliki-formatter-base>)
                                           (page <wiliki-page>)
                                           . options)

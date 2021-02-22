@@ -104,7 +104,7 @@
            (begin
              (auth-clean-sessions! 3600)
              (length (glob (build-path (auth-session-directory) "wiliki-*")))))
-             
+
     (test* "clean-sessions" 0
            (begin
              (auth-clean-sessions! -10)

@@ -272,7 +272,7 @@
   `((div (@ (class category-display))
          ,(format "Categor~a:" (match xs [(_) "ys"][_ "ies"]))
          ,@(intersperse
-            "," 
+            ","
             (map (lambda (x)
                   ;; we'll add link later.
                   `(a ,x))

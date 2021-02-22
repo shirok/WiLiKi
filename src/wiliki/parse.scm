@@ -149,7 +149,7 @@
              seed
              (cons `(,type ,@(reverse! (self (match 1) '()))) seed)))
          seed line)))
-  
+
   (define italic (paired-markup #/''([^'].*?)?''/ 'em nl))
   (define bold   (paired-markup #/'''([^'].*?)?'''/ 'strong italic))
   (define code   (paired-markup #/"""([^\"].*?)?"""/ 'code bold))
@@ -294,7 +294,7 @@
     (let* ([ltype  (token-type tok)]
            [newctx (cons ltype ctx)]
            [bottom (l-level newctx)])
-      
+
       (define (wrap tok items ctx)
         (if (not (memq (token-type tok) '(ul ol)))
           (values tok `((,(car ctx) ,@(reverse! items))))
@@ -393,7 +393,7 @@
           [else (proc-nomatch line seed)])))
 
 ;; Expands tabs in a line.
-(define expand-tab 
+(define expand-tab
   (let ((pads #("        "
                 " "
                 "  "

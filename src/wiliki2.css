@@ -9,7 +9,7 @@ body {
 :link    { text-decoration: none; color: #00bb00; }
 :visited { text-decoration: none; color: #557722; }
 
-h1 { 
+h1 {
   text-align: right;
   font-size: 190%;
   color: #444400;
@@ -44,7 +44,7 @@ pre {
     border: solid thin #9999aa;
 }
 
-pre.macroerror { 
+pre.macroerror {
     background-color: #ee5555;
 }
 
@@ -95,4 +95,3 @@ span.breadcrumb-links {
 }
 
 span.wiliki-alert { background-color: #ff8080; } /* used to warn internal error */
-

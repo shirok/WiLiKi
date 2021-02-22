@@ -195,7 +195,7 @@
                                  "--")))
                    )))
          sites infos)))
-    
+
 
 (define-method rss-main ((self <rssmix>))
   (cgi-main
@@ -266,7 +266,7 @@
                            :channel-title channel-title
                            :elapsed 'timeout)])
       (dbm-put! db id (write-to-string data)))))
-                                
+
 ;; Creates a thunk for thread.
 (define (make-thunk self id uri start-time)
   (^[] (guard (e [else (display (~ e 'message) (current-error-port)) #f])

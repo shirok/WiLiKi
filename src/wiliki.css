@@ -28,7 +28,7 @@ pre {
     border: solid thin #aacccc;
 }
 
-pre.macroerror { 
+pre.macroerror {
     background-color: #ee5555;
 }
 
@@ -77,7 +77,7 @@ span.wiliki-alert { background-color: #ff8080; } /* used to warn internal error 
  * Comment
  */
 
-div.comment { 
+div.comment {
   font-size: 90%;
   padding: 0pt 3em 2em 3em;
   margin: 0pt;

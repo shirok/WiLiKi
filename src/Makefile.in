@@ -25,16 +25,16 @@ SCMFILES = wiliki.scm \
 	   wiliki/core.scm \
 	   wiliki/db.scm \
 	   wiliki/edit.scm \
-           wiliki/format.scm \
-           wiliki/history.scm \
-           wiliki/log.scm \
-           wiliki/macro.scm \
-           wiliki/util.scm \
-           wiliki/rss.scm \
-           wiliki/rssmix.scm \
-           wiliki/page.scm \
-           wiliki/parse.scm \
-           wiliki/pasttime.scm \
+	   wiliki/format.scm \
+	   wiliki/history.scm \
+	   wiliki/log.scm \
+	   wiliki/macro.scm \
+	   wiliki/util.scm \
+	   wiliki/rss.scm \
+	   wiliki/rssmix.scm \
+	   wiliki/page.scm \
+	   wiliki/parse.scm \
+	   wiliki/pasttime.scm \
 	   wiliki/scr-macros.scm \
 	   wiliki/version.scm
 

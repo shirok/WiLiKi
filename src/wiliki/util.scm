@@ -25,6 +25,6 @@
 ;;;
 
 ;; This module is only kept for backward compatibility.
-;; use wiliki.core 
+;; use wiliki.core
 
 (define-module wiliki.util)

@@ -50,7 +50,7 @@
     `((input (@ (type checkbox) (name donttouch) (value on) (id donttouch)
                 ,@(if donttouch '((checked checked)) '())))
       (label (@ (for donttouch)) ,($$ "Don't update 'Recent Changes'"))))
-  
+
   `((form
      (@ (method POST) (action ,(wiliki:url)))
      (input (@ (type hidden) (name c) (value c)))
@@ -94,7 +94,7 @@
          a colon in the description, put it in the next line.</p>
       <p><tt>[[Name]]</tt> to make \"Name\" a WikiName.  Note that
          a simple mixed-case word doesn't become a WikiName.
-         \"Name\" beginning with \"$\" has special meanings (e.g. 
+         \"Name\" beginning with \"$\" has special meanings (e.g.
          \"[[$date]]\" is replaced for the time at the editing.)</p>
       <p>A URL-like string beginning with \"<tt>http:</tt>\" becomes
          a link.  \"<tt>[URL name]</tt>\" becomes a <tt>name</tt> that linked
@@ -107,7 +107,7 @@
          for fixed-length typesetting.</p>
       <p>Surround words by three tildes (<tt>~~~foo~~~</tt>)
          for strikeout.</p>
-      <p>\"<tt>*</tt>\", \"<tt>**</tt>\" and \"<tt>***</tt>\"' ... 
+      <p>\"<tt>*</tt>\", \"<tt>**</tt>\" and \"<tt>***</tt>\"' ...
          at the beginning of a line is a header.  Put a space
          after the asterisk(s).</p>
       <p>Whitespace(s) at the beginning of line for preformatted text.</p>
@@ -292,4 +292,3 @@
                    :message (or logmsg ""))
       (call-with-output-file logfile (^p (display content p) (flush p))
                              :if-exists :append))))
-

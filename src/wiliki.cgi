@@ -19,7 +19,7 @@
 ;;               exist, it is created for the first time it accessed.
 ;;
 ;;    :title    - The name of your WiLiKi site.  A string given here
-;;               is used in some places, like in the title of the 
+;;               is used in some places, like in the title of the
 ;;               "Search results" or "Recent changes" pages.
 ;;
 ;;    :description - A short description of this Wiki site.  This is
@@ -66,4 +66,3 @@
 ;; Local variables:
 ;; mode: scheme
 ;; end:
-
