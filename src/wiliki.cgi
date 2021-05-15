@@ -25,7 +25,9 @@
 ;;    :description - A short description of this Wiki site.  This is
 ;;               used in RDF site summary.
 ;;
-;;    :editable? - If #f, editing is prohibited.
+;;    :editable? - #t, #f, or 'limited.  Default is #t - ediatable for
+;;               anyone.  #f makes the pages read-only.  If limited,
+;;               wiki pages are not editable but comments are allowed.
 ;;
 ;;    :language - default language, either 'jp or 'en
 ;;
@@ -36,6 +38,7 @@
 ;;               used to generate webpage.
 ;;
 ;;    :image-urls - specify which URL is allowed as an in-line image.
+;;               ((<regexp> allow|deny) ...)
 ;;
 ;;    :db-type - A class that implements database functions;
 ;;               Default is <gdbm>.  I think <odbm> and <ndbm> should
@@ -48,6 +51,12 @@
 ;;               it encounters an error during processing (including macro
 ;;               expansion error).  Useful while debugging, but should be
 ;;               turned off for the sites open to public.
+;;
+;;    :log-file - If speficied, logging & history feature becomes available.
+;;               Changes in wiki pages are logged, and page's edit history
+;;               can be seen via 'history' menu.
+;;               If the given path is relative, it is relative to the
+;;               db-path.
 
 (define (main args)
   (wiliki-main
@@ -58,7 +67,7 @@
      :description "Shiro's Wiliki Site"
      :style-sheet "wiliki.css"
      :language 'jp
-     :charsets '((jp . euc-jp) (en . euc-jp))
+     :charsets '((jp . utf-8) (en . utf-8))
      :image-urls '((#/^http:\/\/sourceforge.net\/sflogo/ allow))
      :debug-level 0
      )))
