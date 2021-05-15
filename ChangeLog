@@ -1,3 +1,8 @@
+2021-05-14  Shiro Kawai  <shiro@acm.org>
+
+	* Bumped version to 0.8.2, for some features have been added since
+	  0.8.1, and the configure script requires newer Gauche now.
+
 2019-06-24  Shiro Kawai  <shiro@acm.org>
 
 	* examples/blob/blog.scm: Allow comment manager to batch delete
@@ -494,7 +499,7 @@
 	* src/wiliki.scm (s): Show search key in the page title.
 	  (wiliki:default-head-elements): Fix link element of RDF auto
 	  discoverty (rel=alternative should be rel=alternate).
-	
+
 
 	* src/wiliki/macro.scm (toc): if named page is not found, emit
 	  the original macro form, instead of toc of the current page.
@@ -503,7 +508,7 @@
 	  so that bracket names can be included inside emphasize/strong.
 	  (Patch from Tatsuya BIZENN).
 
-	* src/wiliki/history.scm (cmd-history): Paging histories. 
+	* src/wiliki/history.scm (cmd-history): Paging histories.
 	  Alternate colors every row for readability.
 
 2007-05-01  Shiro Kawai  <shiro@acm.org>
@@ -512,7 +517,7 @@
 	  navi buttons to GET, so that users can get the proper url
 	  on their browser.
 
-	* src/wiliki/macro.scm (handle-reader-macro, handle-writer-macro): 
+	* src/wiliki/macro.scm (handle-reader-macro, handle-writer-macro):
 	  Chaneged macro argument syntax---now you can include whitespaces
 	  in an argument by surrounding the argument by double quotes.
 	  To include a double quote inside double-quoted argument, use
@@ -559,7 +564,7 @@
 	  we can pass an HTML A tag in the code, in which usually quotes
 	  are escaped).  Also added another spam measure to see if
 	  the same string is written into both contents and log message.
-	
+
 2007-02-20  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/edit.scm (cmd-commit-edit): Added a very ad-hoc filter
@@ -645,7 +650,7 @@
 
 	* src/wiliki/db.scm: added wiliki-db-fold and wiliki-db-for-each
 	* src/wiliki/macro.scm: fixed the error handling code.  fixed
-	  define-reader-macro etc to avoid using receive to bind args, 
+	  define-reader-macro etc to avoid using receive to bind args,
 	  for the # of arguments given to the macro can exceed the limit
 	  of # of values.
 	* src/wiliki/scr-macros.scm: added as a sample of auxiliary macros.
@@ -665,7 +670,7 @@
 	* src/wiliki/format.scm (fmt-lines generator): fixed a problem of
 	  context-passing between included pages.  We only need to pass
 	  information of nestings of headings, which is required to generate
-	  proper heading IDs for tha page that consists of included ones.  
+	  proper heading IDs for tha page that consists of included ones.
 	  Other context information could screw fmt-lines.
 
 2005-05-12  Shiro Kawai  <shiro@acm.org>
@@ -683,7 +688,7 @@
 2004-05-23  Shiro Kawai  <shiro@acm.org>
 
 	* release 0.5
-	
+
 	* doc/Makefile.in : suppress making docs for the time being; it's
 	  not ready.
 	* src/wiliki/rssmix.scm, src/rssmix.cgi : splitted customizable part
@@ -803,7 +808,7 @@
 2003-12-31  Shiro Kawai  <shiro@acm.org>
 
 	* another snapshot of refactoring formatter.  wiliki.format is
-	  decoupled completely.  
+	  decoupled completely.
 
 2003-12-30  Shiro Kawai  <shiro@acm.org>
 
@@ -864,14 +869,14 @@
 2003-10-09  YAEGASHI Takeshi  <t@keshi.org>
 
 	* debian: new directory: Debian packaging files.
-	
+
 	* DIST_EXCLUDE: do not include config.status, config.log and
 	  debian directory in the release distribution.
 
 2003-10-07  Shiro Kawai  <shiro@acm.org>
 
 	* release 0.4
-	
+
 	* src/wiliki/format.scm : allow the InterWikiName list to
 	  have protocol scheme (http, https, ftp, mailto).
 	  Patch by Yaegashi Takeshi.
@@ -903,7 +908,7 @@
 2003-08-30  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm, src/wiliki/history.scm, src/wiliki/log.scm,
-	  src/wiliki/format.scm: 
+	  src/wiliki/format.scm:
 	  First snapshot of integrating history module.   If the log
 	  file name is given to :log-file slot of wiliki, the history
 	  feature is turned on.  There are still some missing features.
@@ -935,7 +940,7 @@
 
 	* src/wiliki.scm (<wiliki>) : added customization parameter
 	  textarea-rows and textarea-cols (Patch from knok).
-	
+
 	* src/wiliki.scm (expand-writer-macros) : bug fix: not to expand
 	  writer macros in verbatim block.
 
@@ -1012,7 +1017,7 @@
 
 	* src/wiliki.scm, src/wiliki/msgs.jp.euc: fixed the text formatting
 	  instruction message.
-	
+
 2003-03-05  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm (format-wiki-name, cmd-view),
@@ -1196,14 +1201,14 @@
 	* src/wiliki.scm : fixed WikiName parse routine to deal with nested
 	  "[[" and "]]"'s for InterWikiName, and correctly escape WikiName
 	  reference in URL.
-	
+
 2001-01-13  Shiro Kawai  <shiro@acm.org>
 
 	* various files : autoconfiscated
 	* src/wiliki.scm, src/wiliki/mcatalog.scm, src/wiliki/msgs.jp :
 	  separated language-dependent messages to the separate message
 	  catalog.
-	
+
 2001-12-12  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm : added named url ([URL name]) formatting rule.
@@ -1218,19 +1223,17 @@
 2001-11-28  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm : added preview feature.
-	
+
 2001-11-27  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm : added back-link search feature and update conflict
 	  detection.
-	
+
 2001-11-22  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm : added recent-changes feature, and bilingual
 	  feature for messages.
-	
+
 2001-11-22  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki.scm : added per-page parameters
-	
-

@@ -7,7 +7,7 @@
 Requirements
 ------------
 
-  Gauche 0.9.5 or later
+  Gauche 0.9.10 or later
 
 
 Installation
@@ -21,5 +21,3 @@ The standard configure+make installs necessary modules.
 
 Then you need to copy src/wiliki.cgi to your cgi script
 diretory, and edit the settings.
-
-
