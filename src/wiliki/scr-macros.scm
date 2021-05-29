@@ -262,8 +262,23 @@
     (195 . "Multiple-value boxes")
     (196 . "Range Objects")
     (197 . "Pipeline Operators")
+    (201 . "Syntactic Extensions to the Core Scheme Bindings")
+    (202 .
+         "Pattern-matching Variant of the and-let* Form that Supports Multiple Values")
     (203 . "A Simple Picture Language in the Style of SICP")
-    (207 . "String-notated bytevectors")))
+    (206 . "Auxiliary Syntax Keywords")
+    (207 . "String-notated bytevectors")
+    (208 . "NaN procedures")
+    (209 . "Enums and Enum Sets")
+    (210 . "Procedures and Syntax for Multiple Values")
+    (212 . "Aliases")
+    (213 . "Identifier Properties")
+    (214 . "Flexvectors")
+    (215 . "Central Log Exchange")
+    (216 . "SICP Prerequisites (Portable)")
+    (217 . "Integer Sets")
+    (219 . "Define higher-order lambda")
+    (221 . "Generator/accumulator sub-library")))
 
 ;;---------------------------------------------------------------
 ;; Category macros
