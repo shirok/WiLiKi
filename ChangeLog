@@ -1,3 +1,9 @@
+2021-05-28  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki.scm (default-format-wikiname): Put the '?' suffix attached
+	  to the wikiname for non-existent page, so that its appearance
+	  can be customized by CSS.
+
 2021-05-14  Shiro Kawai  <shiro@acm.org>
 
 	* Bumped version to 0.8.2, for some features have been added since

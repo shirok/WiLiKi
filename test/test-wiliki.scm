@@ -129,7 +129,8 @@
          (head (!contain (title "Nonexistent page: ZZZ")))
          (body (!contain
                 (p "Create a new page: ZZZ"
-                   (a (@ (href "wiliki.cgi?p=ZZZ&c=n")) "?")))))
+                   (a (@ (href "wiliki.cgi?p=ZZZ&c=n"))
+                      (span (@ (class "new-wikiname-suffix")) "?"))))))
        (values-ref (run-cgi-script->sxml
                     *cgi-path*
                     :environment '((REQUEST_METHOD . "GET")
@@ -142,7 +143,8 @@
          (head (!contain (title "Nonexistent page: ZZZ")))
          (body (!contain
                 (p "Create a new page: ZZZ"
-                   (a (@ (href "wiliki.cgi?p=ZZZ&c=n")) "?")))))
+                   (a (@ (href "wiliki.cgi?p=ZZZ&c=n"))
+                      (span (@ (class "new-wikiname-suffix")) "?"))))))
        (values-ref (run-cgi-script->sxml
                     *cgi-path*
                     :environment '((REQUEST_METHOD . "GET")
@@ -155,7 +157,8 @@
          (head (!contain (title "Nonexistent page: ZZZ")))
          (body (!contain
                 (p "Create a new page: ZZZ"
-                   (a (@ (href "wiliki.cgi?p=ZZZ&c=n")) "?")))))
+                   (a (@ (href "wiliki.cgi?p=ZZZ&c=n"))
+                      (span (@ (class "new-wikiname-suffix")) "?"))))))
        (values-ref (run-cgi-script->sxml
                     *cgi-path*
                     :environment '((REQUEST_METHOD . "GET")
@@ -168,7 +171,8 @@
          (head (!contain (title "Nonexistent page: ZZZ")))
          (body (!contain
                 (p "Create a new page: ZZZ"
-                   (a (@ (href "wiliki.cgi?p=ZZZ&c=n")) "?")))))
+                   (a (@ (href "wiliki.cgi?p=ZZZ&c=n"))
+                      (span (@ (class "new-wikiname-suffix")) "?"))))))
        (values-ref (run-cgi-script->sxml
                     *cgi-path*
                     :environment '((REQUEST_METHOD . "GET")
@@ -214,7 +218,8 @@
 
   (test* "check commit"
          '(!contain (p "This is a test page.  LINK"
-                       (a (@ (href "wiliki.cgi?p=LINK&c=n")) "?")))
+                       (a (@ (href "wiliki.cgi?p=LINK&c=n"))
+                          (span (@ (class "new-wikiname-suffix")) "?"))))
          (values-ref (run-cgi-script->sxml
                       *cgi-path*
                       :environment '((REQUEST_METHOD . "GET"))

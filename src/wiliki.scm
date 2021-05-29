@@ -450,7 +450,8 @@
                (list (wiliki:wikiname-anchor real-name))]
               [else
                `(,real-name
-                 (a (@ (href ,(url "p=~a&c=n" (cv-out real-name)))) "?"))]))
+                 (a (@ (href ,(url "p=~a&c=n" (cv-out real-name))))
+                    (span (@ (class new-wikiname-suffix)) "?")))]))
       )
   )
 
