@@ -58,6 +58,58 @@
 ;;               If the given path is relative, it is relative to the
 ;;               db-path.
 
+;; Accessories:
+;;
+;;   RSS feed customization
+;;     By default, WiLiKi provides RSS giving c=rss in the query parameter.
+;;     It includes title of recent changed pages.  You can customize
+;;     RSS content by importing wiliki.rss and settings some parameters
+;;     (the actual value below is the default).
+;;
+;;        (use wiliki.rss)
+;;
+;;        ;;  # of items included in RSS
+;;        (rss-item-count 15)
+;;
+;;        ;; What to include in the 'rdf:description' of each item.
+;;        ;;  none - omit rdf:description
+;;        ;;  raw  - raw wiki-marked up text.
+;;        ;;  html - html rendered text.   (heavy)
+;;        (rss-item-desrcription 'none)
+;;
+;;        ;; # of maximum lines in the original wiki format to be included
+;;        ;; in the partial content (raw-partial, html-partial).
+;;        (rss-partial-content-lines 20)
+;;
+;;        ;; The format of page urls in RSS
+;;        ;;   query - wiliki.cgi?pagename
+;;        ;;   path  - wiliki.cgi/pagename
+;;        (rss-url-format 'query)
+;;
+;;        ;; If not #f, this is inserted as is into each <item>...</item>
+;;        (rss-item-extra-elements #f)
+;;
+;;      Put these settings before calling wiliki-main.
+;;
+;;   Spam blacklisting
+;;      You can reject posts including certain urls, or posts from specific
+;;      IP addresses.
+;;
+;;        (wiliki:spam-blacklist-append! '("url" #/url-regex/ ...))
+;;        (wiliki:ip-blacklist-append! '("1.2.3.4" ...)
+;;
+;;      Put these settings before calling wiliki-main.
+;;
+;;   Rate limiting
+;;      If you get excessive access originating from the same IP, you can
+;;      rate limit it with Gauche-www-cgi-throttle
+;;      https://github.com/shirok/Gauche-www-cgi-throttle
+;;
+;;      Wrap the call of wiliki-main with cgi-throttle.  See README in
+;;      Gauche-www-cgi-throttle for the details.
+;;
+
+
 (define (main args)
   (wiliki-main
    (make <wiliki>
@@ -66,7 +118,9 @@
      :title "MyWiliki"
      :description "Shiro's Wiliki Site"
      :style-sheet "wiliki.css"
-     :language 'jp
+     :log-file "wikidata.log"
+     :event-log-file "wiliki.events.log"
+     :language 'en
      :charsets '((jp . utf-8) (en . utf-8))
      :image-urls '((#/^http:\/\/sourceforge.net\/sflogo/ allow))
      :debug-level 0
