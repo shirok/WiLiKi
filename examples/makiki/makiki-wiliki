@@ -1,0 +1,35 @@
+;;;
+;;; Run WiLiKi in Makiki web server
+;;;
+
+;; Invoke this scirpt in this directory as:
+;;   gosh ./makiki-wiliki --port <port>
+;;
+;; Access wiliki script via
+;;   http://localhost:<port>/makiki-wiliki.cgi
+;;
+;; The wiliki database is created in the current directory when you first
+;; accessed.
+
+(use makiki)
+(use makiki.cgi)
+(use gauche.parseopt)
+
+(define-module makiki+wiliki
+  (export (rename main wiliki/main))
+  (include "makiki-wiliki.cgi"))
+(import makiki+wiliki)
+
+(define (main args)
+  (let-args (cdr args) ([p "port=i"])
+    (start-http-server :access-log #t
+                       :error-log "test-error-env1.log"
+                       :port p))
+  0)
+
+(define-http-handler "/makiki-wiliki.cgi"
+  (cgi-handler wiliki/main :script-name "/makiki-wiliki.cgi"))
+
+;; Local variables:
+;; mode: scheme
+;; end:

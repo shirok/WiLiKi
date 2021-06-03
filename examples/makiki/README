@@ -1,0 +1,10 @@
+This is an example to run WiLiKi inside Makiki server.
+
+To run the server, invoke makiki-wiliki in this directory:
+
+  gosh ./makiki-wiliki --port <port>
+
+The current directory matter, for the wiliki data dbm is created there.
+
+Once the server starts, you can access it via
+http://localhost:<port>/makiki-wiliki.cgi
