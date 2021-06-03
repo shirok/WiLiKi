@@ -61,8 +61,9 @@
 ;; Accessories:
 ;;
 ;;   RSS feed customization
-;;     By default, WiLiKi provides RSS giving c=rss in the query parameter.
-;;     It includes title of recent changed pages.  You can customize
+;;     By default, WiLiKi provides RSS when accessed with c=rss in the
+;;     query parameter (e.g. wiliki.cgi?c=rss).
+;;     It includes titles of recent changed pages.  You can customize
 ;;     RSS content by importing wiliki.rss and settings some parameters
 ;;     (the actual value below is the default).
 ;;
