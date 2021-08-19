@@ -5,3 +5,8 @@ WiLiKi.gpd
 po/*.gmo
 
 src/wiliki/version.scm
+
+test/_test
+test/gosh-path
+test/logger.log
+test/test.log
