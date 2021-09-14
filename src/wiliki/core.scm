@@ -159,6 +159,12 @@
    (gettext-paths :accessor gettext-paths :init-keyword :gettext-paths
                   :init-value '())
 
+   ;; if wiliki is running behind the reverse proxy and its public url path
+   ;; differs from the internal server's url path, give the public path here.
+   ;; NB: public server name & port must be passed via cgi metavariables.
+   (proxy-script-name :init-keyword :proxy-script-name
+                      :init-value #f)
+
    ;; OBSOLETED: customize edit text area size
    ;; Use stylesheet to customize them!
    (textarea-rows :accessor textarea-rows-of :init-keyword :textarea-rows
@@ -486,7 +492,7 @@
 
 (define (wiliki:url . args)
   (define (rel-base w)
-    (sys-basename (~ w'script-name)))
+    (sys-basename (or (~ w'proxy-script-name) (~ w'script-name))))
   (define (abs-base w)
     (format "~a://~a~a~a"
             (~ w'protocol)
@@ -497,7 +503,7 @@
                          (string=? (~ w'protocol) "https")))
               ""
               #":~(~ w'server-port)")
-            (~ w'script-name)))
+            (or (~ w'proxy-script-name) (~ w'script-name))))
   (define (lang-spec language prefix)
     (if (equal? language (~ (wiliki)'language))
       ""
