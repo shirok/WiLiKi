@@ -656,7 +656,7 @@
       alt=\"\" style=\"border:none !important; margin:0px !important;\" />")
 
 (define-reader-macro (gist id)
-  (if (#/^\d+$/ id)
+  (if (#/^[\da-fA-F]+$/ id)
     #"<div style='font-size:75%'><a style=\"background-color: #ececec;\" href=\"https://gist.github.com/~|id|\">https://gist.github.com/~|id|</a><script src=\"https://gist.github.com/~|id|.js\"> </script><noscript><a href=\"https://gist.github.com/~|id|\">https://gist.github.com/~|id|</a></noscript></div>"
     ""))
 
