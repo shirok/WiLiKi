@@ -26,8 +26,8 @@ EXEEXT = @EXEEXT@
 PACKAGE   = WiLiKi
 
 ARCHFILES =
-SCMFILES  = 
-HEADERS   = 
+SCMFILES  =
+HEADERS   =
 
 CONFIG_GENERATED = Makefile config.cache config.log config.status \
 		   configure.lineno autom4te*.cache $(PACKAGE).gpd VERSION

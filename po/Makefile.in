@@ -1,7 +1,3 @@
-#
-# $Id: Makefile.in,v 1.2 2006-04-27 08:53:26 shirok Exp $
-#
-
 # General info
 SHELL       = @SHELL@
 prefix      = @prefix@
@@ -31,18 +27,18 @@ MO_FILES = $(addsuffix .gmo,$(ALL_LINGUAS))
 MSGDIR = "$(DESTDIR)$(datadir)/locale/$$lingua/LC_MESSAGES/"
 
 POTFILES = $(top_srcdir)/src/wiliki.scm \
-           $(top_srcdir)/src/wiliki/db.scm \
-           $(top_srcdir)/src/wiliki/edit.scm \
-           $(top_srcdir)/src/wiliki/format.scm \
-           $(top_srcdir)/src/wiliki/history.scm \
-           $(top_srcdir)/src/wiliki/log.scm \
-           $(top_srcdir)/src/wiliki/macro.scm \
-           $(top_srcdir)/src/wiliki/page.scm \
-           $(top_srcdir)/src/wiliki/parse.scm \
-           $(top_srcdir)/src/wiliki/pasttime.scm \
-           $(top_srcdir)/src/wiliki/rss.scm \
-           $(top_srcdir)/src/wiliki/rssmix.scm \
-           $(top_srcdir)/src/wiliki/util.scm
+	   $(top_srcdir)/src/wiliki/db.scm \
+	   $(top_srcdir)/src/wiliki/edit.scm \
+	   $(top_srcdir)/src/wiliki/format.scm \
+	   $(top_srcdir)/src/wiliki/history.scm \
+	   $(top_srcdir)/src/wiliki/log.scm \
+	   $(top_srcdir)/src/wiliki/macro.scm \
+	   $(top_srcdir)/src/wiliki/page.scm \
+	   $(top_srcdir)/src/wiliki/parse.scm \
+	   $(top_srcdir)/src/wiliki/pasttime.scm \
+	   $(top_srcdir)/src/wiliki/rss.scm \
+	   $(top_srcdir)/src/wiliki/rssmix.scm \
+	   $(top_srcdir)/src/wiliki/util.scm
 
 # Module-specific stuff
 PACKAGE   = WiLiKi
@@ -71,9 +67,9 @@ $(PACKAGE).pot : $(POTFILES)
 	      > `echo $$f|sed 'sx.*/src/x./tmp/x'`;            \
 	done
 	xgettext -d$(PACKAGE) -LScheme -k'$$$$' -o$(PACKAGE).pot \
-	         --copyright-holder='Shiro Kawai' \
-	         --msgid-bugs-address='@PACKAGE_BUGREPORT@' \
-	         `find tmp -name '*.scm' -print`
+		 --copyright-holder='Shiro Kawai' \
+		 --msgid-bugs-address='@PACKAGE_BUGREPORT@' \
+		 `find tmp -name '*.scm' -print`
 	sed -i -e '/^"Report-Msgid-Bugs-To:/d' $(PACKAGE).pot
 
 update-po: $(PACKAGE).pot
@@ -107,5 +103,4 @@ distclean: clean
 	rm -f Makefile
 
 maintainer-clean: clean
-	rm -f Makefile *.gmo 
-
+	rm -f Makefile *.gmo

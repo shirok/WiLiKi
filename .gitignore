@@ -1,6 +1,7 @@
 Makefile
 VERSION
 WiLiKi.gpd
+config.log
 
 po/*.gmo
 
