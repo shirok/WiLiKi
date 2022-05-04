@@ -389,6 +389,13 @@
          [w `(base (@ (href ,(wiliki:url :full))))]
          [w `(link (@ (rel "alternate") (type "application/rss+xml")
                       (title "RSS") (href ,(wiliki:url :full "c=rss"))))]
+         [w `(meta (@ (property "og:title")
+                      (content ,(wiliki:format-head-title (the-formatter) page))))]
+         [w `(meta (@ (property "og:url") (content ,(wiliki:url :full))))]
+         [w `(meta (@ (property "og:type") (content "website")))]
+         [(and w (~ w'thumbnail))
+          => (^[image-url]
+               `(meta (@ (property "og:image") (content ,image-url))))]
          [(and w (~ w'style-sheet))
           => @(^[ss] (map (^s `(link (@ (rel "stylesheet")
                                         (href ,s) (type "text/css"))))

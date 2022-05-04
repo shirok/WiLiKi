@@ -133,6 +133,9 @@
    ;; description
    (description :accessor description-of :init-keyword :description
                 :init-value "WiLiKi, a Wiki engine written in Scheme")
+   ;; thumbnail image url (used for opengraph metadata)
+   ;; recommended size: 1200x630
+   (thumbnail   :init-keyword :thumbnail :init-value #f)
    ;; information for server
    (protocol    :accessor protocol-of    :init-keyword :protocol
                 :initform (if (cgi-get-metavariable "HTTPS") "https" "http"))
