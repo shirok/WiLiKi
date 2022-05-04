@@ -393,6 +393,9 @@
                       (content ,(wiliki:format-head-title (the-formatter) page))))]
          [w `(meta (@ (property "og:url") (content ,(wiliki:url :full))))]
          [w `(meta (@ (property "og:type") (content "website")))]
+         [(and w (~ w'description))
+          => (^[desc]
+               `(meta (@ (property "og:description") (content ,desc))))]
          [(and w (~ w'thumbnail))
           => (^[image-url]
                `(meta (@ (property "og:image") (content ,image-url))))]
