@@ -29,7 +29,6 @@
   (use srfi-13)
   (use srfi-19)
   (use gauche.sequence)
-  (use gauche.parameter)
   (use text.html-lite)
   (use text.tree)
   (use text.gettext)

@@ -33,7 +33,6 @@
   (use rfc.uri)
   (use util.queue)
   (use util.match)
-  (use gauche.parameter)
   (use gauche.charconv)
   (use gauche.sequence)
   (use wiliki.parse)

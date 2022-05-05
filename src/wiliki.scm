@@ -37,7 +37,6 @@
   (use dbm)
   (use gauche.charconv)
   (use gauche.version)
-  (use gauche.parameter)
   (use gauche.sequence)
   (use wiliki.format)
   (use wiliki.page)

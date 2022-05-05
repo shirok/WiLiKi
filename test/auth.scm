@@ -1,6 +1,5 @@
 (use gauche.test)
 (use gauche.version)
-(use gauche.parameter)
 (use srfi-13)
 (use file.util)
 

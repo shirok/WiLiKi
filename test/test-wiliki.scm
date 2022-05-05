@@ -5,7 +5,6 @@
 (use srfi-1)
 (use srfi-13)
 (use gauche.test)
-(use gauche.parameter)
 (use gauche.version)
 (use www.cgi)
 (use sxml.ssax)

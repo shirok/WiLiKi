@@ -64,7 +64,6 @@
 ;; more than one entry per day.
 
 (define-module blog
-  (use gauche.parameter)
   (use srfi-1)
   (use srfi-13)
   (use srfi-19)

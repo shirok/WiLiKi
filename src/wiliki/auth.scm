@@ -39,7 +39,6 @@
 ;; Wiliki script can check the validity of the token via auth-check-session.
 
 (define-module wiliki.auth
-  (use gauche.parameter)
   (use crypt.bcrypt)
   (use file.util)
   (use util.match)

@@ -25,7 +25,6 @@
 ;;;
 
 (define-module wiliki.edit
-  (use gauche.parameter)
   (use srfi-13)
   (use text.gettext)
   (use text.diff)

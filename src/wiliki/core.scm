@@ -32,7 +32,6 @@
 (define-module wiliki.core
   (use srfi-1)
   (use srfi-13)
-  (use gauche.parameter)
   (use gauche.charconv)
   (use gauche.logger)
   (use file.util)
