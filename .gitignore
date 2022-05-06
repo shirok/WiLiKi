@@ -11,3 +11,4 @@ test/_test
 test/gosh-path
 test/logger.log
 test/test.log
+test/test.record

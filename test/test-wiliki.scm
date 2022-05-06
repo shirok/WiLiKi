@@ -20,13 +20,16 @@
 (add-load-path ".")
 
 ;; Generates dummy cgi script with parameters
+;; We use exec trick in w.cgi, for *gosh-path* may contain
+;; ENV=var before the actual gosh path.
 (define *gosh-path* (call-with-input-file "gosh-path" read-line))
 (define *cgi-path* "_test/w.cgi")
 
 (define (generate-cgi . params)
   (with-output-to-file *cgi-path*
     (lambda ()
-      (print #"#!~*gosh-path*")
+      (print "#!/bin/bash")
+      (print #":; exec env ~*gosh-path* $0")
       (write '(add-load-path "../src"))
       (write '(use wiliki))
       (write `(define (main args)
