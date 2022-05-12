@@ -278,7 +278,14 @@
     (216 . "SICP Prerequisites (Portable)")
     (217 . "Integer Sets")
     (219 . "Define higher-order lambda")
-    (221 . "Generator/accumulator sub-library")))
+    (221 . "Generator/accumulator sub-library")
+    (222 . "Compound Objects")
+    (223 . "Generalized binary search procedures")
+    (224 . "Integer Mappings")
+    (227 . "Optional Arguments")
+    (229 . "Tagged Procedures")
+    (230 . "Atomic Operations")
+    (232 . "Flexible curried procedures")))
 
 ;;---------------------------------------------------------------
 ;; Category macros
