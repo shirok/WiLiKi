@@ -38,7 +38,6 @@
   (use rfc.uri)
   (use www.cgi)
   (use wiliki.page)
-  (use util.list)
   (use util.match)
   (use text.tree)
   (use text.html-lite)

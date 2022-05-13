@@ -6,7 +6,6 @@
 (select-module wiliki.macro)
 (use srfi-1)
 (use srfi-13)
-(use util.list)
 
 ;;---------------------------------------------------------------
 ;; SRFI-related macros

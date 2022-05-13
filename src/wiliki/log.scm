@@ -29,7 +29,6 @@
   (use srfi-13)
   (use util.lcs)
   (use util.queue)
-  (use util.list)
   (use text.diff)
   (export <wiliki-log-entry>
           wiliki-log-create

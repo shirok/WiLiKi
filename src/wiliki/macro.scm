@@ -32,7 +32,6 @@
   (use text.html-lite)
   (use text.tree)
   (use text.gettext)
-  (use util.list)
   (use util.match)
   (use text.csv)
   (use wiliki.format)

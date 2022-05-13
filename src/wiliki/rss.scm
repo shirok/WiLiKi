@@ -31,7 +31,6 @@
   (use gauche.experimental.app)
   (use wiliki.core)
   (use file.util)
-  (use util.list)
   (use util.match)
   (use text.html-lite)
   (use text.tree)

@@ -42,7 +42,6 @@
   (use crypt.bcrypt)
   (use file.util)
   (use util.match)
-  (use util.list)
   (use srfi-1)
   (use srfi-13)
   (export <auth-failure> auth-db-path auth-valid-password?
