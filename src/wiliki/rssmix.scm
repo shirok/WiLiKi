@@ -284,11 +284,13 @@
 ;; where DATETIME is in time-utc.
 ;; When error, returns #f.
 (define (fetch uri)
-  (and-let* ([match  (#/^http:\/\/([^\/]+)/ uri)]
-             [server (match 1)]
+  (and-let* ([match  (#/^(https?):\/\/([^\/]+)/ uri)]
+             [scheme (match 1)]
+             [server (match 2)]
              [path   (match 'after)])
     (receive (status headers body)
-        (http-get server path :user-agent +user-agent+)
+        (http-get server path :user-agent +user-agent+
+                  :secure (equal? scheme "https"))
       (and-let* ([ (equal? status "200") ]
                  [ (string? body) ]
                  [encoding (body-encoding body)])
