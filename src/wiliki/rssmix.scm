@@ -32,9 +32,11 @@
   (use srfi-13)
   (use srfi-14)
   (use srfi-19)
+  (use srfi-197)
   (use rfc.http)
   (use rfc.822)
   (use rfc.uri)
+  (use control.pmap)
   (use text.html-lite)
   (use sxml.ssax)
   (use sxml.sxpath)
@@ -210,26 +212,24 @@
 
 ;; Collect RSS info from given sites.
 (define (collect self)
-  (let* ([sites  (ref self 'sites)]
-         [getters (with-rss-db self
-                    (map (^[site] (get-rss self (car site) (caddr site)))
-                         sites))]
-         [timeout (add-duration
-                   (current-time)
-                   ;; NB: this requires fixed srfi-19.scm
-                   (make-time 'time-duration 0 (ref self 'fetch-timeout)))])
-    (sort-by (append-map (^[site getter]
-                           (if-let1 items (getter timeout)
-                             (map (^[item]
-                                    (make <rss-item>
-                                      :site-id (car site) :site-url (cadr site)
-                                      :title (car item) :link (cadr item)
-                                      :date (caddr item)))
-                                  items)
-                             '()))
-                         sites getters)
-             (cut ~ <> 'date)
-             >)))
+  (define timeout
+    (add-duration
+     (current-time)
+     (make-time 'time-duration 0 (~ self 'fetch-timeout))))
+  (chain
+   (pmap (^[site]
+           (let1 getter (with-rss-db self (get-rss self (car site) (caddr site)))
+             (if-let1 items (getter timeout)
+               (map (^[item]
+                      (make <rss-item>
+                        :site-id (car site) :site-url (cadr site)
+                        :title (car item) :link (cadr item)
+                        :date (caddr item)))
+                    items)
+               '())))
+         (~ self'sites))
+   (concatenate _)
+   (sort-by _ (cut ~ <> 'date) >)))
 
 ;; Returns a procedure PROC, that takes a srfi-time and returns RSS data,
 ;; which is a list of (TITLE LINK UNIX-TIME).
