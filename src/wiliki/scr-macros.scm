@@ -270,6 +270,7 @@
     (208 . "NaN procedures")
     (209 . "Enums and Enum Sets")
     (210 . "Procedures and Syntax for Multiple Values")
+    (211 . "Scheme Macro Libraries")
     (212 . "Aliases")
     (213 . "Identifier Properties")
     (214 . "Flexvectors")
