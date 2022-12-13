@@ -166,7 +166,7 @@
     (74 . "Octet-Addressed Binary Blocks")
     (78 . "Lightweight testing")
     (86 .
-        "MU and NU simulating VALUES & CALL-WITH-VALUES, and their related LET-syntax"
+        "MU and NU simulating VALUES &amp; CALL-WITH-VALUES, and their related LET-syntax"
         )
     (87 . "=> in case clauses")
     (88 . "Keyword objects")
@@ -195,7 +195,6 @@
     (118 . "Simple adjustable-size strings")
     (119 . "wisp: simpler indentation-sensitive scheme")
     (120 . "Timer APIs")
-    (122 . "Nonempty Intervals and Generalized Arrays")
     (123 . "Generic accessor and modifier operators")
     (124 . "Ephemerons")
     (125 . "Intermediate hash tables")
@@ -282,10 +281,15 @@
     (222 . "Compound Objects")
     (223 . "Generalized binary search procedures")
     (224 . "Integer Mappings")
+    (225 . "Dictionaries")
     (227 . "Optional Arguments")
+    (228 . "Composing Comparators")
     (229 . "Tagged Procedures")
     (230 . "Atomic Operations")
-    (232 . "Flexible curried procedures")))
+    (231 . "Intervals and Generalized Arrays")
+    (232 . "Flexible curried procedures")
+    (233 . "INI files")
+    (236 . "Evaluating expressions in an unspecified order")))
 
 ;;---------------------------------------------------------------
 ;; Category macros
