@@ -28,7 +28,6 @@
 ;; for now, I use an ad-hoc approach.
 
 (define-module wiliki.rss
-  (use gauche.experimental.app)
   (use wiliki.core)
   (use file.util)
   (use util.match)

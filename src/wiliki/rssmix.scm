@@ -28,11 +28,11 @@
 ;; *EXPERIMENTAL*
 
 (define-module wiliki.rssmix
-  (use srfi-1)
-  (use srfi-13)
-  (use srfi-14)
-  (use srfi-19)
-  (use srfi-197)
+  (use scheme.list)
+  (use srfi.13)
+  (use scheme.charset)
+  (use srfi.19)
+  (use srfi.197)
   (use rfc.http)
   (use rfc.822)
   (use rfc.uri)

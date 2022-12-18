@@ -25,8 +25,8 @@
 ;;;
 
 (define-module wiliki.parse
-  (use srfi-1)
-  (use srfi-13)
+  (use scheme.list)
+  (use srfi.13)
   (use text.tree)
   (use util.match)
   (export wiliki-parse wiliki-parse-string

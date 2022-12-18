@@ -2,7 +2,6 @@
 
 ;; wiliki2 - sample of customizing page format
 
-(use util.list)
 (use wiliki)
 (use wiliki.format)
 (use wiliki.db)

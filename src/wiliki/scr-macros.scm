@@ -4,8 +4,8 @@
 ;;
 
 (select-module wiliki.macro)
-(use srfi-1)
-(use srfi-13)
+(use scheme.list)
+(use srfi.13)
 
 ;;---------------------------------------------------------------
 ;; SRFI-related macros

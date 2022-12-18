@@ -25,7 +25,7 @@
 ;;;
 
 (define-module wiliki.page
-  (use srfi-1)
+  (use scheme.list)
   (use util.match)
   (export <wiliki-page>
           wiliki:current-page wiliki:page-circular?

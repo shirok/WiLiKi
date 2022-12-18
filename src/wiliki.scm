@@ -25,8 +25,8 @@
 ;;;
 
 (define-module wiliki
-  (use srfi-1)
-  (use srfi-13)
+  (use scheme.list)
+  (use srfi.13)
   (use text.html-lite)
   (use text.tree)
   (use text.tr)

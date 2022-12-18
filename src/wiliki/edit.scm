@@ -25,7 +25,7 @@
 ;;;
 
 (define-module wiliki.edit
-  (use srfi-13)
+  (use srfi.13)
   (use text.gettext)
   (use text.diff)
   (use www.cgi)

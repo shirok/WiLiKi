@@ -25,9 +25,9 @@
 ;;;
 
 (define-module wiliki.macro
-  (use srfi-1)
-  (use srfi-13)
-  (use srfi-19)
+  (use scheme.list)
+  (use srfi.13)
+  (use srfi.19)
   (use gauche.sequence)
   (use text.html-lite)
   (use text.tree)
@@ -41,7 +41,7 @@
 (select-module wiliki.macro)
 
 ;; Delay loading some modules
-(autoload srfi-27
+(autoload srfi.27
           random-integer  random-source-randomize! default-random-source)
 (autoload wiliki.pasttime how-long-since)
 (autoload wiliki.edit     cmd-edit cmd-preview cmd-commit-edit)

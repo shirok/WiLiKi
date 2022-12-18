@@ -42,8 +42,8 @@
   (use crypt.bcrypt)
   (use file.util)
   (use util.match)
-  (use srfi-1)
-  (use srfi-13)
+  (use scheme.list)
+  (use srfi.13)
   (export <auth-failure> auth-db-path auth-valid-password?
           auth-change-password! auth-add-user! auth-delete-user!
           auth-user-exists? auth-users
