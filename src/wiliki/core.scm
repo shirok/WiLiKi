@@ -30,20 +30,20 @@
 ;;
 
 (define-module wiliki.core
-  (use scheme.list)
-  (use srfi.13)
+  (use dbm)
+  (use file.util)
   (use gauche.charconv)
   (use gauche.logger)
-  (use file.util)
   (use rfc.uri)
-  (use www.cgi)
-  (use wiliki.page)
-  (use util.match)
-  (use text.tree)
-  (use text.html-lite)
+  (use scheme.list)
+  (use srfi.13)
   (use text.csv)
   (use text.gettext)
-  (use dbm)
+  (use text.html-lite)
+  (use text.tree)
+  (use util.match)
+  (use wiliki.page)
+  (use www.cgi)
   (extend wiliki.format) ;; temporary
   (export <wiliki> wiliki-main
           wiliki wiliki:lang

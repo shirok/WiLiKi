@@ -26,13 +26,13 @@
 
 (define-module wiliki.edit
   (use srfi.13)
-  (use text.gettext)
   (use text.diff)
-  (use www.cgi)
+  (use text.gettext)
   (use wiliki.core)
   (use wiliki.log)
-  (use wiliki.page)
   (use wiliki.macro)
+  (use wiliki.page)
+  (use www.cgi)
   (export cmd-edit cmd-preview cmd-commit-edit))
 (select-module wiliki.edit)
 

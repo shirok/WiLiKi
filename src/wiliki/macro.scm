@@ -25,18 +25,18 @@
 ;;;
 
 (define-module wiliki.macro
+  (use gauche.sequence)
   (use scheme.list)
   (use srfi.13)
   (use srfi.19)
-  (use gauche.sequence)
+  (use text.csv)
+  (use text.gettext)
   (use text.html-lite)
   (use text.tree)
-  (use text.gettext)
   (use util.match)
-  (use text.csv)
+  (use wiliki.core)
   (use wiliki.format)
   (use wiliki.page)
-  (use wiliki.core)
   )
 (select-module wiliki.macro)
 

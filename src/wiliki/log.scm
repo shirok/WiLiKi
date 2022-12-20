@@ -27,9 +27,9 @@
 (define-module wiliki.log
   (use scheme.list)
   (use srfi.13)
+  (use text.diff)
   (use util.lcs)
   (use util.queue)
-  (use text.diff)
   (export <wiliki-log-entry>
           wiliki-log-create
           wiliki-log-pick

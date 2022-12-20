@@ -28,11 +28,11 @@
 ;; for now, I use an ad-hoc approach.
 
 (define-module wiliki.rss
-  (use wiliki.core)
   (use file.util)
-  (use util.match)
   (use text.html-lite)
   (use text.tree)
+  (use util.match)
+  (use wiliki.core)
   (export rss-page rss-item-count rss-item-description rss-item-extra-elements
           rss-partial-content-lines rss-source rss-url-format))
 (select-module wiliki.rss)

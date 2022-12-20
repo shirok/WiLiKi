@@ -2,10 +2,10 @@
 ;;; Simple password management utility for wiliki.auth
 ;;;
 
-(use wiliki.auth)
 (use gauche.parseopt)
 (use gauche.termios)
 (use util.match)
+(use wiliki.auth)
 
 (define (usage)
   (print "Usage: wiliki-passwd [-D] <passwdfile> <username> [<password>]")

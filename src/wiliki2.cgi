@@ -3,8 +3,8 @@
 ;; wiliki2 - sample of customizing page format
 
 (use wiliki)
-(use wiliki.format)
 (use wiliki.db)
+(use wiliki.format)
 
 (define-class <my-formatter> (<wiliki-formatter>) ())
 

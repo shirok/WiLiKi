@@ -3,12 +3,12 @@
 ;; A simple script to run a small web server locally to test wiliki.
 ;; Requires Gauche-makiki https://github.com/shirok/Gauche-makiki
 
-(use gauche.parseopt)
-(use gauche.parameter)
-(use util.match)
 (use file.util)
+(use gauche.parameter)
+(use gauche.parseopt)
 (use makiki)
 (use makiki.cgi)
+(use util.match)
 
 (define (usage)
   (print "Usage: wiliki-server [-p port][-e entry-path][-d document-root] cgi-script")

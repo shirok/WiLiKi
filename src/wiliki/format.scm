@@ -25,19 +25,19 @@
 ;;;
 
 (define-module wiliki.format
-  (use scheme.list)
-  (use srfi.13)
-  (use text.html-lite)
-  (use text.tree)
-  (use text.tr)
-  (use rfc.uri)
-  (use util.queue)
-  (use util.match)
   (use gauche.charconv)
   (use gauche.sequence)
-  (use wiliki.parse)
-  (use wiliki.page)
+  (use rfc.uri)
+  (use scheme.list)
+  (use srfi.13)
   (use sxml.tools)
+  (use text.html-lite)
+  (use text.tr)
+  (use text.tree)
+  (use util.match)
+  (use util.queue)
+  (use wiliki.page)
+  (use wiliki.parse)
   (export <wiliki-formatter-base>
           wiliki:persistent-page?
           wiliki:transient-page?
