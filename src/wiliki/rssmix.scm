@@ -323,8 +323,8 @@
      [(rfc822-parse-date date) (^[yy . _] (number? yy))
       => (^[year month day hour minute second tz dow]
            (get-time year month day hour minute second
-                     (quotient tz 100)
-                     (abs (remainder tz 100))))]
+                     (quotient (or tz 0) 100)
+                     (abs (remainder (or tz 0) 100))))]
      [else #f]))
 
   (define (get-time year month day hour minute second zh zm)
@@ -352,7 +352,7 @@
      (filter-map
       (^[item]
         (let ([title ((if-car-sxpath '(// title *text*)) item)]
-              [link  ( item)]
+              [link  ((if-car-sxpath '(// link *text*)) item)]
               [date  (parse-date
                       ((if-car-sxpath '(// (or@ date pubDate) *text*))
                        item))])
