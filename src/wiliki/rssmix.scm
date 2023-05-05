@@ -25,8 +25,6 @@
 ;;;  IN THE SOFTWARE.
 ;;;
 
-;; *EXPERIMENTAL*
-
 (define-module wiliki.rssmix
   (use control.pmap)
   (use dbm)
@@ -45,6 +43,7 @@
   (use sxml.ssax)
   (use sxml.sxpath)
   (use text.html-lite)
+  (use util.match)
   (use www.cgi)
   (export rss-main <rssmix>)
   )
@@ -93,18 +92,45 @@
    (date     :init-keyword :date)
    ))
 
-(define-syntax with-rss-db
-  (syntax-rules ()
-    [(_ self . body)
-     (let* ([s  self]
-            [lock (ref s 'db-lock)])
-       (with-locking-mutex lock
-         (^[]
-           (let1 db (dbm-open (ref s 'db-type)
-                             :path (ref s 'db-name) :rwmode :write)
-            (set! (ref s 'db) db)
-            (unwind-protect (begin . body)
-              (dbm-close db))))))]))
+;; Abstract database access
+;; (dbop 'get id) => kv-list or #f
+;; (dbop 'mget (id ...)) => (kv-list ...)
+;; (dbop 'put id kv-list) => #<undef>
+;; locking is handled in it.
+;; useful to debug without making full <rssmix> instance
+(define (make-dbop self)
+  (define (db-get1 db id)
+    (and-let1 data (dbm-get db id #f)
+      (read-from-string data)))
+  (define (db-get id)
+    (with-locking-mutex (~ self'db-lock)
+      (^[]
+        (let1 db (dbm-open (~ self'db-type)
+                           :path (~ self'db-name) :rwmode :read)
+          (unwind-protect
+              (db-get1 db id)
+            (dbm-close db))))))
+  (define  (db-mget ids)
+    (with-locking-mutex (~ self'db-lock)
+      (^[]
+        (let1 db (dbm-open (~ self'db-type)
+                           :path (~ self'db-name) :rwmode :read)
+          (unwind-protect
+              (map (cut db-get1 db <>) ids)
+            (dbm-close db))))))
+  (define (db-put! id record)
+    (with-locking-mutex (~ self'db-lock)
+      (^[]
+        (let ([db (dbm-open (~ self'db-type)
+                            :path (~ self'db-name) :rwmode :write)]
+              [data (write-to-string record)])
+          (unwind-protect
+              (dbm-put! db id data)
+            (dbm-close db))))))
+  (match-lambda*
+    [('get id) (db-get id)]
+    [('mget ids) (db-mget ids)]
+    [('put id record) (db-put! id record)]))
 
 ;; an ad-hoc function to estimate width of the string
 (define (char-width ch)
@@ -167,10 +193,7 @@
 
 (define-method rss-site-info ((self <rssmix>))
   (let* ([sites (ref self 'sites)]
-         [infos (with-rss-db self
-                  (map (^s ($ read-from-string
-                              $ dbm-get (ref self 'db) (car s) "#f"))
-                       sites))])
+         [infos ((make-dbop self) 'mget (map car sites))])
     ($ rss-page self "RSSMix: Site Info"
        $ map (^[site info]
                `(,(html:h3 (html-escape-string (car site)))
@@ -218,7 +241,7 @@
      (make-time 'time-duration 0 (~ self 'fetch-timeout))))
   (chain
    (pmap (^[site]
-           (let1 getter (with-rss-db self (get-rss self (car site) (caddr site)))
+           (let1 getter (get-rss self (car site) (caddr site))
              (if-let1 items (getter timeout)
                (map (^[item]
                       (make <rss-item>
@@ -240,8 +263,7 @@
 ;; Cache is updated accodringly within PROC.
 ;; NB: this is called from primordial thread, so we don't need to lock db.
 (define (get-rss self id rss-url)
-  (let* ([cached (and-let* ((body  (dbm-get (ref self 'db) id #f)))
-                   (read-from-string body))]
+  (let* ([cached ((make-dbop self) 'get id)]
          [timestamp (and cached (get-keyword :timestamp cached 0))]
          [rss    (and cached (get-keyword :rss-cache cached #f))]
          [now    (sys-time)])
@@ -256,27 +278,26 @@
 
 ;; Record the fact that timeout occurred.  Must be called from main thread.
 (define (record-timeout self id)
-  (with-rss-db self
-    (and-let* ([db (ref self 'db)]
-               [cached (read-from-string (dbm-get db id "#f"))]
-               [channel-title (get-keyword :channel-title cached #f)]
-               [timestamp (get-keyword :timestamp cached #f)]
-               [rss-cache (get-keyword :rss-cache cached #f)]
-               [data (list :timestamp timestamp :rss-cache rss-cache
+  (and-let* ([db (ref self 'db)]
+             [cached ((make-dbop self) 'get id)]
+             [channel-title (get-keyword :channel-title cached #f)]
+             [timestamp (get-keyword :timestamp cached #f)]
+             [rss-cache (get-keyword :rss-cache cached #f)]
+             [record (list :timestamp timestamp :rss-cache rss-cache
                            :channel-title channel-title
                            :elapsed 'timeout)])
-      (dbm-put! db id (write-to-string data)))))
+    ((make-dbop self) 'put id record)))
 
 ;; Creates a thunk for thread.
 (define (make-thunk self id uri start-time)
   (^[] (guard (e [else (display (~ e 'message) (current-error-port)) #f])
          (and-let* ([rss (fetch uri)]
                     [now (sys-time)]
-                    [data (list :timestamp now :rss-cache (cdr rss)
+                    [record (list :timestamp now :rss-cache (cdr rss)
                                 :channel-title (car rss)
                                 :elapsed (- now start-time))])
-           (with-rss-db self
-             (dbm-put! (~ self 'db) id (write-to-string data))) (cdr rss)))))
+           ((make-dbop self) 'put id record)
+           (cdr rss)))))
 
 ;; Fetch RSS from specified URI, parse it, and extract link information
 ;; with updated dates.  Returns list of items, in
