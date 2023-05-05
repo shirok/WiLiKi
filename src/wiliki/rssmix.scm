@@ -117,7 +117,7 @@
   (define  (db-mget ids)
     (with-db (db :read) (map (cut db-get1 db <>) ids)))
   (define (db-put! id record)
-    (with-db (db :write) (dbm-put! db id data)))
+    (with-db (db :write) (dbm-put! db id record)))
   (match-lambda*
     [('get id) (db-get id)]
     [('mget ids) (db-mget ids)]
