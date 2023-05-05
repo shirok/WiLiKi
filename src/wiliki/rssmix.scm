@@ -99,34 +99,25 @@
 ;; locking is handled in it.
 ;; useful to debug without making full <rssmix> instance
 (define (make-dbop self)
+  (define-syntax with-db
+    (syntax-rules ()
+      [(_ (var mode) . body)
+       (with-locking-mutex (~ self'db-lock)
+         (^[]
+           (let1 var (dbm-open (~ self'db-type)
+                               :path (~ self'db-name) :rwmode mode)
+             (unwind-protect
+                 (begin . body)
+               (dbm-close var)))))]))
   (define (db-get1 db id)
     (and-let1 data (dbm-get db id #f)
       (read-from-string data)))
   (define (db-get id)
-    (with-locking-mutex (~ self'db-lock)
-      (^[]
-        (let1 db (dbm-open (~ self'db-type)
-                           :path (~ self'db-name) :rwmode :read)
-          (unwind-protect
-              (db-get1 db id)
-            (dbm-close db))))))
+    (with-db (db :read) (db-get1 db id)))
   (define  (db-mget ids)
-    (with-locking-mutex (~ self'db-lock)
-      (^[]
-        (let1 db (dbm-open (~ self'db-type)
-                           :path (~ self'db-name) :rwmode :read)
-          (unwind-protect
-              (map (cut db-get1 db <>) ids)
-            (dbm-close db))))))
+    (with-db (db :read) (map (cut db-get1 db <>) ids)))
   (define (db-put! id record)
-    (with-locking-mutex (~ self'db-lock)
-      (^[]
-        (let ([db (dbm-open (~ self'db-type)
-                            :path (~ self'db-name) :rwmode :write)]
-              [data (write-to-string record)])
-          (unwind-protect
-              (dbm-put! db id data)
-            (dbm-close db))))))
+    (with-db (db :write) (dbm-put! db id data)))
   (match-lambda*
     [('get id) (db-get id)]
     [('mget ids) (db-mget ids)]
