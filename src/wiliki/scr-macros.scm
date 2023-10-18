@@ -85,13 +85,14 @@
       (wiliki:db-fold
        (^[pagename _ seed]
          (cond [(#/^SRFI-(\d+)$/ pagename)
-                => (^m (acons pagename (m 1) seed))]
+                => (^m (acons (x->integer (m 1)) pagename seed))]
                [else seed]))
        '())
     `((div
        ,@($ intersperse " "
-            $ map (^p `(a (@ (href ,(wiliki:url (car p)))) ,(cdr p)))
-            srfi-pages-alist)))))
+            $ map (^p `(a (@ (href ,(wiliki:url (cdr p))))
+                          ,(x->string (car p))))
+            $ sort-by srfi-pages-alist car)))))
 
 ;;; The SRFI table below can be obtained by the following code snippet.
 #|
