@@ -79,6 +79,20 @@
                            (cons " " (wiliki:format-wikiname impl)))
                          impls))))))
 
+;; List srfi numbers as links to SRFI-N page.
+(define-reader-macro (srfi-links)
+  (let1 srfi-pages-alist
+      (wiliki:db-fold
+       (^[pagename _ seed]
+         (cond [(#/^SRFI-(\d+)$/ pagename)
+                => (^m (acons pagename (m 1) seed))]
+               [else seed]))
+       '())
+    `((div
+       ,@($ intersperse " "
+            $ map (^p `(a (@ (href ,(wiliki:url (car p)))) ,(cdr p)))
+            srfi-pages-alist)))))
+
 ;;; The SRFI table below can be obtained by the following code snippet.
 #|
 (use rfc.http)
