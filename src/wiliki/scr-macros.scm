@@ -88,7 +88,7 @@
                 => (^m (acons (x->integer (m 1)) pagename seed))]
                [else seed]))
        '())
-    `((div
+    `((span
        ,@($ intersperse " "
             $ map (^p `(a (@ (href ,(wiliki:url (cdr p))))
                           ,(x->string (car p))))
