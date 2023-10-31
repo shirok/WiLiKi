@@ -7,12 +7,12 @@ You can visit the [official site](https://practical-scheme.net/wiliki/wiliki.cgi
 ## Prerequisites
 
 You need Gauche installed on your machine.
-See (`package.scm`)[package.scm] for the required minimum version.
+See [`package.scm`](package.scm) for the required minimum version.
 
 WiLiKi is supposed to run as a CGI script, so you need a web server
 setup that can run CGI scripts.
 
-Alternatively, you can install (Gauche-makiki)[https://github.com/shirok/Gauche-makiki] webserver to run WiLiKi stand-alone.
+Alternatively, you can install [Gauche-makiki](https://github.com/shirok/Gauche-makiki) webserver to run WiLiKi stand-alone.
 
 
 ## Installation
@@ -30,7 +30,7 @@ make install
 
 ## Running
 
-To run the wiki, you need to copy (`wiliki.cgi`)[src/wiliki.cgi]
+To run the wiki, you need to copy [`wiliki.cgi`](src/wiliki.cgi)
 to your site's cgi script location and edit it to suit your
 site's setup.
 
