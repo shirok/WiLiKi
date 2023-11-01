@@ -32,6 +32,7 @@
 (define-module wiliki.core
   (use dbm)
   (use file.util)
+  (use gauche.parameter)
   (use gauche.charconv)
   (use gauche.logger)
   (use rfc.uri)
