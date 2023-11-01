@@ -1,3 +1,12 @@
+2023-10-31  Shiro Kawai  <shiro@acm.org>
+
+	* Release 0.8.3, because of the parameterize issue.
+
+	* src/wiliki/core.scm (wiliki:with-db): Found an issue with
+	  0.9.13's parameter; the combination of parameter and unwind-protect
+	  evaded the compatibility measure.  Added explicit use of
+	  gauche.parameter to force it work with compatibility mode.
+
 2023-10-17  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/scr-macros.scm (srfi-links): Add a reader macro
