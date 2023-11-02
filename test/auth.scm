@@ -1,6 +1,6 @@
 (use gauche.test)
 (use gauche.version)
-(use srfi-13)
+(use srfi.13)
 (use file.util)
 
 (test-start "auth")

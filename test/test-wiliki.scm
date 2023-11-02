@@ -2,15 +2,14 @@
 ;; test for wiliki
 ;;
 
-(use srfi-1)
-(use srfi-13)
+(use srfi.1)
+(use srfi.13)
 (use gauche.test)
 (use gauche.version)
 (use www.cgi)
 (use sxml.ssax)
 (use sxml.sxpath)
 (use rfc.822)
-(use util.list)
 (use www.cgi.test)
 
 ;; need some modules that aren't available until later.
