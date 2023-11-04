@@ -169,7 +169,6 @@
 
 ;; API
 ;;   A parameter points to a directory where session records are stored.
-;;   In future, it may be extended to hold
 (define auth-session-directory (make-parameter (temporary-directory)))
 
 ;; API
