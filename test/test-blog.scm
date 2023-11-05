@@ -8,6 +8,7 @@
 (use util.match)
 (add-load-path "../examples/blog" :relative)
 (add-load-path "../util" :relative)
+(use sxml.sxpath)
 (use sxml.xml-test)
 
 (test-start "blog")
@@ -78,20 +79,45 @@
 
 (test* "new entry"
        '(("status" "302 Moved")
-         ("location" "http://localhost/wiliki.cgi?2023-01-01-new-entry"))
+         ("location" "http://localhost/wiliki.cgi?20230101-new-entry"))
        (values-ref (run-cgi-script->string
                     *cgi-path*
                     :environment `((REQUEST_METHOD . "POST")
                                    (HTTP_COOKIE . ,#"sess=~*session-key*"))
                     :parameters `((c . c)
-                                  (p . "2023-01-01-new-entry")
+                                  (p . "20230101-new-entry")
                                   (commit . "true")
                                   (submit . "Create")
-                                  (mtime . "")
                                   (content . "New entry.\r\n")))
                    0))
 
-'(when (file-exists? "_test")
+(test* "new entry 2"
+       '(("status" "302 Moved")
+         ("location" "http://localhost/wiliki.cgi?20230102-another-entry"))
+       (values-ref (run-cgi-script->string
+                    *cgi-path*
+                    :environment `((REQUEST_METHOD . "POST")
+                                   (HTTP_COOKIE . ,#"sess=~*session-key*"))
+                    :parameters `((c . c)
+                                  (p . "20230102-another-entry")
+                                  (commit . "true")
+                                  (submit . "Create")
+                                  (content . "[[$$recent-entries]]\r\n")))
+                   0))
+
+(test* "recent entries"
+       '("wiliki.cgi/20230102-another-entry"
+         "wiliki.cgi/20230101-new-entry")
+       (receive (_ sxml)
+           (run-cgi-script->sxml
+            *cgi-path*
+            :environment '((PATH_INFO . "/20230102-another-entry")))
+         ((sxpath '(// (ul (@ class (equal? "recent-entries")))
+                       li a @ href *text*))
+          sxml)))
+
+(when (file-exists? "_test")
   (remove-directory* "_test"))
+
 
 (test-end)
