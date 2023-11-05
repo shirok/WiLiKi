@@ -337,7 +337,7 @@
    name
    (^[pagename params]
      (wiliki:with-db
-      (^[] (wiliki:run-action (wiliki) 'name (fn-gen pagename)
+      (^[] (wiliki:run-action (wiliki) name (fn-gen pagename)
                               pagename params (args-alist-gen params)))
       :rwmode rwmode))))
 
