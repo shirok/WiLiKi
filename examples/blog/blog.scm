@@ -263,10 +263,12 @@
   (read-from-string (wiliki:db-raw-get *index-store* "(() #f #f)")))
 
 (define blog-index
-  (let1 promise (delay (read-index))
+  (let1 cached #f
     (case-lambda
-      [() (force promise)]
-      [(new) (set! promise (delay new))])))
+      [() (or cached
+              (rlet1 idx (read-index)
+                (set! cached idx)))]
+      [(new) (set! cached #f) (blog-index)])))
 (define blog-index-root
   (getter-with-setter (^() (car (blog-index)))
                       (^v  (set-car! (blog-index) v))))

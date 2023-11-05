@@ -1,3 +1,12 @@
+2023-11-04  Shiro Kawai  <shiro@acm.org>
+
+	* examples/blog/blog.scm (blog-index): It turned out the
+	  parameterize issue was a red herring.  The real issue was the
+	  change of 'delay' in 0.9.13---now the promise is evaluated
+	  in the dynamic environment of delay (srfi-226 semantics), while
+	  by 0.9.12 it is evaluated in the dynamic environment of force
+	  (R7RS semantics).
+
 2023-10-31  Shiro Kawai  <shiro@acm.org>
 
 	* Release 0.8.3, because of the parameterize issue.
