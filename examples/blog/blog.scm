@@ -34,7 +34,7 @@
          :style-sheet "blog.css"
          :language 'jp
          :charsets '((jp . utf-8) (en . utf-8))
-         :image-urls '((#/^http:\/\/[-\w.]*amazon.com\// allow)
+         :image-urls '((#/^https?:\/\/[-\w.]*amazon.com\// allow)
                        (#/^\// allow))
          :debug-level 1
          )))
@@ -633,13 +633,13 @@
   (define aid-us (blog-option-ref (wiliki) 'amazon-affiliate-id-us))
   (let-macro-keywords* opts ([domain "jp"][float "left"])
     (if (equal? domain "us")
-      #"<div class=\"amazon\" style=\"float:~|float|;\"><iframe src=\"http://rcm.amazon.com/e/cm?\
+      #"<div class=\"amazon\" style=\"float:~|float|;\"><iframe src=\"https://rcm.amazon.com/e/cm?\
           t=~|aid-us|&o=1&p=8&l=as1&asins=~|asin|&\
           fc1=000000&IS2=1&lt1=_blank&m=amazon&lc1=0000FF&\
           bc1=000000&bg1=FFFFFF&f=ifr\" style=\"width:120px;height:240px;\" \
           scrolling=\"no\" marginwidth=\"0\" marginheight=\"0\" \
           frameborder=\"0\"></iframe></div>"
-      #"<div class=\"amazon\" style=\"float:~|float|;\"><iframe src=\"http://rcm-jp.amazon.co.jp/e/cm?\
+      #"<div class=\"amazon\" style=\"float:~|float|;\"><iframe src=\"https://rcm-jp.amazon.co.jp/e/cm?\
           lt1=_blank&bc1=000000&IS2=1&nou=1&bg1=FFFFFF&\
           fc1=000000&lc1=0000FF&t=~|aid|&\
           o=9&p=8&l=as1&m=amazon&f=ifr&asins=~|asin|\" \
@@ -649,12 +649,9 @@
 
 (define-reader-macro (amazon-affiliate-link asin text)
   (define aid (blog-option-ref (wiliki) 'amazon-affiliate-id))
-  #"<a href=\"http://www.amazon.co.jp/gp/product/~|asin|?\
+  #"<a href=\"https://www.amazon.co.jp/gp/product/~|asin|?\
       ie=UTF8&tag=~|aid|&linkCode=as2&camp=247&\
-      creative=1211&creativeASIN=,|asin|\">~|text|</a>\
-     <img src=\"http://www.assoc-amazon.jp/e/ir?t=~|aid|&\
-      l=as2&o=9&a=~|asin|\" width=\"1\" height=\"1\" border=\"0\" \
-      alt=\"\" style=\"border:none !important; margin:0px !important;\" />")
+      creative=1211&creativeASIN=~|asin|\">~|text|</a>")
 
 (define-reader-macro (gist id)
   (if (#/^[\da-fA-F]+$/ id)
@@ -672,7 +669,7 @@
     (let* ([q `((msa ,msa) ,@(if msid `((msid ,msid)) '())
                 (hl ,hl) (ie ,ie) (t ,t)
                 (ll ,ll) (spn ,spn) (z ,z))]
-           [prefix "http://maps.google.com/maps/ms"]
+           [prefix "https://maps.google.com/maps/ms"]
            [path1 (http-compose-query prefix `(,@q (output "embed")))]
            [path2 (http-compose-query prefix `(,@q (source "embed")))])
       `((iframe (@ (width ,width) (height ,height)
@@ -719,28 +716,28 @@
   `((hr)
     (div (@ (class "footer"))
          (a (@ (rel "license")
-               (href "http://creativecommons.org/licenses/by/3.0/"))
+               (href "https://creativecommons.org/licenses/by/3.0/"))
             (img (@ (alt "Creative Commons License")
                     (style "border-width:0")
-                    (src "http://i.creativecommons.org/l/by/3.0/88x31.png"))))
+                    (src "https://i.creativecommons.org/l/by/3.0/88x31.png"))))
          (br)
          "This work by "
-         (a (@ (xmlns:cc "http://creativecommons.org/ns#")
+         (a (@ (xmlns:cc "https://creativecommons.org/ns#")
                (href ,(wiliki:url :full))
                (property "cc:attributionName")
                (rel "cc:attributionURL"))
             ,(~ (wiliki)'author))
          " is licensed under a "
          (a (@ (rel "license")
-               (href "http://creativecommons.org/licenses/by/3.0/"))
+               (href "https://creativecommons.org/licenses/by/3.0/"))
             "Creative Commons Attribution 3.0 Unported License")
          (br)
          "Last modified : " ,(wiliki:format-time (ref page 'mtime))
          (br)
-         (a (@ (href "http://practical-scheme.net/wiliki/wiliki.cgi"))
+         (a (@ (href "https://practical-scheme.net/wiliki/wiliki.cgi"))
             "WiLiKi " ,(wiliki:version))
          " running on "
-         (a (@ (href "http://practical-scheme.net/gauche/"))
+         (a (@ (href "https://practical-scheme.net/gauche/"))
             "Gauche ",(gauche-version)))))
 
 (define-method wiliki:format-page-content ((fmt <blog-formatter>) page . opts)
