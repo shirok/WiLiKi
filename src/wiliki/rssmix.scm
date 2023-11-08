@@ -92,36 +92,101 @@
    (date     :init-keyword :date)
    ))
 
-;; Abstract database access
-;; (dbop 'get id) => kv-list or #f
-;; (dbop 'mget (id ...)) => (kv-list ...)
-;; (dbop 'put id kv-list) => #<undef>
-;; locking is handled in it.
-;; useful to debug without making full <rssmix> instance
-(define (make-dbop self)
-  (define-syntax with-db
-    (syntax-rules ()
-      [(_ (var mode) . body)
-       (with-locking-mutex (~ self'db-lock)
-         (^[]
-           (let1 var (dbm-open (~ self'db-type)
-                               :path (~ self'db-name) :rwmode mode)
-             (unwind-protect
-                 (begin . body)
-               (dbm-close var)))))]))
-  (define (db-get1 db id)
-    (and-let1 data (dbm-get db id #f)
-      (read-from-string data)))
-  (define (db-get id)
-    (with-db (db :read) (db-get1 db id)))
-  (define  (db-mget ids)
-    (with-db (db :read) (map (cut db-get1 db <>) ids)))
-  (define (db-put! id record)
-    (with-db (db :write) (dbm-put! db id (write-to-string record))))
-  (match-lambda*
-    [('get id) (db-get id)]
-    [('mget ids) (db-mget ids)]
-    [('put id record) (db-put! id record)]))
+(define-class <rss-source> ()
+  ((site-id  :init-keyword :site-id)
+   (home-url :init-keyword :home-url)
+   (rss-url  :init-keyword :rss-url)
+   (updated  :init-value #f)
+   (cache-timestamp :init-value #f)
+   (channel-title   :init-value #f)
+   (cache-elapsed   :init-value #f)
+   (items    :init-value '())))         ;#<List <rss-item>>
+
+;; Returns #<List <rss-source>>
+;; Must be called from the main thread.
+(define (load-sources rssmix)
+  (define (maybe-read-cache db source)
+    (assume-type source <rss-source>)
+    (and-let1 cached ($ read-from-string
+                        $ dbm-get db (~ source'site-id) "#f")
+      (set! (~ source'cache-timestamp)
+            (get-keyword :timestamp cached))
+      (set! (~ source'channel-title)
+            (get-keyword :channel-title cached))
+      (set! (~ source'cache-elapsed)
+            (get-keyword :elapsed cached))
+      (set! (~ source'items)
+            (map (cut make-item source <>) (get-keyword :rss-cache cached)))))
+  (define (make-item source entry)
+    (make <rss-item>
+      :site-id (~ source'site-id)
+      :site-url (~ source'rss-url)
+      :title (car entry)
+      :link (cadr entry)
+      :date (caddr entry)))
+
+  (rlet1 sources (map (match-lambda
+                        ([ident home-url rss-url]
+                         (make <rss-source>
+                           :site-id ident
+                           :home-url home-url
+                           :rss-url rss-url)))
+                      (~ rssmix'sites))
+    (let1 db (dbm-open (~ rssmix'db-type)
+                       :path (~ rssmix'db-name) :rw-mode :read)
+      (unwind-protect
+          (for-each (cut maybe-read-cache db <>) sources)
+        (dbm-close db)))))
+
+;; Save cache, if it is updated.
+;; Must be called from the main thread.
+(define (save-cache rssmix sources)
+  (define (serialize-source source)
+    (assume-type source <rss-source>)
+    `(:timestamp ,(~ source'cache-timestamp)
+                 :rss-cache ,(map serialize-item (~ source'items))
+                 :channel-title ,(~ source'channel-title)
+                 :elapsed ,(~ source'cache-elapsed)))
+  (define (serialize-item item)
+    (assume-type item <rss-item>)
+    `(,(~ item'title)
+      ,(~ item'link)
+      ,(~ item'date)))
+  (let1 db (dbm-open (~ rssmix'db-type)
+                     :path (~ rssmix'db-name) :rw-mode :write)
+    (unwind-protect
+        (dolist [source sources]
+          (when (~ source'updated)
+            (dbm-put! db (~ source'site-id)
+                      (write-to-string (serialize-source source)))))
+      (dbm-close db))))
+
+;; Update source
+;; Called from worker thread
+(define (update-source! rssmix source)
+  (assume-type source <rss-source>)
+  (let1 now (sys-time)
+    (define (make-item source entry)
+      (make <rss-item>
+        :site-id (~ source'site-id)
+        :site-url (~ source'rss-url)
+        :title (car entry)
+        :link (cadr entry)
+        :date (caddr entry)))
+    (when (or (not (~ source'cache-timestamp))
+              (< (~ source'cache-timestamp) (- now (~ rssmix'cache-life))))
+      (guard (e [else (display (~ e 'message) (current-error-port)) #f])
+        (and-let1 rss (fetch (~ source'rss-url))
+          (set! (~ source'cache-timestamp) (sys-time))
+          (set! (~ source'cache-elapsed) (- (sys-time) now))
+          (set! (~ source'channel-title) (car rss))
+          (set! (~ source'items)
+                (map (cut make-item source <>) (cdr rss)))
+          (set! (~ source'updated) #t))))))
+
+(define (update-sources! rssmix sources)
+  (pmap (cut update-source! rssmix <>) sources
+        :mapper (make-fully-concurrent-mapper (~ rssmix'fetch-timeout))))
 
 ;; an ad-hoc function to estimate width of the string
 (define (char-width ch)
@@ -182,36 +247,32 @@
                  ))))
      $ take* (collect self) (ref self 'num-items)))
 
-(define-method rss-site-info ((self <rssmix>))
-  (let* ([sites (ref self 'sites)]
-         [infos ((make-dbop self) 'mget (map car sites))])
-    ($ rss-page self "RSSMix: Site Info"
-       $ map (^[site info]
-               `(,(html:h3 (html-escape-string (car site)))
-                 ,(html:table
-                   (html:tr (html:td "Title")
-                            (html:td (get-keyword :channel-title info "--")))
-                   (html:tr (html:td "Top")
-                            (html:td (html:a :href (cadr site)
-                                             (html-escape-string (cadr site)))))
-                   (html:tr (html:td "RSS")
-                            (html:td (html:a :href (caddr site)
-                                             (html-escape-string (caddr site)))))
-                   (html:tr (html:td "Last fetched")
-                            (html:td
-                             (or (and-let* ((info)
-                                            (ts (get-keyword :timestamp info #f)))
-                                   (rss-format-date ts))
-                                 "--")))
-                   (html:tr (html:td "Time spent")
-                            (html:td
-                             (or (and-let* ((info)
-                                            (ts (get-keyword :elapsed info #f)))
-                                   ts)
-                                 "--")))
-                   )))
-         sites infos)))
-
+(define-method rss-site-info ((rssmix <rssmix>))
+  ($ rss-page rssmix "RSSMix: Site Info"
+     $ map (^[source]
+             `(,(html:h3 (html-escape-string (~ source'site-id)))
+               ,(html:table
+                 (html:tr (html:td "Title")
+                          (html:td (~ source'channel-title)))
+                 (html:tr (html:td "Top")
+                          (html:td (html:a :href (~ source'home-url)
+                                           (html-escape-string
+                                            (~ source'home-url)))))
+                 (html:tr (html:td "RSS")
+                          (html:td (html:a :href (~ source'rss-url)
+                                           (html-escape-string
+                                            (~ source'rss-url)))))
+                 (html:tr (html:td "Last fetched")
+                          (html:td
+                           (or (and-let* ((ts (~ source'cache-timestamp)))
+                                 (rss-format-date ts))
+                               "--")))
+                 (html:tr (html:td "Time spent")
+                          (html:td
+                           (or (~ source'cache-elapsed)
+                               "--"))))
+               ))
+     $ load-sources rssmix))
 
 (define-method rss-main ((self <rssmix>))
   (cgi-main
@@ -225,70 +286,13 @@
   0)
 
 ;; Collect RSS info from given sites.
-(define (collect self)
-  (define timeout
-    (add-duration
-     (current-time)
-     (make-time 'time-duration 0 (~ self 'fetch-timeout))))
-  (chain
-   (pmap (^[site]
-           (let1 getter (get-rss self (car site) (caddr site))
-             (if-let1 items (getter timeout)
-               (map (^[item]
-                      (make <rss-item>
-                        :site-id (car site) :site-url (cadr site)
-                        :title (car item) :link (cadr item)
-                        :date (caddr item)))
-                    items)
-               '())))
-         (~ self'sites))
-   (concatenate _)
-   (sort-by _ (cut ~ <> 'date) >)))
-
-;; Returns a procedure PROC, that takes a srfi-time and returns RSS data,
-;; which is a list of (TITLE LINK UNIX-TIME).
-;; The time passed to PROC specifies a limit when thread can wait to fetch
-;; the RSS.  If the RSS is cached and up to date, PROC promptly returns it.
-;; If there is no cache or the cache is obsolete, a thread is spawned to
-;; fetch RSS.   If something goes wrong, PROC returns #f.
-;; Cache is updated accodringly within PROC.
-;; NB: this is called from primordial thread, so we don't need to lock db.
-(define (get-rss self id rss-url)
-  (let* ([cached ((make-dbop self) 'get id)]
-         [timestamp (and cached (get-keyword :timestamp cached 0))]
-         [rss    (and cached (get-keyword :rss-cache cached #f))]
-         [now    (sys-time)])
-    (if (and rss (> timestamp (- now (ref self 'cache-life))))
-      (^[timeout] rss)  ;; active
-      (let1 t (thread-start! (make-thread (make-thunk self id rss-url now) id))
-        (^[timeout]
-          (let1 r (thread-join! t timeout 'timeout)
-            (if (eq? r 'timeout)
-              (begin (record-timeout self id) rss)
-              r)))))))
-
-;; Record the fact that timeout occurred.  Must be called from main thread.
-(define (record-timeout self id)
-  (and-let* ([db (ref self 'db)]
-             [cached ((make-dbop self) 'get id)]
-             [channel-title (get-keyword :channel-title cached #f)]
-             [timestamp (get-keyword :timestamp cached #f)]
-             [rss-cache (get-keyword :rss-cache cached #f)]
-             [record (list :timestamp timestamp :rss-cache rss-cache
-                           :channel-title channel-title
-                           :elapsed 'timeout)])
-    ((make-dbop self) 'put id record)))
-
-;; Creates a thunk for thread.
-(define (make-thunk self id uri start-time)
-  (^[] (guard (e [else (display (~ e 'message) (current-error-port)) #f])
-         (and-let* ([rss (fetch uri)]
-                    [now (sys-time)]
-                    [record (list :timestamp now :rss-cache (cdr rss)
-                                :channel-title (car rss)
-                                :elapsed (- now start-time))])
-           ((make-dbop self) 'put id record)
-           (cdr rss)))))
+(define (collect rssmix)
+  (let1 sources (load-sources rssmix)
+    (update-sources! rssmix sources)
+    (save-cache rssmix sources)
+    (sort-by (concatenate (map (cut ~ <>'items) sources))
+             (cut ~ <>'date)
+             >)))
 
 ;; Fetch RSS from specified URI, parse it, and extract link information
 ;; with updated dates.  Returns list of items, in
