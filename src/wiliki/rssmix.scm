@@ -96,6 +96,7 @@
   ((site-id  :init-keyword :site-id)
    (home-url :init-keyword :home-url)
    (rss-url  :init-keyword :rss-url)
+   (mutex    :init-form (make-mutex))
    (updated  :init-value #f)
    (cache-timestamp :init-value #f)
    (channel-title   :init-value #f)
@@ -173,16 +174,19 @@
         :title (car entry)
         :link (cadr entry)
         :date (caddr entry)))
-    (when (or (not (~ source'cache-timestamp))
-              (< (~ source'cache-timestamp) (- now (~ rssmix'cache-life))))
-      (guard (e [else (display (~ e 'message) (current-error-port)) #f])
-        (and-let1 rss (fetch (~ source'rss-url))
-          (set! (~ source'cache-timestamp) (sys-time))
-          (set! (~ source'cache-elapsed) (- (sys-time) now))
-          (set! (~ source'channel-title) (car rss))
-          (set! (~ source'items)
-                (map (cut make-item source <>) (cdr rss)))
-          (set! (~ source'updated) #t))))))
+    (with-locking-mutex
+        (~ source'mutex)
+      (^[]
+        (when (or (not (~ source'cache-timestamp))
+                  (< (~ source'cache-timestamp) (- now (~ rssmix'cache-life))))
+          (guard (e [else (display (~ e 'message) (current-error-port)) #f])
+            (and-let1 rss (fetch (~ source'rss-url))
+              (set! (~ source'cache-timestamp) (sys-time))
+              (set! (~ source'cache-elapsed) (- (sys-time) now))
+              (set! (~ source'channel-title) (car rss))
+              (set! (~ source'items)
+                    (map (cut make-item source <>) (cdr rss)))
+              (set! (~ source'updated) #t))))))))
 
 (define (update-sources! rssmix sources)
   (pmap (cut update-source! rssmix <>) sources
@@ -250,28 +254,31 @@
 (define-method rss-site-info ((rssmix <rssmix>))
   ($ rss-page rssmix "RSSMix: Site Info"
      $ map (^[source]
-             `(,(html:h3 (html-escape-string (~ source'site-id)))
-               ,(html:table
-                 (html:tr (html:td "Title")
-                          (html:td (~ source'channel-title)))
-                 (html:tr (html:td "Top")
-                          (html:td (html:a :href (~ source'home-url)
-                                           (html-escape-string
-                                            (~ source'home-url)))))
-                 (html:tr (html:td "RSS")
-                          (html:td (html:a :href (~ source'rss-url)
-                                           (html-escape-string
-                                            (~ source'rss-url)))))
-                 (html:tr (html:td "Last fetched")
-                          (html:td
-                           (or (and-let* ((ts (~ source'cache-timestamp)))
-                                 (rss-format-date ts))
-                               "--")))
-                 (html:tr (html:td "Time spent")
-                          (html:td
-                           (or (~ source'cache-elapsed)
-                               "--"))))
-               ))
+             (with-locking-mutex
+                 (~ source'mutex)
+               (^[]
+                 `(,(html:h3 (html-escape-string (~ source'site-id)))
+                   ,(html:table
+                     (html:tr (html:td "Title")
+                              (html:td (~ source'channel-title)))
+                     (html:tr (html:td "Top")
+                              (html:td (html:a :href (~ source'home-url)
+                                               (html-escape-string
+                                                (~ source'home-url)))))
+                     (html:tr (html:td "RSS")
+                              (html:td (html:a :href (~ source'rss-url)
+                                               (html-escape-string
+                                                (~ source'rss-url)))))
+                     (html:tr (html:td "Last fetched")
+                              (html:td
+                               (or (and-let* ((ts (~ source'cache-timestamp)))
+                                     (rss-format-date ts))
+                                   "--")))
+                     (html:tr (html:td "Time spent")
+                              (html:td
+                               (or (~ source'cache-elapsed)
+                                   "--"))))
+                   ))))
      $ load-sources rssmix))
 
 (define-method rss-main ((self <rssmix>))
