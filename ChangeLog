@@ -1,3 +1,16 @@
+2023-11-09  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/rssmix.cgi: Overhaul the fetch code.  Now we split
+	  the operation into three parts:
+	   1. Load the settings and cached content
+	   2. For each source, if the cache is expired, try to fetch
+	   3. Save the updated cache and return the result.
+	  Only the second part needs to be run in parallel.
+	  We also record the last attempt timestamp separately from the last
+	  fetched time, and we refresh only when the cache-life passed
+	  after the last attempt.  If the site is down, it is a waste to
+	  try to fetch every time it is accessed.
+
 2023-11-04  Shiro Kawai  <shiro@acm.org>
 
 	* examples/blog/blog.scm (blog-index): It turned out the

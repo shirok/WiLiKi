@@ -97,10 +97,11 @@
    (home-url :init-keyword :home-url)
    (rss-url  :init-keyword :rss-url)
    (mutex    :init-form (make-mutex))
-   (updated  :init-value #f)
-   (cache-timestamp :init-value #f)
+   (updated  :init-value #f)            ;if the instance is updated by fetch
    (channel-title   :init-value #f)
-   (cache-elapsed   :init-value #f)
+   (last-cached-at  :init-value #f)     ;unix time of the last cached content
+   (last-attempt-at :init-value #f)     ;unix time of the last fetch attempt
+   (cache-elapsed   :init-value #f)     ;time required to fetch
    (items    :init-value '())))         ;#<List <rss-item>>
 
 ;; Returns #<List <rss-source>>
@@ -110,8 +111,12 @@
     (assume-type source <rss-source>)
     (and-let1 cached ($ read-from-string
                         $ dbm-get db (~ source'site-id) "#f")
-      (set! (~ source'cache-timestamp)
-            (get-keyword :timestamp cached))
+      (set! (~ source'last-cached-at)
+            (or (get-keyword :last-cached-at cached #f)
+                (get-keyword :timestamp cached #f)))
+      (set! (~ source'last-attempt-at)
+            (or (get-keyword :last-attempt-at cached #f)
+                (get-keyword :timestamp cached #f)))
       (set! (~ source'channel-title)
             (get-keyword :channel-title cached))
       (set! (~ source'cache-elapsed)
@@ -144,10 +149,11 @@
 (define (save-cache rssmix sources)
   (define (serialize-source source)
     (assume-type source <rss-source>)
-    `(:timestamp ,(~ source'cache-timestamp)
-                 :rss-cache ,(map serialize-item (~ source'items))
-                 :channel-title ,(~ source'channel-title)
-                 :elapsed ,(~ source'cache-elapsed)))
+    `(:last-cached-at ,(~ source'last-cached-at)
+      :last-attempt-at ,(~ source'last-attempt-at)
+      :rss-cache ,(map serialize-item (~ source'items))
+      :channel-title ,(~ source'channel-title)
+      :elapsed ,(~ source'cache-elapsed)))
   (define (serialize-item item)
     (assume-type item <rss-item>)
     `(,(~ item'title)
@@ -177,16 +183,19 @@
     (with-locking-mutex
         (~ source'mutex)
       (^[]
-        (when (or (not (~ source'cache-timestamp))
-                  (< (~ source'cache-timestamp) (- now (~ rssmix'cache-life))))
+        (when (or (not (~ source'last-attempt-at))
+                  (< (~ source'last-attempt-at) (- now (~ rssmix'cache-life))))
           (guard (e [else (display (~ e 'message) (current-error-port)) #f])
+            (set! (~ source'last-attempt-at) now)
+            (set! (~ source'updated) #t)
             (and-let1 rss (fetch (~ source'rss-url))
-              (set! (~ source'cache-timestamp) (sys-time))
+              (set! (~ source'last-cached-at) (sys-time))
+              (set! (~ source'last-attempt-at) (sys-time))
               (set! (~ source'cache-elapsed) (- (sys-time) now))
               (set! (~ source'channel-title) (car rss))
               (set! (~ source'items)
                     (map (cut make-item source <>) (cdr rss)))
-              (set! (~ source'updated) #t))))))))
+              )))))))
 
 (define (update-sources! rssmix sources)
   (pmap (cut update-source! rssmix <>) sources
@@ -271,7 +280,12 @@
                                                 (~ source'rss-url)))))
                      (html:tr (html:td "Last fetched")
                               (html:td
-                               (or (and-let* ((ts (~ source'cache-timestamp)))
+                               (or (and-let* ((ts (~ source'last-cached-at)))
+                                     (rss-format-date ts))
+                                   "--")))
+                     (html:tr (html:td "Last attempted")
+                              (html:td
+                               (or (and-let* ((ts (~ source'last-attempt-at)))
                                      (rss-format-date ts))
                                    "--")))
                      (html:tr (html:td "Time spent")
