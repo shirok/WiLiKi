@@ -52,7 +52,7 @@
 (autoload dbm.gdbm <gdbm>)
 
 (define-constant +user-agent+
-  "wiliki/rssmix http://practical-scheme.net/wiliki/rssmix.cgi")
+  "wiliki/rssmix https://practical-scheme.net/wiliki/rssmix.cgi")
 
 (define-constant +namespaces+
   '((rdf  . "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
@@ -76,7 +76,7 @@
    (max-title-width :init-keyword :max-title-width :init-value 65)
    ;; - entry longer than this will be truncated
    (max-threads :init-keyword :max-threads :init-value 4)
-   ;; - max # of threads to be used to fetch rss.
+   ;; - max # of threads to be used to fetch rss (obsoleted - no longer used)
    (db      :init-value #f)
    ;; - opened dbm instance
    (db-lock :init-form (make-mutex))
@@ -243,22 +243,22 @@
      $ html:table
      $ map (^[item]
              (html:tr
-              (html:td (rss-format-date (ref item 'date)))
+              (html:td (rss-format-date (~ item 'date)))
               (html:td
-               (let* ([id (ref item 'site-id)]
-                      [title (ref item 'title)]
+               (let* ([id (~ item 'site-id)]
+                      [title (~ item 'title)]
                       [titlew (string-width title)]
-                      [len (- (ref self 'max-title-width)
+                      [len (- (~ self 'max-title-width)
                               (+ (string-width id) titlew))])
                  (when (negative? len)
                    (set! title #"~(string-chop title (+ titlew len)) ..."))
                  (list
-                  (html:a :href (ref item 'site-url) (html-escape-string id))
+                  (html:a :href (~ item 'site-url) (html-escape-string id))
                   ": "
-                  (html:a :href (ref item 'link) (html-escape-string title))
+                  (html:a :href (~ item 'link) (html-escape-string title))
                   )
                  ))))
-     $ take* (collect self) (ref self 'num-items)))
+     $ take* (collect self) (~ self 'num-items)))
 
 (define-method rss-site-info ((rssmix <rssmix>))
   ($ rss-page rssmix "RSSMix: Site Info"
