@@ -313,7 +313,8 @@
          "Match — Simple Pattern-Matching Syntax to Express Catamorphisms on Scheme Data"
          )
     (242 . "The CFG Language")
-    (244 . "Multiple-value Definitions")))
+    (244 . "Multiple-value Definitions")
+    (247 . "Syntactic Monads")))
 
 ;;---------------------------------------------------------------
 ;; Category macros
