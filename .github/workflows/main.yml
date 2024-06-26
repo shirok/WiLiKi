@@ -8,7 +8,9 @@ jobs:
     timeout-minutes: 10
     steps:
     - uses: actions/checkout@v3
-    - uses: shirok/setup-gauche@v1
+    - uses: shirok/setup-gauche@v4
+      with:
+        prebuilt-binary: true
     - name: Install dependencies
       run: |
         sudo apt install -y gettext
