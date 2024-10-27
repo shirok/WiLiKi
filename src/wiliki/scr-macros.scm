@@ -303,6 +303,7 @@
     (231 . "Intervals and Generalized Arrays")
     (232 . "Flexible curried procedures")
     (233 . "INI files")
+    (234 . "Topological Sorting")
     (235 . "Combinators")
     (236 . "Evaluating expressions in an unspecified order")
     (237 . "R6RS Records (refined)")
@@ -314,7 +315,9 @@
          )
     (242 . "The CFG Language")
     (244 . "Multiple-value Definitions")
-    (247 . "Syntactic Monads")))
+    (247 . "Syntactic Monads")
+    (251 . "Mixing groups of definitions with expressions within bodies")
+    (252 . "Property Testing")))
 
 ;;---------------------------------------------------------------
 ;; Category macros
