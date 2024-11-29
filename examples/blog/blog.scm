@@ -469,8 +469,8 @@
   ;; fixed in WiLiKi side to allow editable? slot value is recalculated
   ;; for each request.
   (auth:auth-db-path (~ self'auth-db-path))
-  (if-let1 login-command (~ self'login-command)
-    (register-login-action (~ self'login-command)))
+  (and-let1 login-command (~ self'login-command)
+    (register-login-action login-command))
   (set! (~ self'editable?) (if (authenticated?) #t 'limited))
   ;; Some other setup
   (rss-item-description 'html)
