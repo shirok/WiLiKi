@@ -191,7 +191,7 @@
      (^[param]
        (let ([pagename (get-page-name self param)]
              [command  (cgi-get-parameter "c" param)]
-             [language (cgi-get-parameter "l" param :convert %canon-lang)])
+             [language (cgi-get-parameter "l" param :convert (^x (%canon-lang self x)))])
          (parameterize ([wiliki:lang (or language (~ self'language))])
            (cgi-output-character-encoding (wiliki:output-charset))
            (setup-textdomain self language)
