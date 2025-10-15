@@ -1,3 +1,9 @@
+2025-10-14  Shiro Kawai  <shiro@acm.org>
+
+	* src/wiliki/core.scm (%canon-lang): Canonicalize l=LANG parameter;
+	  if a bogus value is passed to LANG, we use default value,
+	  so that the bogus value won't appear in links in the rendered page.
+
 2023-11-09  Shiro Kawai  <shiro@acm.org>
 
 	* src/wiliki/rssmix.cgi: Overhaul the fetch code.  Now we split

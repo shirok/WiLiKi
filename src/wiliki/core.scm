@@ -191,7 +191,7 @@
      (^[param]
        (let ([pagename (get-page-name self param)]
              [command  (cgi-get-parameter "c" param)]
-             [language (cgi-get-parameter "l" param :convert string->symbol)])
+             [language (cgi-get-parameter "l" param :convert %canon-lang)])
          (parameterize ([wiliki:lang (or language (~ self'language))])
            (cgi-output-character-encoding (wiliki:output-charset))
            (setup-textdomain self language)
@@ -528,6 +528,17 @@
     [(':full (? string? s)) (url-format #t s '())]
     [(':full (? string? s) args ...) (url-format #t s args)]
     [else (error "invalid call to wiliki:url:" `(wiliki:url ,@args))]))
+
+;; "Canonicalize" given language tag LANG, which can be symbol or string.
+;; Returns a symbol language tag which is
+;;  - all lowercase
+;;  - if LANG is not a known two-letter language code or the one listed
+;;    in 'charsets' slot,
+(define (%canon-lang wiliki lang)
+  (let1 s (string->symbol (string-downcase (x->string lang)))
+    (cond [(memq s '(en jp)) s]
+          [(assq s (~ wiliki'charsets)) => car]
+          [else (~ wiliki'language)])))
 
 ;;===================================================================
 ;; Macro mechanism
